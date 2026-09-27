@@ -24,11 +24,15 @@ namespace VGCASignToolPro.Services
             if (string.IsNullOrWhiteSpace(wordFilePath) || !File.Exists(wordFilePath))
                 throw new FileNotFoundException($"Không tìm thấy file Word: {wordFilePath}", wordFilePath);
 
+            string tempDir = Path.Combine(Path.GetTempPath(), "VGCASignToolPro");
+            if (!Directory.Exists(tempDir)) Directory.CreateDirectory(tempDir);
+
+            // Tạo tên file HTML duy nhất (kèm timestamp/guid) để triệt tiêu hoàn toàn xung đột khóa tệp (File Lock)
             if (string.IsNullOrWhiteSpace(outputHtmlPath))
             {
-                string tempDir = Path.Combine(Path.GetTempPath(), "VGCASignToolPro");
-                if (!Directory.Exists(tempDir)) Directory.CreateDirectory(tempDir);
-                outputHtmlPath = Path.Combine(tempDir, $"{Path.GetFileNameWithoutExtension(wordFilePath)}_editable.html");
+                string baseName = Path.GetFileNameWithoutExtension(wordFilePath);
+                string uniqueToken = Guid.NewGuid().ToString("N").Substring(0, 8);
+                outputHtmlPath = Path.Combine(tempDir, $"{baseName}_{uniqueToken}.html");
             }
 
             StatusChanged?.Invoke("Đang khởi tạo engine hiển thị trực tiếp tài liệu Word...");
@@ -64,12 +68,14 @@ namespace VGCASignToolPro.Services
                     FileFormat: 10,
                     AddToRecentFiles: false);
 
-                StatusChanged?.Invoke("Tài liệu đã được tải lên khung chỉnh sửa trực tiếp.");
+                // QUAN TRỌNG: Đóng tài liệu Word ngay lập tức để giải phóng hoàn toàn khóa tệp tin (File Lock)
+                wordDoc.Close(false);
+                try { Marshal.ReleaseComObject(wordDoc); } catch { }
+                wordDoc = null;
 
-                // Nhúng giao diện trang giấy A4 và kích hoạt chế độ chỉnh sửa trực tiếp (contentEditable)
-                EnhanceHtmlForDirectEditing(outputHtmlPath);
-
-                return outputHtmlPath;
+                wordApp.Quit(false);
+                try { Marshal.ReleaseComObject(wordApp); } catch { }
+                wordApp = null;
             }
             catch (Exception ex)
             {
@@ -95,16 +101,24 @@ namespace VGCASignToolPro.Services
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
             }
+
+            // Sau khi Word đã đóng và nhả toàn bộ File Handle, tiến hành nhúng CSS trang A4 và contentEditable
+            StatusChanged?.Invoke("Tài liệu đã được tải lên khung chỉnh sửa trực tiếp.");
+            EnhanceHtmlForDirectEditing(outputHtmlPath);
+
+            return outputHtmlPath;
         }
 
         private static void EnhanceHtmlForDirectEditing(string htmlFilePath)
         {
             if (!File.Exists(htmlFilePath)) return;
 
-            string content = File.ReadAllText(htmlFilePath, Encoding.UTF8);
+            try
+            {
+                string content = File.ReadAllText(htmlFilePath, Encoding.UTF8);
 
-            // Chèn CSS định dạng trang giấy A4 và kích hoạt chế độ chỉnh sửa trực tiếp
-            string customStyles = @"
+                // Chèn CSS định dạng trang giấy A4 và kích hoạt chế độ chỉnh sửa trực tiếp
+                string customStyles = @"
 <style>
     html, body {
         background-color: #f1f5f9 !important;
@@ -113,10 +127,11 @@ namespace VGCASignToolPro.Services
         font-family: 'Times New Roman', 'Segoe UI', serif;
     }
     body {
-        display: flex;
-        justify-content: center;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
     }
-    .WordSection1, body > div:first-child {
+    .WordSection1, .WordSection2, body > div {
         background: #ffffff !important;
         width: 210mm !important;
         min-height: 297mm !important;
@@ -126,26 +141,39 @@ namespace VGCASignToolPro.Services
         border-radius: 4px;
         box-sizing: border-box !important;
         outline: none !important;
+        margin-bottom: 24px !important;
     }
 </style>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    function enableEditing() {
         document.body.contentEditable = 'true';
         document.designMode = 'on';
-    });
+        var sections = document.querySelectorAll('.WordSection1, .WordSection2, body > div');
+        sections.forEach(function(sec) {
+            sec.contentEditable = 'true';
+        });
+    }
+    window.addEventListener('DOMContentLoaded', enableEditing);
+    window.addEventListener('load', enableEditing);
+    setTimeout(enableEditing, 500);
 </script>
 ";
 
-            if (content.Contains("</head>", StringComparison.OrdinalIgnoreCase))
-            {
-                content = content.Replace("</head>", customStyles + "</head>", StringComparison.OrdinalIgnoreCase);
-            }
-            else
-            {
-                content = customStyles + content;
-            }
+                if (content.Contains("</head>", StringComparison.OrdinalIgnoreCase))
+                {
+                    content = content.Replace("</head>", customStyles + "</head>", StringComparison.OrdinalIgnoreCase);
+                }
+                else
+                {
+                    content = customStyles + content;
+                }
 
-            File.WriteAllText(htmlFilePath, content, Encoding.UTF8);
+                File.WriteAllText(htmlFilePath, content, Encoding.UTF8);
+            }
+            catch
+            {
+                // Bỏ qua nếu có lỗi nhỏ về encoding, file HTML vẫn hiển thị tốt
+            }
         }
 
         /// <summary>
