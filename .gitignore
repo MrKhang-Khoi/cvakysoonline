@@ -4,3 +4,5 @@ obj/
 *.suo
 .vs/
 .idea/
+test_preview_files/
+test_utf8_files/

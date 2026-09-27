@@ -62,6 +62,13 @@ namespace VGCASignToolPro.Services
 
                 StatusChanged?.Invoke("Đang tạo bản trình diễn trực quan (Filtered HTML)...");
 
+                // Bắt buộc thiết lập Encoding = 65001 (msoEncodingUTF8) để triệt tiêu 100% lỗi font tiếng Việt trên tiêu đề H1, H2 và nội dung
+                try
+                {
+                    wordDoc.WebOptions.Encoding = 65001; // msoEncodingUTF8
+                }
+                catch { }
+
                 // 10 = wdFormatFilteredHTML (HTML sạch tối ưu cho hiển thị trang web)
                 wordDoc.SaveAs2(
                     FileName: outputHtmlPath,
@@ -115,16 +122,28 @@ namespace VGCASignToolPro.Services
 
             try
             {
+                // Đọc tệp với UTF-8
                 string content = File.ReadAllText(htmlFilePath, Encoding.UTF8);
 
-                // Chèn CSS định dạng trang giấy A4 và kích hoạt chế độ chỉnh sửa trực tiếp
+                // Triệt tiêu mọi khai báo charset Windows-1252 / ISO cũ từ Word nếu có
+                content = System.Text.RegularExpressions.Regex.Replace(
+                    content,
+                    @"charset=[a-zA-Z0-9_\-]+",
+                    "charset=utf-8",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                // Chèn CSS định dạng trang giấy A4, font tiếng Việt chuẩn và kích hoạt chế độ chỉnh sửa trực tiếp
                 string customStyles = @"
+<meta charset=""utf-8"">
 <style>
+    * {
+        font-family: 'Times New Roman', 'Segoe UI', Arial, Tahoma, sans-serif !important;
+    }
     html, body {
         background-color: #f1f5f9 !important;
         margin: 0;
         padding: 24px 0;
-        font-family: 'Times New Roman', 'Segoe UI', serif;
+        font-family: 'Times New Roman', 'Segoe UI', Arial, Tahoma, sans-serif !important;
     }
     body {
         display: flex !important;
@@ -143,6 +162,13 @@ namespace VGCASignToolPro.Services
         outline: none !important;
         margin-bottom: 24px !important;
     }
+    h1, h2, h3, h4, h5, h6, .MsoTitle, .MsoSubtitle {
+        font-family: 'Times New Roman', 'Segoe UI', Arial, Tahoma, sans-serif !important;
+        color: #0f172a !important;
+    }
+    p, span, li, td, th {
+        line-height: 1.4 !important;
+    }
 </style>
 <script>
     function enableEditing() {
@@ -159,7 +185,11 @@ namespace VGCASignToolPro.Services
 </script>
 ";
 
-                if (content.Contains("</head>", StringComparison.OrdinalIgnoreCase))
+                if (content.Contains("<head>", StringComparison.OrdinalIgnoreCase))
+                {
+                    content = content.Replace("<head>", "<head>" + customStyles, StringComparison.OrdinalIgnoreCase);
+                }
+                else if (content.Contains("</head>", StringComparison.OrdinalIgnoreCase))
                 {
                     content = content.Replace("</head>", customStyles + "</head>", StringComparison.OrdinalIgnoreCase);
                 }

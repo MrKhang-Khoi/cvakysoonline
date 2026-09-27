@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using VGCASignToolPro.Models;
 using VGCASignToolPro.Services;
@@ -203,25 +204,178 @@ namespace VGCASignToolPro
             if (CmbProfiles.SelectedItem is SignatureProfile profile)
             {
                 TxtDimensions.Text = $"{profile.SignatureWidth}x{profile.SignatureHeight}";
+
+                if (CmbDisplayMode != null)
+                {
+                    CmbDisplayMode.SelectedIndex = profile.Mode switch
+                    {
+                        1 => 0, // Chỉ ảnh
+                        2 => 1, // Ảnh + Chữ
+                        0 => 2, // Chỉ chữ
+                        _ => 0
+                    };
+                }
+
                 if (!string.IsNullOrWhiteSpace(profile.ImagePath) && File.Exists(profile.ImagePath))
                 {
-                    TxtStampImagePath.Text = profile.ImagePath;
+                    SetAndPersistStampImage(profile.ImagePath);
+                }
+                else
+                {
+                    // Tự động kiểm tra file quyen.png trên Desktop người dùng nếu có
+                    string defaultDesktopStamp = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "quyen.png");
+                    if (File.Exists(defaultDesktopStamp))
+                    {
+                        SetAndPersistStampImage(defaultDesktopStamp);
+                    }
+                    else
+                    {
+                        ClearStampImage();
+                    }
                 }
             }
+        }
+
+        private void SetAndPersistStampImage(string filePath)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+            {
+                ClearStampImage();
+                return;
+            }
+
+            try
+            {
+                TxtStampImagePath.Text = filePath;
+
+                // Nạp ảnh xem trước trong Tab 1
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.UriSource = new Uri(filePath);
+                bitmap.EndInit();
+
+                ImgStampPreview.Source = bitmap;
+                PnlStampPlaceholder.Visibility = Visibility.Collapsed;
+                PnlStampLoaded.Visibility = Visibility.Visible;
+                BtnClearStampImage.Visibility = Visibility.Visible;
+
+                TxtStampFileName.Text = Path.GetFileName(filePath);
+                TxtStampDimensionsInfo.Text = $"Kích thước: {bitmap.PixelWidth}x{bitmap.PixelHeight}px • Dung lượng: {new FileInfo(filePath).Length / 1024:N0} KB";
+                TxtStampFullPath.Text = filePath;
+
+                // Đồng bộ sang chip hiển thị trên Tab 2
+                ImgTab2StampThumb.Source = bitmap;
+                ImgTab2StampThumb.Visibility = Visibility.Visible;
+                TxtTab2StampStatus.Text = $"🔴 Con dấu: {Path.GetFileName(filePath)}";
+                BtnTab2SelectStamp.Content = "Đổi ảnh";
+
+                // Tự động gán vào Profile đang chọn và lưu ngay xuống ổ đĩa
+                if (CmbProfiles.SelectedItem is SignatureProfile profile)
+                {
+                    profile.ImagePath = filePath;
+                    _profileManager.SaveProfiles(_profiles);
+                }
+
+                UpdateStatus($"Đã nạp và lưu ảnh con dấu: {Path.GetFileName(filePath)}");
+            }
+            catch (Exception ex)
+            {
+                UpdateStatus($"Lỗi hiển thị ảnh con dấu: {ex.Message}");
+            }
+        }
+
+        private void ClearStampImage()
+        {
+            TxtStampImagePath.Text = string.Empty;
+            ImgStampPreview.Source = null;
+            PnlStampPlaceholder.Visibility = Visibility.Visible;
+            PnlStampLoaded.Visibility = Visibility.Collapsed;
+            BtnClearStampImage.Visibility = Visibility.Collapsed;
+
+            ImgTab2StampThumb.Source = null;
+            ImgTab2StampThumb.Visibility = Visibility.Collapsed;
+            TxtTab2StampStatus.Text = "⚪ Con dấu: Chưa chọn";
+            BtnTab2SelectStamp.Content = "+ Thêm ảnh";
+
+            if (CmbProfiles.SelectedItem is SignatureProfile profile)
+            {
+                profile.ImagePath = null;
+                _profileManager.SaveProfiles(_profiles);
+            }
+
+            UpdateStatus("Đã gỡ bỏ ảnh con dấu.");
         }
 
         private void BtnSelectStampImage_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
             {
-                Title = "Chọn hình ảnh con dấu hoặc chữ ký tay quét",
-                Filter = "Hình ảnh (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg|Tất cả tệp (*.*)|*.*"
+                Title = "Chọn hình ảnh con dấu đỏ hoặc chữ ký tay quét",
+                Filter = "Hình ảnh (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg|Tất cả tệp (*.*)|*.*",
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
             };
 
             if (dialog.ShowDialog() == true)
             {
-                TxtStampImagePath.Text = dialog.FileName;
-                UpdateStatus($"Đã chọn ảnh con dấu: {Path.GetFileName(dialog.FileName)}");
+                SetAndPersistStampImage(dialog.FileName);
+            }
+        }
+
+        private void BtnTab2ChangeStamp_Click(object sender, RoutedEventArgs e)
+        {
+            BtnSelectStampImage_Click(sender, e);
+        }
+
+        private void BtnClearStampImage_Click(object sender, RoutedEventArgs e)
+        {
+            ClearStampImage();
+        }
+
+        private void BtnSaveProfile_Click(object sender, RoutedEventArgs e)
+        {
+            if (CmbProfiles.SelectedItem is SignatureProfile profile)
+            {
+                var dimParts = TxtDimensions.Text.Split('x', 'X');
+                if (dimParts.Length == 2)
+                {
+                    if (int.TryParse(dimParts[0].Trim(), out int w)) profile.SignatureWidth = w;
+                    if (int.TryParse(dimParts[1].Trim(), out int h)) profile.SignatureHeight = h;
+                }
+
+                if (CmbDisplayMode != null)
+                {
+                    profile.Mode = CmbDisplayMode.SelectedIndex switch
+                    {
+                        0 => 1, // Chỉ ảnh
+                        1 => 2, // Ảnh + Chữ
+                        2 => 0, // Chỉ chữ
+                        _ => 1
+                    };
+                }
+
+                string stampPath = TxtStampImagePath.Text.Trim();
+                profile.ImagePath = (!string.IsNullOrWhiteSpace(stampPath) && File.Exists(stampPath)) ? stampPath : null;
+                profile.SignerName = TxtSignerDisplayName.Text.Trim();
+
+                _profileManager.SaveProfiles(_profiles);
+                UpdateStatus($"Đã lưu thành công cấu hình mẫu chữ ký: '{profile.Name}'");
+                MessageBox.Show($"Đã lưu mẫu chữ ký '{profile.Name}' thành công!\nẢnh con dấu: {(profile.ImagePath != null ? Path.GetFileName(profile.ImagePath) : "Chưa chọn")}\nKích thước: {profile.SignatureWidth}x{profile.SignatureHeight}px", 
+                    "Lưu Cấu Hình Mẫu Ký", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private void CmbDisplayMode_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbProfiles.SelectedItem is SignatureProfile profile && CmbDisplayMode != null)
+            {
+                profile.Mode = CmbDisplayMode.SelectedIndex switch
+                {
+                    0 => 1, // Chỉ ảnh
+                    1 => 2, // Ảnh + Chữ
+                    2 => 0, // Chỉ chữ
+                    _ => 1
+                };
             }
         }
 
@@ -392,10 +546,45 @@ namespace VGCASignToolPro
                 float.TryParse(dimParts[1].Trim(), out height);
             }
 
-            string stampPath = TxtStampImagePath.Text.Trim();
-            if (stampPath.StartsWith("Ảnh con dấu") || !File.Exists(stampPath))
+            // Xác định tệp hình ảnh con dấu (từ ô nhập, từ Profile đã lưu, hoặc từ Desktop quyen.png)
+            string? stampPath = TxtStampImagePath.Text.Trim();
+            if (string.IsNullOrWhiteSpace(stampPath) || stampPath.StartsWith("Ảnh con dấu") || !File.Exists(stampPath))
             {
-                stampPath = null!;
+                if (CmbProfiles.SelectedItem is SignatureProfile p && !string.IsNullOrWhiteSpace(p.ImagePath) && File.Exists(p.ImagePath))
+                {
+                    stampPath = p.ImagePath;
+                }
+                else
+                {
+                    string defaultDesktopStamp = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "quyen.png");
+                    if (File.Exists(defaultDesktopStamp))
+                    {
+                        stampPath = defaultDesktopStamp;
+                    }
+                    else
+                    {
+                        stampPath = null;
+                    }
+                }
+            }
+
+            var selectedProfile = CmbProfiles.SelectedItem as SignatureProfile;
+            if (selectedProfile != null)
+            {
+                if (!string.IsNullOrWhiteSpace(stampPath))
+                {
+                    selectedProfile.ImagePath = stampPath;
+                }
+                if (CmbDisplayMode != null)
+                {
+                    selectedProfile.Mode = CmbDisplayMode.SelectedIndex switch
+                    {
+                        0 => 1, // Chỉ ảnh
+                        1 => 2, // Ảnh + Chữ
+                        2 => 0, // Chỉ chữ
+                        _ => 1
+                    };
+                }
             }
 
             string dir = Path.GetDirectoryName(_currentWorkingPdfPath) ?? AppDomain.CurrentDomain.BaseDirectory;
@@ -415,6 +604,7 @@ namespace VGCASignToolPro
                 Reason = TxtReason.Text.Trim(),
                 SignerDisplayName = TxtSignerDisplayName.Text.Trim(),
                 StampImagePath = stampPath,
+                Profile = selectedProfile,
                 UseTSA = ChkUseTSA.IsChecked == true,
                 TSAUrl = "http://ca.gov.vn/tsa"
             };

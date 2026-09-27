@@ -256,17 +256,56 @@
                                     <TextBlock Text="Chọn mẫu chữ ký chuẩn:" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
                                     <ComboBox x:Name="CmbProfiles" Margin="0,0,0,8" Padding="6" SelectionChanged="CmbProfiles_SelectionChanged" />
 
-                                    <TextBlock Text="Hình ảnh con dấu đỏ hoặc chữ ký tay quét:" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
-                                    <Grid Margin="0,0,0,8">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBox Grid.Column="0" x:Name="TxtStampImagePath" IsReadOnly="True" 
-                                                 Background="#F8FAFC" Padding="6" Text="Ảnh con dấu / Chữ ký tay (tùy chọn)..." />
-                                        <Button Grid.Column="1" Content="🖼 Chọn Ảnh..." Style="{StaticResource SecondaryButton}" 
-                                                Margin="6,0,0,0" Click="BtnSelectStampImage_Click" />
-                                    </Grid>
+                                    <!-- KHUNG CHỌN & XEM TRƯỚC HÌNH ẢNH CON DẤU / CHỮ KÝ TAY -->
+                                    <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,10">
+                                        <StackPanel>
+                                            <Grid Margin="0,0,0,6">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0" Text="Hình ảnh con dấu đỏ hoặc chữ ký tay quét:" FontSize="12" FontWeight="Bold" Foreground="#1E293B" VerticalAlignment="Center" />
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                    <Button Content="🖼 Chọn Ảnh..." Style="{StaticResource PrimaryButton}" Padding="10,4" FontSize="11" Click="BtnSelectStampImage_Click" />
+                                                    <Button x:Name="BtnClearStampImage" Content="❌ Gỡ Ảnh" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Margin="6,0,0,0" Click="BtnClearStampImage_Click" Visibility="Collapsed" />
+                                                </StackPanel>
+                                            </Grid>
+
+                                            <!-- KHUNG PREVIEW ẢNH CON DẤU THỰC TẾ -->
+                                            <Border x:Name="BorderStampPreview" Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="4" MinHeight="75" Padding="6" Margin="0,0,0,6">
+                                                <Grid>
+                                                    <!-- PLACEHOLDER KHI CHƯA CHỌN ẢNH -->
+                                                    <StackPanel x:Name="PnlStampPlaceholder" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                        <TextBlock Text="⭕ Chưa chọn ảnh con dấu / chữ ký tay" FontSize="12" Foreground="#94A3B8" HorizontalAlignment="Center" />
+                                                        <TextBlock Text="Nhấn nút 'Chọn Ảnh...' ở trên để nạp tệp con dấu đỏ (.png, .jpg)" FontSize="10" Foreground="#CBD5E1" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                                                    </StackPanel>
+
+                                                    <!-- ẢNH HIỂN THỊ THỰC TẾ KHI ĐÃ CHỌN -->
+                                                    <StackPanel x:Name="PnlStampLoaded" Visibility="Collapsed" Orientation="Horizontal" HorizontalAlignment="Center">
+                                                        <Border BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Background="#FAFAFA" Padding="4">
+                                                            <Image x:Name="ImgStampPreview" MaxHeight="75" MaxWidth="130" Stretch="Uniform" />
+                                                        </Border>
+                                                        <StackPanel VerticalAlignment="Center" Margin="10,0,0,0">
+                                                            <TextBlock x:Name="TxtStampFileName" Text="quyen.png" FontWeight="Bold" FontSize="12" Foreground="#047857" />
+                                                            <TextBlock x:Name="TxtStampDimensionsInfo" Text="Kích thước: 120x120px" FontSize="11" Foreground="#64748B" Margin="0,2,0,0" />
+                                                            <TextBlock x:Name="TxtStampFullPath" Text="C:\...\quyen.png" FontSize="10" Foreground="#94A3B8" TextWrapping="Wrap" MaxWidth="250" Margin="0,2,0,0" />
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+
+                                            <!-- ĐƯỜNG DẪN ẨN / TƯƠNG THÍCH -->
+                                            <TextBox x:Name="TxtStampImagePath" Visibility="Collapsed" />
+
+                                            <!-- HÌNH THỨC HIỂN THỊ CHỮ KÝ (MODE) -->
+                                            <TextBlock Text="Hình thức thể hiện khi ký trên tài liệu PDF:" FontSize="11" Foreground="#64748B" Margin="0,2,0,2" />
+                                            <ComboBox x:Name="CmbDisplayMode" Padding="5" SelectionChanged="CmbDisplayMode_SelectionChanged">
+                                                <ComboBoxItem Content="🔴 Chỉ hình ảnh con dấu / chữ ký tay (Khuyên dùng)" IsSelected="True" />
+                                                <ComboBoxItem Content="📝 Ảnh con dấu + Dòng thông tin người ký &amp; ngày giờ" />
+                                                <ComboBoxItem Content="📄 Chỉ thông tin văn bản chữ ký số điện tử (Không ảnh)" />
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </Border>
 
                                     <!-- VỊ TRÍ KÝ: TRANG, TỌA ĐỘ -->
                                     <Grid Margin="0,0,0,8">
@@ -305,12 +344,21 @@
                                     <TextBox x:Name="TxtReason" Text="Ký duyệt phát hành văn bản điện tử" Padding="5" Margin="0,0,0,8" />
 
                                     <CheckBox x:Name="ChkUseTSA" Content="Đóng Dấu thời gian TSA Ban Cơ yếu (http://ca.gov.vn/tsa)" 
-                                              IsChecked="True" FontWeight="Normal" FontSize="11" Margin="0,0,0,14" />
+                                              IsChecked="True" FontWeight="Normal" FontSize="11" Margin="0,0,0,12" />
 
-                                    <!-- NÚT CHUYỂN SANG TAB KÝ VĂN BẢN -->
-                                    <Button Content="👉 Đi Tới Soạn Thảo &amp; Ký Văn Bản (Tab 2) ➡" 
-                                            Style="{StaticResource PrimaryButton}" Padding="16,10" 
-                                            Click="BtnGoToSignWorkspace_Click" />
+                                    <!-- NÚT LƯU CẤU HÌNH & CHUYỂN SANG TAB SOẠN THẢO -->
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Button Grid.Column="0" Content="💾 Lưu Mẫu Chữ Ký Này" 
+                                                Style="{StaticResource SecondaryButton}" Padding="10,8" Margin="0,0,4,0" 
+                                                Click="BtnSaveProfile_Click" />
+                                        <Button Grid.Column="1" Content="👉 Đi Tới Soạn Thảo (Tab 2) ➡" 
+                                                Style="{StaticResource PrimaryButton}" Padding="10,8" Margin="4,0,0,0" 
+                                                Click="BtnGoToSignWorkspace_Click" />
+                                    </Grid>
                                 </StackPanel>
                             </GroupBox>
                         </StackPanel>
@@ -406,8 +454,19 @@
                                 <ProgressBar Grid.Column="2" x:Name="PrgConvertLoading" Height="4" IsIndeterminate="True" 
                                              Visibility="Collapsed" VerticalAlignment="Center" Margin="14,0" Foreground="#D97706" />
 
-                                <TextBlock Grid.Column="3" x:Name="TxtQuickCertNotice" Text="Chứng thư: Hà Văn Tý (Ban Cơ yếu G2)" 
-                                           FontSize="11" FontWeight="Medium" Foreground="#059669" VerticalAlignment="Center" />
+                                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <!-- CHIP HIỂN THỊ ẢNH CON DẤU TRÊN TAB 2 -->
+                                    <Border x:Name="BadgeTab2Stamp" Background="#F0FDF4" BorderBrush="#86EFAC" BorderThickness="1" CornerRadius="4" Padding="6,3" Margin="0,0,10,0" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Image x:Name="ImgTab2StampThumb" Width="18" Height="18" Stretch="Uniform" Margin="0,0,6,0" Visibility="Collapsed" />
+                                            <TextBlock x:Name="TxtTab2StampStatus" Text="🔴 Con dấu: Chưa chọn" FontSize="11" FontWeight="Bold" Foreground="#15803D" VerticalAlignment="Center" />
+                                            <Button x:Name="BtnTab2SelectStamp" Content="🖼 Đổi ảnh..." Style="{StaticResource SecondaryButton}" Padding="5,1" Margin="6,0,0,0" FontSize="10" Click="BtnTab2ChangeStamp_Click" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <TextBlock x:Name="TxtQuickCertNotice" Text="Chứng thư: Hà Văn Tý (Ban Cơ yếu G2)" 
+                                               FontSize="11" FontWeight="Medium" Foreground="#059669" VerticalAlignment="Center" />
+                                </StackPanel>
                             </Grid>
                         </Grid>
                     </Border>

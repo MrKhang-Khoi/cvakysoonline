@@ -66,10 +66,22 @@ namespace VGCASignToolPro.Services
             signerProps.SetLocation(request.Location);
             signerProps.SetClaimedSignDate(DateTime.Now);
 
-            // Tạo hiển thị trực quan (Visual Appearance)
+            // Tạo hiển thị trực quan (Visual Appearance) chuẩn Ban Cơ yếu & Nghị định 30/2020/NĐ-CP
             var appearance = new SignatureFieldAppearance(sigFieldName);
-            appearance.SetPageNumber(targetPage);
-            appearance.SetFixedPosition(targetPage, request.X, request.Y, request.Width);
+
+            // Nạp font chữ Unicode (Times New Roman / Arial) từ hệ thống Windows để hiển thị tiếng Việt có dấu chuẩn xác 100%
+            try
+            {
+                string timesFontPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Fonts), "times.ttf");
+                if (File.Exists(timesFontPath))
+                {
+                    var font = iText.Kernel.Font.PdfFontFactory.CreateFont(timesFontPath, iText.IO.Font.PdfEncodings.IDENTITY_H);
+                    appearance.SetFont(font);
+                }
+            }
+            catch { }
+
+            appearance.SetFontSize(8);
 
             string signerName = !string.IsNullOrWhiteSpace(request.SignerDisplayName)
                 ? request.SignerDisplayName
@@ -77,18 +89,31 @@ namespace VGCASignToolPro.Services
 
             string signInfoText = $"Ký bởi: {signerName}\nNgày ký: {DateTime.Now:dd/MM/yyyy HH:mm:ss}\nLý do: {request.Reason}";
 
-            if (!string.IsNullOrWhiteSpace(request.StampImagePath) && File.Exists(request.StampImagePath))
+            bool hasStampImage = !string.IsNullOrWhiteSpace(request.StampImagePath) && File.Exists(request.StampImagePath);
+            int displayMode = request.Profile?.Mode ?? (hasStampImage ? 1 : 0);
+
+            if (hasStampImage)
             {
                 StatusChanged?.Invoke("Đang nhúng hình ảnh con dấu / chữ ký tay...");
                 ImageData stampImage = ImageDataFactory.Create(request.StampImagePath);
-                appearance.SetContent(signInfoText, stampImage);
+
+                if (displayMode == 1)
+                {
+                    // Chế độ 1: Chỉ hiển thị hình ảnh con dấu đỏ hoặc chữ ký tay
+                    appearance.SetContent(stampImage);
+                }
+                else
+                {
+                    // Chế độ 2: Hiển thị cả hình ảnh con dấu và dòng thông tin chữ ký điện tử
+                    appearance.SetContent(signInfoText, stampImage);
+                }
             }
             else
             {
+                // Chế độ 0: Chỉ hiển thị thông tin chữ ký điện tử dạng chữ
                 appearance.SetContent(signInfoText);
             }
 
-            appearance.SetFontSize(8);
             signerProps.SetSignatureAppearance(appearance);
             signer.SetSignerProperties(signerProps);
 
