@@ -11,7 +11,6 @@
   <ItemGroup>
     <PackageReference Include="itext7" Version="9.7.0" />
     <PackageReference Include="itext7.bouncy-castle-adapter" Version="9.7.0" />
-    <PackageReference Include="Microsoft.Office.Interop.Word" Version="15.0.4797.1004" />
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>

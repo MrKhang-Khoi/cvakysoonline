@@ -120,7 +120,7 @@ namespace VGCASignToolPro
 
         #region Xử lý Tài Liệu (Word / PDF)
 
-        private async void BtnSelectWord_Click(object sender, RoutedEventArgs e)
+        private void BtnSelectWord_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
             {
@@ -134,29 +134,76 @@ namespace VGCASignToolPro
                 _originalWordFilePath = wordPath;
                 TxtInputFilePath.Text = wordPath;
 
+                // Hiển thị khung thao tác chuyển đổi Word
+                PnlWordActions.Visibility = Visibility.Visible;
+                var fi = new FileInfo(wordPath);
+                TxtConvertStatus.Text = $"Đã nạp file: {fi.Name} ({fi.Length / 1024:N0} KB). Nhấn 'Chuyển Sang PDF Để Ký' để bắt đầu chuyển đổi.";
+                TxtWorkingPdfPath.Text = "Chưa chuyển đổi. Nhấn nút bên trên để chuyển sang PDF.";
+
                 LogActivity($"Đã chọn file Word: {Path.GetFileName(wordPath)}");
-                BtnSignDocument.IsEnabled = false;
+            }
+        }
 
-                try
-                {
-                    // Tự động chuyển đổi Word sang PDF
-                    string pdfPath = await _wordConverter.ConvertWordToPdfAsync(wordPath);
-                    _currentWorkingPdfPath = pdfPath;
-                    TxtWorkingPdfPath.Text = pdfPath;
+        private void BtnOpenWordViewer_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(_originalWordFilePath) || !File.Exists(_originalWordFilePath))
+            {
+                MessageBox.Show("Vui lòng chọn tệp Word trước khi mở xem.", "Chưa có file", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
-                    // Hiển thị lên khung xem trước
-                    LoadPdfIntoPreview(pdfPath);
-                    LogActivity("File PDF đã được tạo sẵn sàng cho tiến trình ký số.");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Không thể chuyển đổi file Word sang PDF:\n{ex.Message}",
-                        "Lỗi Chuyển Đổi", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                finally
-                {
-                    BtnSignDocument.IsEnabled = true;
-                }
+            try
+            {
+                LogActivity($"Đang mở tệp tin Word: {Path.GetFileName(_originalWordFilePath)}...");
+                WordConverterService.OpenWordDocumentInViewer(_originalWordFilePath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Không thể mở file Word:\n{ex.Message}", "Lỗi Mở File", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void BtnExecuteConvertWord_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(_originalWordFilePath) || !File.Exists(_originalWordFilePath))
+            {
+                MessageBox.Show("Vui lòng chọn tệp Word trước khi chuyển đổi.", "Chưa có file", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            BtnExecuteConvertWord.IsEnabled = false;
+            PrgConvertLoading.Visibility = Visibility.Visible;
+            TxtConvertStatus.Text = "Đang khởi tạo engine Microsoft Word và chuyển đổi sang PDF...";
+            LogActivity($"Bắt đầu chuyển đổi Word sang PDF cho tệp: {Path.GetFileName(_originalWordFilePath)}");
+
+            try
+            {
+                // Thực hiện chuyển đổi qua Late-Bound COM an toàn tuyệt đối
+                string pdfPath = await _wordConverter.ConvertWordToPdfAsync(_originalWordFilePath);
+                _currentWorkingPdfPath = pdfPath;
+                TxtWorkingPdfPath.Text = pdfPath;
+
+                TxtConvertStatus.Text = $"Chuyển đổi thành công 100%! Tệp PDF: {Path.GetFileName(pdfPath)}";
+                LogActivity($"Chuyển đổi hoàn tất thành công: {Path.GetFileName(pdfPath)}");
+
+                // Nạp file PDF vừa tạo lên khung xem trước
+                LoadPdfIntoPreview(pdfPath);
+
+                MessageBox.Show(
+                    $"Chuyển đổi tài liệu Word sang PDF thành công 100%!\n\nTệp tin đã lưu tại:\n{pdfPath}\n\nNội dung đã được nạp lên khung xem trước bên phải. Bây giờ bạn có thể tiến hành ký số.",
+                    "Chuyển Đổi Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                TxtConvertStatus.Text = $"Lỗi chuyển đổi: {ex.Message}";
+                LogActivity($"Lỗi chuyển đổi: {ex.Message}");
+                MessageBox.Show($"Quá trình chuyển đổi Word sang PDF thất bại:\n\n{ex.Message}",
+                    "Lỗi Chuyển Đổi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                PrgConvertLoading.Visibility = Visibility.Collapsed;
+                BtnExecuteConvertWord.IsEnabled = true;
             }
         }
 
@@ -176,6 +223,7 @@ namespace VGCASignToolPro
 
                 TxtInputFilePath.Text = pdfPath;
                 TxtWorkingPdfPath.Text = pdfPath;
+                PnlWordActions.Visibility = Visibility.Collapsed;
 
                 LoadPdfIntoPreview(pdfPath);
                 LogActivity($"Đã nạp file PDF trực tiếp: {Path.GetFileName(pdfPath)}");
@@ -478,7 +526,7 @@ namespace VGCASignToolPro
                     LogActivity($"Phát hiện {signatures.Count} chữ ký số trong tài liệu.");
                     MessageBox.Show(
                         $"Tìm thấy {signatures.Count} chữ ký số trong tài liệu.\nKiểm tra chi tiết trạng thái ở bảng bên dưới.",
-                        "Kết Quả Xác Minh", MessageBoxButton.OK, MessageBoxImage.Information);
+                        "Kết QuẢ Xác Minh", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {

@@ -6,14 +6,14 @@
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         mc:Ignorable="d"
         Title="VGCA Sign Tool Pro - Phần Mềm Ký Số Văn Bản Điện Tử &amp; Tích Hợp Web" 
-        Height="780" Width="1240"
-        MinHeight="650" MinWidth="1000"
+        Height="800" Width="1260"
+        MinHeight="680" MinWidth="1020"
         WindowStartupLocation="CenterScreen"
         Background="#F4F6F9"
         FontFamily="Segoe UI">
 
     <Window.Resources>
-        <!-- Style cho Button Chính -->
+        <!-- Style cho Button Chính (Xanh dương) -->
         <Style x:Key="PrimaryButton" TargetType="Button">
             <Setter Property="Background" Value="#1E40AF" />
             <Setter Property="Foreground" Value="White" />
@@ -38,6 +38,19 @@
                 </Trigger>
                 <Trigger Property="IsEnabled" Value="False">
                     <Setter Property="Background" Value="#94A3B8" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Style cho Button Chuyển đổi (Cam / Hổ phách) -->
+        <Style x:Key="ConvertButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+            <Setter Property="Background" Value="#D97706" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Padding" Value="16,9" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#B45309" />
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -143,7 +156,7 @@
             <TabItem Header="  Ký Số &amp; Xử Lý Văn Bản  " FontSize="14" FontWeight="SemiBold">
                 <Grid Margin="0,10,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="480" MinWidth="420" />
+                        <ColumnDefinition Width="500" MinWidth="440" />
                         <ColumnDefinition Width="8" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
@@ -153,7 +166,7 @@
                         <StackPanel>
 
                             <!-- NHÓM 1: CHỌN VĂN BẢN GỐC -->
-                            <GroupBox Header="1. Tài Liệu Đầu Vào">
+                            <GroupBox Header="1. Tài Liệu Đầu Vào (Word / PDF)">
                                 <StackPanel>
                                     <Grid Margin="0,0,0,8">
                                         <Grid.ColumnDefinitions>
@@ -169,13 +182,49 @@
                                                 Click="BtnSelectPdf_Click" />
                                     </Grid>
 
-                                    <TextBlock Text="Đường dẫn tài liệu:" FontSize="11" Foreground="#64748B" Margin="0,2,0,2" />
+                                    <TextBlock Text="Đường dẫn tệp tin gốc:" FontSize="11" Foreground="#64748B" Margin="0,2,0,2" />
                                     <TextBox x:Name="TxtInputFilePath" IsReadOnly="True" Background="#F8FAFC" Padding="6" 
-                                             Text="Chưa chọn tệp tin..." Margin="0,0,0,6" />
+                                             Text="Chưa chọn tệp tin..." Margin="0,0,0,6" TextWrapping="Wrap" />
 
-                                    <TextBlock Text="File PDF sẵn sàng ký:" FontSize="11" Foreground="#64748B" Margin="0,2,0,2" />
+                                    <!-- BẢNG ĐIỀU KHIỂN RIÊNG CHO FILE WORD (XEM TRƯỚC & CHUYỂN ĐỔI CÓ LOADING) -->
+                                    <Border x:Name="PnlWordActions" Visibility="Collapsed" Background="#FEF3C7" BorderBrush="#FCD34D" 
+                                            BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,2,0,8">
+                                        <StackPanel>
+                                            <TextBlock Text="TÀI LIỆU WORD ĐÃ ĐƯỢC CHỌN" FontWeight="Bold" FontSize="11" Foreground="#92400E" Margin="0,0,0,6" />
+                                            
+                                            <Grid Margin="0,0,0,8">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="8" />
+                                                    <ColumnDefinition Width="1.5*" />
+                                                </Grid.ColumnDefinitions>
+                                                
+                                                <!-- Nút 1: Mở ra xem bằng Word -->
+                                                <Button Grid.Column="0" Content="👀 Xem File Word" 
+                                                        Style="{StaticResource SecondaryButton}" 
+                                                        Padding="8,6" FontSize="11" FontWeight="SemiBold"
+                                                        ToolTip="Mở tệp tin bằng Microsoft Word để kiểm tra nội dung"
+                                                        Click="BtnOpenWordViewer_Click" />
+
+                                                <!-- Nút 2: Nút bấm chủ động chuyển đổi sang PDF -->
+                                                <Button Grid.Column="2" x:Name="BtnExecuteConvertWord" 
+                                                        Content="⚡ Chuyển Sang PDF Để Ký" 
+                                                        Style="{StaticResource ConvertButton}" 
+                                                        Click="BtnExecuteConvertWord_Click" />
+                                            </Grid>
+
+                                            <!-- THANH TIẾN TRÌNH LOADING KHI ĐANG CHUYỂN ĐỔI -->
+                                            <ProgressBar x:Name="PrgConvertLoading" Height="6" IsIndeterminate="True" 
+                                                         Visibility="Collapsed" Margin="0,2,0,4" Foreground="#D97706" />
+
+                                            <TextBlock x:Name="TxtConvertStatus" Text="Nhấn nút 'Chuyển Sang PDF Để Ký' để bắt đầu xuất tệp PDF chuẩn." 
+                                                       FontSize="11" Foreground="#78350F" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <TextBlock Text="Tệp PDF sẵn sàng ký số:" FontSize="11" Foreground="#64748B" Margin="0,2,0,2" />
                                     <TextBox x:Name="TxtWorkingPdfPath" IsReadOnly="True" Background="#F1F5F9" Padding="6" 
-                                             FontWeight="Medium" Text="Chưa có PDF..." />
+                                             FontWeight="Medium" Text="Chưa có PDF sẵn sàng ký..." TextWrapping="Wrap" />
                                 </StackPanel>
                             </GroupBox>
 
@@ -295,7 +344,7 @@
                                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <TextBlock Text="📄" FontSize="48" HorizontalAlignment="Center" Foreground="#94A3B8" />
                                         <TextBlock Text="Khung Xem Trước Tài Liệu" FontWeight="Bold" FontSize="15" Foreground="#475569" HorizontalAlignment="Center" Margin="0,6,0,2" />
-                                        <TextBlock Text="Chọn file Word hoặc PDF ở cột trái để nạp hiển thị tài liệu tại đây" FontSize="12" Foreground="#64748B" HorizontalAlignment="Center" />
+                                        <TextBlock Text="Sau khi chuyển đổi Word hoặc chọn file PDF, nội dung sẽ được hiển thị trực quan tại đây" FontSize="12" Foreground="#64748B" HorizontalAlignment="Center" />
                                     </StackPanel>
                                 </Border>
                             </Grid>
@@ -456,7 +505,7 @@
                                     Ứng dụng này kế thừa và hoàn thiện toàn bộ các tính năng cốt lõi của VGCA Sign Tool (Cục Chứng thực số và Bảo mật thông tin – Ban Cơ yếu Chính phủ), bổ sung 2 tính năng mở rộng quan trọng:
                                 </TextBlock>
                                 <TextBlock TextWrapping="Wrap" FontSize="13" LineHeight="22" Foreground="#334155" Margin="0,8,0,0">
-                                    • <Bold>1. Tự động chuyển đổi Word sang PDF:</Bold> Hỗ trợ chọn trực tiếp file .docx/.doc, gọi engine Microsoft Word Interop để chuyển đổi giữ nguyên 100% chuẩn văn bản hành chính theo Nghị định 30/2020/NĐ-CP (font Times New Roman, lề trang, bảng biểu) trước khi đưa vào luồng ký.<LineBreak />
+                                    • <Bold>1. Tự động chuyển đổi Word sang PDF:</Bold> Hỗ trợ chọn trực tiếp file .docx/.doc, mở xem kiểm tra nội dung trước, sau đó bấm chuyển sang PDF chuẩn theo Nghị định 30/2020/NĐ-CP (font Times New Roman, lề trang, bảng biểu) kèm thanh trạng thái loading trực quan.<LineBreak />
                                     • <Bold>2. Ký số PAdES chuẩn quốc tế &amp; Ban Cơ yếu:</Bold> Sử dụng iText 9 và cầu nối mật mã Windows CNG, cho phép ký số an toàn bằng khóa riêng tư trong USB Token vật lý hoặc Remote Signing KSP (Virtual CSP v2.0), đóng dấu thời gian TSA (http://ca.gov.vn/tsa).<LineBreak />
                                     • <Bold>3. Đẩy file đã ký lên Cổng Web:</Bold> Sau khi ký xong, gửi trực tiếp tài liệu cùng metadata (tiêu đề, người ký, mã số) tới cổng quản lý văn bản / LMS của đơn vị qua giao thức HTTPS Multipart Form Data.
                                 </TextBlock>
@@ -484,7 +533,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" x:Name="TxtStatusBar" Text="Sẵn sàng." FontSize="12" Foreground="#334155" />
-                <TextBlock Grid.Column="1" Text="Phiên bản: 3.5.0 Pro (Hỗ trợ Word &amp; Web) • .NET 8 x64" FontSize="11" Foreground="#64748B" />
+                <TextBlock Grid.Column="1" Text="Phiên bản: 3.5.1 Pro (Chuyển Word Sang PDF &amp; Cổng Web) • .NET 8 x64" FontSize="11" Foreground="#64748B" />
             </Grid>
         </Border>
     </Grid>
