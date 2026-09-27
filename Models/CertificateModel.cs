@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 
 namespace VGCASignToolPro.Models
@@ -8,12 +9,19 @@ namespace VGCASignToolPro.Models
         public X509Certificate2 Certificate { get; }
         public string Subject { get; }
         public string CommonName { get; }
+        public string Email { get; }
+        public string OrganizationUnit { get; }
+        public string Organization { get; }
         public string Issuer { get; }
+        public string IssuerCommonName { get; }
         public string SerialNumber { get; }
         public DateTime NotBefore { get; }
         public DateTime NotAfter { get; }
         public string Thumbprint { get; }
         public bool HasPrivateKey { get; }
+        public bool IsValidNow { get; }
+        public bool IsVGCACertificate { get; }
+        public string KeyAlgorithm { get; }
         public string DisplayText { get; }
 
         public CertificateModel(X509Certificate2 cert)
@@ -26,26 +34,83 @@ namespace VGCASignToolPro.Models
             NotAfter = cert.NotAfter;
             Thumbprint = cert.Thumbprint;
             HasPrivateKey = cert.HasPrivateKey;
+            IsValidNow = DateTime.Now >= NotBefore && DateTime.Now <= NotAfter;
 
-            CommonName = ExtractCommonName(cert.Subject);
-            var issuerCn = ExtractCommonName(cert.Issuer);
+            // Phân tích các trường trong Subject
+            var parts = ParseDistinguishedName(cert.Subject);
+            CommonName = parts.GetValueOrDefault("CN", cert.GetNameInfo(X509NameType.SimpleName, false) ?? "N/A");
+            Email = parts.GetValueOrDefault("E", parts.GetValueOrDefault("EMAILADDRESS", ""));
+            OrganizationUnit = parts.GetValueOrDefault("OU", "");
+            Organization = parts.GetValueOrDefault("O", "");
 
-            string status = (DateTime.Now >= NotBefore && DateTime.Now <= NotAfter) ? "Còn hạn" : "Hết hạn";
-            DisplayText = $"{CommonName} | Cấp bởi: {issuerCn} | Hạn: {NotAfter:dd/MM/yyyy} ({status})";
-        }
+            var issuerParts = ParseDistinguishedName(cert.Issuer);
+            IssuerCommonName = issuerParts.GetValueOrDefault("CN", cert.GetNameInfo(X509NameType.SimpleName, true) ?? cert.Issuer);
 
-        private static string ExtractCommonName(string dn)
-        {
-            if (string.IsNullOrWhiteSpace(dn)) return "N/A";
-            foreach (var part in dn.Split(','))
+            // Kiểm tra xem có phải chứng thư số chuyên dùng của Ban Cơ yếu Chính phủ không
+            string issuerUpper = cert.Issuer.ToUpperInvariant();
+            IsVGCACertificate = issuerUpper.Contains("BAN CƠ YẾU") ||
+                                issuerUpper.Contains("CHINH PHU") ||
+                                issuerUpper.Contains("CHÍNH PHỦ") ||
+                                issuerUpper.Contains("VGCA") ||
+                                issuerUpper.Contains("CA PHỤC VỤ CÁC CƠ QUAN NHÀ NƯỚC");
+
+            // Xác định loại khóa bí mật (RSA hay ECDSA)
+            using var rsa = cert.GetRSAPrivateKey();
+            if (rsa != null)
             {
-                var trimmed = part.Trim();
-                if (trimmed.StartsWith("CN=", StringComparison.OrdinalIgnoreCase))
+                KeyAlgorithm = $"RSA {rsa.KeySize}-bit";
+            }
+            else
+            {
+                using var ecdsa = cert.GetECDsaPrivateKey();
+                if (ecdsa != null)
                 {
-                    return trimmed.Substring(3).Trim();
+                    KeyAlgorithm = $"ECDSA {ecdsa.KeySize}-bit (ECC P-{ecdsa.KeySize})";
+                }
+                else
+                {
+                    KeyAlgorithm = cert.PublicKey.Oid.FriendlyName ?? "Khóa công khai";
                 }
             }
-            return dn;
+
+            string vgcaTag = IsVGCACertificate ? "[VGCA Ban Cơ yếu] " : "";
+            string status = IsValidNow ? "Còn hạn" : "Hết hạn";
+            DisplayText = $"{vgcaTag}{CommonName} | {IssuerCommonName} | Hạn: {NotAfter:dd/MM/yyyy} ({status})";
+        }
+
+        private static Dictionary<string, string> ParseDistinguishedName(string dn)
+        {
+            var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(dn)) return dict;
+
+            var parts = dn.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
+            var ouList = new List<string>();
+
+            foreach (var part in parts)
+            {
+                int eqIndex = part.IndexOf('=');
+                if (eqIndex > 0)
+                {
+                    string key = part.Substring(0, eqIndex).Trim();
+                    string val = part.Substring(eqIndex + 1).Trim();
+
+                    if (key.Equals("OU", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ouList.Add(val);
+                    }
+                    else if (!dict.ContainsKey(key))
+                    {
+                        dict[key] = val;
+                    }
+                }
+            }
+
+            if (ouList.Count > 0)
+            {
+                dict["OU"] = string.Join(" - ", ouList);
+            }
+
+            return dict;
         }
 
         public override string ToString() => DisplayText;

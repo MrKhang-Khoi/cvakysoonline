@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using VGCASignToolPro.Models;
@@ -8,25 +10,42 @@ namespace VGCASignToolPro.Services
 {
     public class CertificateService
     {
+        private static readonly string VGCAManagerExePath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+            "VGCA", "Virtual CSP v2.0", "vgca_vcsp_v2_mgr.exe");
+
         public List<CertificateModel> LoadCertificates(bool onlyWithPrivateKey = true)
         {
             var results = new List<CertificateModel>();
             var seenThumbprints = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            // 1. Quét kho CurrentUser\My (chứa chứng thư cá nhân, USB Token cắm vào, Virtual CSP)
+            // 1. Quét kho CurrentUser\My (Kho người dùng đăng nhập hiện tại - chứa chứng thư VGCA, Virtual CSP, USB Token)
             ScanStore(StoreName.My, StoreLocation.CurrentUser, onlyWithPrivateKey, results, seenThumbprints);
 
             // 2. Quét kho LocalMachine\My
             ScanStore(StoreName.My, StoreLocation.LocalMachine, onlyWithPrivateKey, results, seenThumbprints);
 
-            // Sắp xếp chứng thư còn hạn lên đầu
-            return results
-                .OrderByDescending(c => DateTime.Now >= c.NotBefore && DateTime.Now <= c.NotAfter)
+            // Lọc bỏ các chứng thư thiết bị hệ thống không dùng để ký số văn bản (như MS-Organization-Access, localhost)
+            var filtered = results.Where(c =>
+            {
+                if (c.CommonName.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+                    return false;
+                if (c.Issuer.Contains("MS-Organization-Access", StringComparison.OrdinalIgnoreCase))
+                    return false;
+                if (c.CommonName.StartsWith("WMSvc-", StringComparison.OrdinalIgnoreCase))
+                    return false;
+                return true;
+            }).ToList();
+
+            // Ưu tiên chứng thư Ban Cơ yếu Chính phủ lên đầu danh sách
+            return filtered
+                .OrderByDescending(c => c.IsVGCACertificate)
+                .ThenByDescending(c => c.IsValidNow)
                 .ThenBy(c => c.CommonName)
                 .ToList();
         }
 
-        private void ScanStore(StoreName storeName, StoreLocation storeLocation, bool onlyWithPrivateKey, List<CertificateModel> results, HashSet<string> seenThumbprints)
+        private static void ScanStore(StoreName storeName, StoreLocation storeLocation, bool onlyWithPrivateKey, List<CertificateModel> results, HashSet<string> seenThumbprints)
         {
             try
             {
@@ -56,6 +75,46 @@ namespace VGCASignToolPro.Services
             {
                 // Bỏ qua nếu không có quyền truy cập kho
             }
+        }
+
+        /// <summary>
+        /// Lấy chứng thư số chuyên dùng Ban Cơ yếu Chính phủ đang hoạt động của người dùng
+        /// </summary>
+        public CertificateModel? GetActiveVGCACertificate()
+        {
+            var certs = LoadCertificates(onlyWithPrivateKey: true);
+            return certs.FirstOrDefault(c => c.IsVGCACertificate && c.IsValidNow)
+                ?? certs.FirstOrDefault(c => c.IsVGCACertificate);
+        }
+
+        /// <summary>
+        /// Kiểm tra xem người dùng đã đăng nhập vào hệ thống VGCA / Virtual CSP hay chưa
+        /// </summary>
+        public bool IsVGCALoggedIn()
+        {
+            var activeCert = GetActiveVGCACertificate();
+            return activeCert != null && activeCert.HasPrivateKey;
+        }
+
+        /// <summary>
+        /// Khởi chạy ứng dụng quản lý Virtual CSP của Ban Cơ yếu để người dùng đăng nhập tài khoản
+        /// </summary>
+        public bool LaunchVGCALoginApp()
+        {
+            if (File.Exists(VGCAManagerExePath))
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = VGCAManagerExePath,
+                        UseShellExecute = true
+                    });
+                    return true;
+                }
+                catch { }
+            }
+            return false;
         }
     }
 }
