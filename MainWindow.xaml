@@ -1,0 +1,491 @@
+<Window x:Class="VGCASignToolPro.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        mc:Ignorable="d"
+        Title="VGCA Sign Tool Pro - Phần Mềm Ký Số Văn Bản Điện Tử &amp; Tích Hợp Web" 
+        Height="780" Width="1240"
+        MinHeight="650" MinWidth="1000"
+        WindowStartupLocation="CenterScreen"
+        Background="#F4F6F9"
+        FontFamily="Segoe UI">
+
+    <Window.Resources>
+        <!-- Style cho Button Chính -->
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#1E40AF" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="6" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#1D4ED8" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#94A3B8" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Style cho Button Thành công (Xanh lá) -->
+        <Style x:Key="SuccessButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+            <Setter Property="Background" Value="#059669" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#10B981" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Style cho Button Đỏ (Ban Cơ yếu / Ký) -->
+        <Style x:Key="SignButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+            <Setter Property="Background" Value="#DC2626" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Padding" Value="20,12" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#B91C1C" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Style cho Button Phụ -->
+        <Style x:Key="SecondaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#E2E8F0" />
+            <Setter Property="Foreground" Value="#1E293B" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#CBD5E1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#CBD5E1" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Style GroupBox -->
+        <Style TargetType="GroupBox">
+            <Setter Property="Margin" Value="0,0,0,12" />
+            <Setter Property="Padding" Value="10" />
+            <Setter Property="BorderBrush" Value="#E2E8F0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="White" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#1E293B" />
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- HEADER BANNER -->
+        <Border Grid.Row="0" Background="#1E3A8A" Padding="20,14">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="VGCA SIGN TOOL PRO" FontSize="20" FontWeight="Bold" Foreground="White" />
+                    <TextBlock Text="Hệ thống Ký số Văn bản PDF Chuẩn PAdES • Chuyển đổi Word Tự động • Tích hợp Cổng Web" 
+                               FontSize="12" Foreground="#93C5FD" Margin="0,3,0,0" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="#1E40AF" CornerRadius="4" Padding="10,5" Margin="0,0,10,0">
+                        <TextBlock Text="Cục Chứng thực số &amp; Bảo mật TT - VGCA" Foreground="#E0E7FF" FontSize="11" FontWeight="Medium" />
+                    </Border>
+                    <Border Background="#047857" CornerRadius="4" Padding="10,5">
+                        <TextBlock Text="Hỗ trợ USB Token &amp; Remote KSP" Foreground="#D1FAE5" FontSize="11" FontWeight="Bold" />
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- MAIN TABS -->
+        <TabControl Grid.Row="1" Margin="14,10,14,10" Background="Transparent" BorderThickness="0">
+            
+            <!-- ================= TAB 1: KÝ SỐ VĂN BẢN ================= -->
+            <TabItem Header="  Ký Số &amp; Xử Lý Văn Bản  " FontSize="14" FontWeight="SemiBold">
+                <Grid Margin="0,10,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="480" MinWidth="420" />
+                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- CỘT TRÁI: ĐIỀU KHIỂN & CẤU HÌNH KÝ SỐ -->
+                    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+                        <StackPanel>
+
+                            <!-- NHÓM 1: CHỌN VĂN BẢN GỐC -->
+                            <GroupBox Header="1. Tài Liệu Đầu Vào">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="8" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Button Grid.Column="0" Content="📄 Chọn File Word (.docx)" 
+                                                Style="{StaticResource PrimaryButton}" 
+                                                Click="BtnSelectWord_Click" />
+                                        <Button Grid.Column="2" Content="📑 Chọn File PDF" 
+                                                Style="{StaticResource SecondaryButton}" 
+                                                Click="BtnSelectPdf_Click" />
+                                    </Grid>
+
+                                    <TextBlock Text="Đường dẫn tài liệu:" FontSize="11" Foreground="#64748B" Margin="0,2,0,2" />
+                                    <TextBox x:Name="TxtInputFilePath" IsReadOnly="True" Background="#F8FAFC" Padding="6" 
+                                             Text="Chưa chọn tệp tin..." Margin="0,0,0,6" />
+
+                                    <TextBlock Text="File PDF sẵn sàng ký:" FontSize="11" Foreground="#64748B" Margin="0,2,0,2" />
+                                    <TextBox x:Name="TxtWorkingPdfPath" IsReadOnly="True" Background="#F1F5F9" Padding="6" 
+                                             FontWeight="Medium" Text="Chưa có PDF..." />
+                                </StackPanel>
+                            </GroupBox>
+
+                            <!-- NHÓM 2: CHỌN CHỨNG THƯ SỐ -->
+                            <GroupBox Header="2. Chọn Chứng Thư Số (USB Token / KSP)">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Danh sách chứng thư trên máy tính:" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" />
+                                        <Button Grid.Column="1" Content="🔄 Quét Lại Token" Style="{StaticResource SecondaryButton}" 
+                                                Padding="8,3" FontSize="11" Click="BtnRefreshCertificates_Click" />
+                                    </Grid>
+
+                                    <ComboBox x:Name="CmbCertificates" Margin="0,0,0,6" Padding="6" 
+                                              SelectionChanged="CmbCertificates_SelectionChanged" />
+
+                                    <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="8">
+                                        <TextBlock x:Name="TxtCertDetails" FontSize="11" Foreground="#334155" TextWrapping="Wrap" 
+                                                   Text="Vui lòng cắm USB Token hoặc chọn chứng thư số để xem chi tiết." />
+                                    </Border>
+                                </StackPanel>
+                            </GroupBox>
+
+                            <!-- NHÓM 3: MẪU CHỮ KÝ & THIẾT LẬP VỊ TRÍ -->
+                            <GroupBox Header="3. Mẫu Chữ Ký &amp; Vị Trí Ký">
+                                <StackPanel>
+                                    <TextBlock Text="Chọn mẫu chữ ký chuẩn:" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
+                                    <ComboBox x:Name="CmbProfiles" Margin="0,0,0,8" Padding="6" 
+                                              SelectionChanged="CmbProfiles_SelectionChanged" />
+
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Grid.Column="0" x:Name="TxtStampImagePath" IsReadOnly="True" 
+                                                 Background="#F8FAFC" Padding="6" Text="Ảnh con dấu / Chữ ký tay (tùy chọn)..." />
+                                        <Button Grid.Column="1" Content="🖼 Chọn Ảnh..." Style="{StaticResource SecondaryButton}" 
+                                                Margin="6,0,0,0" Click="BtnSelectStampImage_Click" />
+                                    </Grid>
+
+                                    <!-- VỊ TRÍ KÝ: TRANG, TỌA ĐỘ -->
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="6" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="6" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="6" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="Trang ký:" FontSize="11" Foreground="#64748B" />
+                                            <TextBox x:Name="TxtPageNumber" Text="-1" Padding="4" ToolTip="-1 là trang cuối cùng" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="Tọa độ X:" FontSize="11" Foreground="#64748B" />
+                                            <TextBox x:Name="TxtCoordX" Text="380" Padding="4" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="4">
+                                            <TextBlock Text="Tọa độ Y:" FontSize="11" Foreground="#64748B" />
+                                            <TextBox x:Name="TxtCoordY" Text="120" Padding="4" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="6">
+                                            <TextBlock Text="Rộng x Cao:" FontSize="11" Foreground="#64748B" />
+                                            <TextBox x:Name="TxtDimensions" Text="160x80" Padding="4" />
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <TextBlock Text="Họ tên người ký hiển thị:" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
+                                    <TextBox x:Name="TxtSignerDisplayName" Padding="5" Margin="0,0,0,6" />
+
+                                    <TextBlock Text="Lý do ký:" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
+                                    <TextBox x:Name="TxtReason" Text="Ký duyệt phát hành văn bản điện tử" Padding="5" Margin="0,0,0,8" />
+
+                                    <CheckBox x:Name="ChkUseTSA" Content="Đóng Dấu thời gian TSA Ban Cơ yếu (http://ca.gov.vn/tsa)" 
+                                              IsChecked="True" FontWeight="Normal" FontSize="11" Margin="0,0,0,6" />
+                                </StackPanel>
+                            </GroupBox>
+
+                            <!-- NÚT THỰC HIỆN KÝ SỐ CHÍNH -->
+                            <Button x:Name="BtnSignDocument" Content="✍ TIẾN HÀNH KÝ SỐ TÀI LIỆU" 
+                                    Style="{StaticResource SignButton}" 
+                                    Margin="0,4,0,8" 
+                                    Click="BtnSignDocument_Click" />
+
+                            <Button x:Name="BtnGoToUpload" Content="🚀 Chuyển Sang Gửi File Lên Web ➡" 
+                                    Style="{StaticResource SuccessButton}" 
+                                    Visibility="Collapsed" 
+                                    Margin="0,0,0,10" 
+                                    Click="BtnGoToUpload_Click" />
+
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Center" Background="#CBD5E1" />
+
+                    <!-- CỘT PHẢI: TRỰC QUAN XEM TRƯỚC & LOG TIẾN TRÌNH -->
+                    <Grid Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="3*" MinHeight="250" />
+                            <RowDefinition Height="6" />
+                            <RowDefinition Height="1*" MinHeight="120" />
+                        </Grid.RowDefinitions>
+
+                        <!-- KHUNG PREVIEW TÀI LIỆU (WEBVIEW2) -->
+                        <Border Grid.Row="0" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6">
+                            <Grid>
+                                <wv2:WebView2 x:Name="PdfPreviewControl" />
+                                
+                                <Border x:Name="PnlPreviewPlaceholder" Background="#F8FAFC" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <TextBlock Text="📄" FontSize="48" HorizontalAlignment="Center" Foreground="#94A3B8" />
+                                        <TextBlock Text="Khung Xem Trước Tài Liệu" FontWeight="Bold" FontSize="15" Foreground="#475569" HorizontalAlignment="Center" Margin="0,6,0,2" />
+                                        <TextBlock Text="Chọn file Word hoặc PDF ở cột trái để nạp hiển thị tài liệu tại đây" FontSize="12" Foreground="#64748B" HorizontalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <GridSplitter Grid.Row="1" Height="4" HorizontalAlignment="Stretch" Background="#CBD5E1" />
+
+                        <!-- LOG TIẾN TRÌNH THỰC TẾ -->
+                        <Border Grid.Row="2" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="1" CornerRadius="6" Padding="10">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="NHẬT KÝ TIẾN TRÌNH HỆ THỐNG (REAL-TIME ACTIVITY LOG)" 
+                                           FontSize="10" FontWeight="Bold" Foreground="#38BDF8" Margin="0,0,0,6" />
+                                <TextBox Grid.Row="1" x:Name="TxtActivityLog" 
+                                         Background="Transparent" Foreground="#E2E8F0" 
+                                         BorderThickness="0" FontFamily="Consolas" FontSize="11" 
+                                         IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" />
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <!-- ================= TAB 2: GỬI LÊN WEB ================= -->
+            <TabItem Header="  Gửi File Lên Web  " FontSize="14" FontWeight="SemiBold">
+                <Grid Margin="0,10,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="520" />
+                        <ColumnDefinition Width="14" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- THIẾT LẬP THÔNG SỐ GỬI WEB -->
+                    <GroupBox Grid.Column="0" Header="Cấu Hình Gói Tin Đẩy Lên Cổng Web">
+                        <StackPanel Margin="6">
+                            <TextBlock Text="Tệp PDF đã ký cần gửi:" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" x:Name="TxtUploadFilePath" Background="#F8FAFC" Padding="6" 
+                                         Text="Chưa có file nào sẵn sàng..." />
+                                <Button Grid.Column="1" Content="📁 Chọn File..." Style="{StaticResource SecondaryButton}" 
+                                        Margin="6,0,0,0" Click="BtnSelectSignedPdfForUpload_Click" />
+                            </Grid>
+
+                            <TextBlock Text="Địa chỉ URL Web Gateway tiếp nhận (HTTP/HTTPS):" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
+                            <TextBox x:Name="TxtUploadUrl" Text="https://httpbin.org/post" Padding="6" Margin="0,0,0,8" />
+
+                            <TextBlock Text="Mã định danh Token / Bearer Key (nếu có):" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
+                            <TextBox x:Name="TxtAuthToken" Text="Bearer vgca-secure-token-2026" Padding="6" Margin="0,0,0,8" />
+
+                            <TextBlock Text="Tiêu đề văn bản:" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
+                            <TextBox x:Name="TxtUploadDocTitle" Text="Văn bản đã ký duyệt" Padding="6" Margin="0,0,0,8" />
+
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="8" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="Người ký:" FontSize="11" Foreground="#64748B" />
+                                    <TextBox x:Name="TxtUploadSigner" Padding="6" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="Đơn vị / Phòng ban:" FontSize="11" Foreground="#64748B" />
+                                    <TextBox x:Name="TxtUploadDepartment" Text="Ban Giám Hiệu" Padding="6" />
+                                </StackPanel>
+                            </Grid>
+
+                            <Button x:Name="BtnExecuteUpload" Content="🚀 TIẾN HÀNH GỬI TÀI LIỆU LÊN CỔNG WEB" 
+                                    Style="{StaticResource SuccessButton}" 
+                                    FontSize="13" Padding="16,10" Margin="0,10,0,0" 
+                                    Click="BtnExecuteUpload_Click" />
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- KẾT QUẢ PHẢN HỒI TỪ MÁY CHỦ WEB -->
+                    <GroupBox Grid.Column="2" Header="Phản Hồi Mạng Thật Từ Máy Chủ (Live HTTP Response Trace)">
+                        <Grid Margin="6">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0" Background="#F1F5F9" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Trạng thái HTTP: " FontWeight="Bold" Foreground="#334155" />
+                                    <TextBlock x:Name="TxtHttpStatus" Text="Chưa gửi yêu cầu" FontWeight="Bold" Foreground="#64748B" Margin="0,0,20,0" />
+                                    <TextBlock Text="Thời gian phản hồi: " FontWeight="Bold" Foreground="#334155" />
+                                    <TextBlock x:Name="TxtHttpLatency" Text="0 ms" FontWeight="Bold" Foreground="#0284C7" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Grid.Row="1" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="1" CornerRadius="6" Padding="10">
+                                <TextBox x:Name="TxtHttpResponseContent" 
+                                         Background="Transparent" Foreground="#38BDF8" 
+                                         BorderThickness="0" FontFamily="Consolas" FontSize="11" 
+                                         IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" 
+                                         Text="Chưa có dữ liệu phản hồi từ máy chủ." />
+                            </Border>
+                        </Grid>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+
+            <!-- ================= TAB 3: KIỂM TRA CHỮ KÝ ================= -->
+            <TabItem Header="  Kiểm Tra Chữ Ký (Verify)  " FontSize="14" FontWeight="SemiBold">
+                <Grid Margin="0,10,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <GroupBox Grid.Row="0" Header="Chọn File PDF Cần Kiểm Tra Tính Toàn Vẹn &amp; Pháp Lý">
+                        <Grid Margin="6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Grid.Column="0" x:Name="TxtVerifyPdfPath" Background="#F8FAFC" Padding="6" 
+                                     Text="Chọn file PDF để kiểm tra..." />
+                            <Button Grid.Column="1" Content="🔍 Mở File &amp; Xác Minh" Style="{StaticResource PrimaryButton}" 
+                                    Margin="8,0,0,0" Click="BtnVerifyPdf_Click" />
+                        </Grid>
+                    </GroupBox>
+
+                    <GroupBox Grid.Row="1" Header="Danh Sách Các Chữ Ký Số Phát Hiện Trong Tài Liệu">
+                        <ListView x:Name="ListSignatures" Background="White" BorderThickness="0" Margin="4">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Header="Trạng thái" Width="100" DisplayMemberBinding="{Binding IsValid}" />
+                                    <GridViewColumn Header="Người ký" Width="220" DisplayMemberBinding="{Binding SignerName}" />
+                                    <GridViewColumn Header="Ngày ký" Width="150" DisplayMemberBinding="{Binding SignDate, StringFormat={}{0:dd/MM/yyyy HH:mm:ss}}" />
+                                    <GridViewColumn Header="Dấu thời gian (TSA)" Width="150" DisplayMemberBinding="{Binding TimestampDate, StringFormat={}{0:dd/MM/yyyy HH:mm:ss}}" />
+                                    <GridViewColumn Header="Bảo vệ toàn vẹn" Width="120" DisplayMemberBinding="{Binding CoversWholeDocument}" />
+                                    <GridViewColumn Header="Chi tiết chứng thư" Width="400" DisplayMemberBinding="{Binding Details}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </GroupBox>
+                </Grid>
+            </TabItem>
+
+            <!-- ================= TAB 4: HƯỚNG DẪN & THÔNG TIN ================= -->
+            <TabItem Header="  Giới Thiệu &amp; Cấu Hình  " FontSize="14" FontWeight="SemiBold">
+                <ScrollViewer Margin="0,10,0,0" VerticalScrollBarVisibility="Auto">
+                    <StackPanel MaxWidth="900" HorizontalAlignment="Left">
+                        <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="20" Margin="0,0,0,14">
+                            <StackPanel>
+                                <TextBlock Text="HƯỚNG DẪN VẬN HÀNH VGCA SIGN TOOL PRO" FontSize="16" FontWeight="Bold" Foreground="#1E3A8A" Margin="0,0,0,10" />
+                                <TextBlock TextWrapping="Wrap" FontSize="13" LineHeight="20" Foreground="#334155">
+                                    Ứng dụng này kế thừa và hoàn thiện toàn bộ các tính năng cốt lõi của VGCA Sign Tool (Cục Chứng thực số và Bảo mật thông tin – Ban Cơ yếu Chính phủ), bổ sung 2 tính năng mở rộng quan trọng:
+                                </TextBlock>
+                                <TextBlock TextWrapping="Wrap" FontSize="13" LineHeight="22" Foreground="#334155" Margin="0,8,0,0">
+                                    • <Bold>1. Tự động chuyển đổi Word sang PDF:</Bold> Hỗ trợ chọn trực tiếp file .docx/.doc, gọi engine Microsoft Word Interop để chuyển đổi giữ nguyên 100% chuẩn văn bản hành chính theo Nghị định 30/2020/NĐ-CP (font Times New Roman, lề trang, bảng biểu) trước khi đưa vào luồng ký.<LineBreak />
+                                    • <Bold>2. Ký số PAdES chuẩn quốc tế &amp; Ban Cơ yếu:</Bold> Sử dụng iText 9 và cầu nối mật mã Windows CNG, cho phép ký số an toàn bằng khóa riêng tư trong USB Token vật lý hoặc Remote Signing KSP (Virtual CSP v2.0), đóng dấu thời gian TSA (http://ca.gov.vn/tsa).<LineBreak />
+                                    • <Bold>3. Đẩy file đã ký lên Cổng Web:</Bold> Sau khi ký xong, gửi trực tiếp tài liệu cùng metadata (tiêu đề, người ký, mã số) tới cổng quản lý văn bản / LMS của đơn vị qua giao thức HTTPS Multipart Form Data.
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1" CornerRadius="8" Padding="16">
+                            <StackPanel>
+                                <TextBlock Text="Thông số kết nối mặc định:" FontWeight="Bold" Foreground="#1E40AF" Margin="0,0,0,6" />
+                                <TextBlock Text="• Máy chủ cấp Dấu thời gian Quốc gia (TSA): http://ca.gov.vn/tsa" FontSize="12" Foreground="#1E3A8A" />
+                                <TextBlock Text="• Chuẩn kiểm tra chứng thư số: OCSP / CRL trực tuyến theo Nghị định 130/2018/NĐ-CP" FontSize="12" Foreground="#1E3A8A" />
+                                <TextBlock Text="• Định dạng lưu hồ sơ mẫu ký: Tương thích hoàn toàn với signerprofiles.json của VGCA Sign Tool gốc" FontSize="12" Foreground="#1E3A8A" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <!-- STATUS BAR CHÂN TRANG -->
+        <Border Grid.Row="2" Background="#E2E8F0" BorderBrush="#CBD5E1" BorderThickness="0,1,0,0" Padding="12,6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" x:Name="TxtStatusBar" Text="Sẵn sàng." FontSize="12" Foreground="#334155" />
+                <TextBlock Grid.Column="1" Text="Phiên bản: 3.5.0 Pro (Hỗ trợ Word &amp; Web) • .NET 8 x64" FontSize="11" Foreground="#64748B" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
