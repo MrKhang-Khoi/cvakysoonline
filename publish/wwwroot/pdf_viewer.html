@@ -5,10 +5,166 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VGCA Sign Tool Pro - PDF Viewer</title>
     <script src="pdfjs/pdf.min.js"></script>
+    <script src="xlsx.full.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
-            user-select: none;
+        }
+
+        /* BẢNG TÍNH EXCEL INTERACTIVE */
+        #excel-container {
+            display: none;
+            width: 100%;
+            min-height: 100%;
+            background-color: #f1f5f9;
+            padding: 16px;
+            flex-direction: column;
+            align-items: center;
+        }
+        .excel-toolbar {
+            width: 100%;
+            max-width: 1100px;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 10px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .excel-sheet-tabs {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            max-width: 60%;
+        }
+        .excel-sheet-tab {
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+            cursor: pointer;
+            color: #334155;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .excel-sheet-tab:hover {
+            background: #e2e8f0;
+        }
+        .excel-sheet-tab.active {
+            background: #16a34a;
+            color: white;
+            border-color: #15803d;
+        }
+        .excel-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .excel-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: white;
+            cursor: pointer;
+            color: #1e293b;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s;
+        }
+        .excel-btn:hover {
+            background: #f1f5f9;
+        }
+        .excel-btn.active {
+            background: #0284c7;
+            color: white;
+            border-color: #0369a1;
+        }
+        .excel-btn-primary {
+            background: #d97706;
+            color: white;
+            border-color: #b45309;
+        }
+        .excel-btn-primary:hover {
+            background: #b45309;
+        }
+        .excel-paper-wrapper {
+            background: white;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.15);
+            border: 1px solid #cbd5e1;
+            padding: 20mm 15mm;
+            margin-bottom: 40px;
+            transition: all 0.3s;
+            overflow-x: auto;
+            min-height: 297mm;
+            width: 210mm; /* A4 Portrait */
+        }
+        .excel-paper-wrapper.landscape {
+            width: 297mm;
+            min-height: 210mm;
+            padding: 15mm 15mm;
+        }
+        .excel-paper-wrapper.fit-width {
+            width: 98% !important;
+            max-width: 1400px;
+            padding: 12mm;
+        }
+        .excel-table {
+            border-collapse: collapse;
+            width: 100%;
+            font-family: 'Times New Roman', Times, serif, 'Segoe UI';
+            font-size: 13px;
+            color: #111827;
+            background: white;
+        }
+        .excel-table th, .excel-table td {
+            border: 1px solid #4b5563;
+            padding: 6px 8px;
+            min-width: 32px;
+            min-height: 22px;
+            vertical-align: middle;
+            line-height: 1.35;
+            outline: none;
+        }
+        .excel-table td[contenteditable="true"]:focus {
+            background-color: #eff6ff !important;
+            box-shadow: inset 0 0 0 2px #2563eb;
+        }
+        @media print {
+            body, html {
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            #loading-overlay, #viewer-container, .excel-toolbar {
+                display: none !important;
+            }
+            #excel-container {
+                display: block !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .excel-paper-wrapper {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100% !important;
+                min-height: auto !important;
+            }
+            .excel-table th, .excel-table td {
+                border-color: #000 !important;
+            }
         }
         html, body {
             margin: 0;
@@ -174,6 +330,38 @@
         <div id="loading-text" style="font-size: 14px; font-weight: 500;">Đang nạp tài liệu PDF...</div>
     </div>
 
+    <!-- KHUNG XEM VÀ CHỈNH SỬA BẢNG TÍNH EXCEL TRỰC TIẾP -->
+    <div id="excel-container">
+        <div class="excel-toolbar">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 16px;">📊</span>
+                <span id="excel-file-name-label" style="font-weight: bold; font-size: 13px; color: #1e293b;">Bảng Tính Excel</span>
+            </div>
+
+            <!-- TABS CHỌN SHEET -->
+            <div id="excel-sheet-tabs" class="excel-sheet-tabs"></div>
+
+            <!-- CÁC NÚT ĐIỀU KHIỂN TRANG IN -->
+            <div class="excel-controls">
+                <button type="button" class="excel-btn active" id="btn-excel-landscape" onclick="setExcelOrientation('landscape')" title="Định dạng in khổ ngang A4 (Thích hợp cho bảng điểm, bảng lương)">
+                    📄 Khổ Ngang A4
+                </button>
+                <button type="button" class="excel-btn" id="btn-excel-portrait" onclick="setExcelOrientation('portrait')" title="Định dạng in khổ dọc A4">
+                    📄 Khổ Dọc A4
+                </button>
+                <button type="button" class="excel-btn" id="btn-excel-fit-width" onclick="toggleExcelFitWidth()" title="Tự động co giãn bảng tính vừa khít chiều rộng trang in A4">
+                    ↔ Vừa Khít Chiều Ngang
+                </button>
+                <button type="button" class="excel-btn excel-btn-primary" onclick="requestExportExcelPdf()" title="Chuyển đổi bảng tính sang PDF để ký số">
+                    ⚡ Chuyển Sang PDF Để Ký
+                </button>
+            </div>
+        </div>
+
+        <!-- TỜ GIẤY IN A4 MÔ PHỎNG CHỨA BẢNG TÍNH -->
+        <div id="excel-paper" class="excel-paper-wrapper landscape"></div>
+    </div>
+
     <div id="viewer-container"></div>
 
     <script>
@@ -187,6 +375,163 @@
             widthPx: 140,
             heightPx: 140
         };
+
+        // QUẢN LÝ BẢNG TÍNH EXCEL TƯƠNG TÁC
+        let currentWorkbook = null;
+        let currentExcelSheetName = '';
+        let currentExcelOrientation = 'landscape';
+        let isExcelFitWidth = false;
+
+        function loadExcelFromBase64(base64Data, fileName) {
+            if (!base64Data || typeof base64Data !== 'string') {
+                console.error('loadExcelFromBase64: invalid input');
+                return;
+            }
+
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+            const loadingText = document.getElementById('loading-text');
+            if (loadingText) loadingText.innerText = 'Đang phân tích cấu trúc bảng tính Excel...';
+
+            // Ẩn PDF viewer và hiện Excel container
+            const pdfContainer = document.getElementById('viewer-container');
+            if (pdfContainer) pdfContainer.style.display = 'none';
+
+            const excelContainer = document.getElementById('excel-container');
+            if (excelContainer) excelContainer.style.display = 'flex';
+
+            removeStamp();
+
+            try {
+                const cleanBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
+                const binaryString = atob(cleanBase64.trim());
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+
+                currentWorkbook = XLSX.read(bytes, {
+                    type: 'array',
+                    cellStyles: true,
+                    cellDates: true,
+                    cellNF: true
+                });
+
+                if (!currentWorkbook || !currentWorkbook.SheetNames || currentWorkbook.SheetNames.length === 0) {
+                    throw new Error('Tệp Excel không chứa bảng tính nào.');
+                }
+
+                document.getElementById('excel-file-name-label').innerText = fileName || 'Bảng Tính Excel';
+                currentExcelSheetName = currentWorkbook.SheetNames[0];
+                renderExcelSheetTabs();
+                renderCurrentExcelSheet();
+
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+
+                if (window.chrome && window.chrome.webview) {
+                    window.chrome.webview.postMessage({
+                        type: 'excelLoaded',
+                        fileName: fileName,
+                        sheetCount: currentWorkbook.SheetNames.length,
+                        firstSheet: currentExcelSheetName,
+                        orientation: currentExcelOrientation
+                    });
+                }
+            } catch (err) {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                console.error('Lỗi nạp Excel:', err);
+                alert('Không thể mở tệp Excel: ' + (err.message || err));
+            }
+        }
+
+        function renderExcelSheetTabs() {
+            const tabsContainer = document.getElementById('excel-sheet-tabs');
+            if (!tabsContainer || !currentWorkbook) return;
+            tabsContainer.textContent = '';
+
+            currentWorkbook.SheetNames.forEach(sheetName => {
+                const tab = document.createElement('div');
+                tab.className = 'excel-sheet-tab' + (sheetName === currentExcelSheetName ? ' active' : '');
+                tab.innerText = '📊 ' + sheetName;
+                tab.onclick = () => {
+                    currentExcelSheetName = sheetName;
+                    renderExcelSheetTabs();
+                    renderCurrentExcelSheet();
+                };
+                tabsContainer.appendChild(tab);
+            });
+        }
+
+        function renderCurrentExcelSheet() {
+            if (!currentWorkbook || !currentExcelSheetName) return;
+            const ws = currentWorkbook.Sheets[currentExcelSheetName];
+            if (!ws) return;
+
+            const paper = document.getElementById('excel-paper');
+            if (!paper) return;
+
+            // Xuất HTML từ SheetJS (giữ nguyên merge cell, cấu trúc bảng)
+            const rawHtml = XLSX.utils.sheet_to_html(ws, { editable: true });
+            paper.textContent = '';
+            const parser = new DOMParser();
+            const parsedDoc = parser.parseFromString(rawHtml, 'text/html');
+            const table = parsedDoc.querySelector('table');
+            if (table) {
+                table.className = 'excel-table';
+                table.querySelectorAll('td').forEach(td => {
+                    td.setAttribute('contenteditable', 'true');
+                    td.setAttribute('spellcheck', 'false');
+                });
+                paper.appendChild(table);
+            }
+        }
+
+        function setExcelOrientation(orientation) {
+            currentExcelOrientation = orientation;
+            const paper = document.getElementById('excel-paper');
+            const btnLandscape = document.getElementById('btn-excel-landscape');
+            const btnPortrait = document.getElementById('btn-excel-portrait');
+
+            if (orientation === 'landscape') {
+                paper.classList.add('landscape');
+                btnLandscape.classList.add('active');
+                btnPortrait.classList.remove('active');
+            } else {
+                paper.classList.remove('landscape');
+                btnPortrait.classList.add('active');
+                btnLandscape.classList.remove('active');
+            }
+
+            if (window.chrome && window.chrome.webview) {
+                window.chrome.webview.postMessage({
+                    type: 'excelOrientationChanged',
+                    orientation: orientation
+                });
+            }
+        }
+
+        function toggleExcelFitWidth() {
+            isExcelFitWidth = !isExcelFitWidth;
+            const paper = document.getElementById('excel-paper');
+            const btnFit = document.getElementById('btn-excel-fit-width');
+
+            if (isExcelFitWidth) {
+                paper.classList.add('fit-width');
+                btnFit.classList.add('active');
+            } else {
+                paper.classList.remove('fit-width');
+                btnFit.classList.remove('active');
+            }
+        }
+
+        function requestExportExcelPdf() {
+            if (window.chrome && window.chrome.webview) {
+                window.chrome.webview.postMessage({
+                    type: 'requestExportExcelPdf',
+                    orientation: currentExcelOrientation
+                });
+            }
+        }
 
         async function loadPdfFromBase64(base64Data) {
             if (!base64Data || typeof base64Data !== 'string') {
@@ -203,11 +548,15 @@
             const loadingText = document.getElementById('loading-text');
             if (loadingText) loadingText.innerText = 'Đang phân tích cấu trúc trang PDF...';
 
+            const excelContainer = document.getElementById('excel-container');
+            if (excelContainer) excelContainer.style.display = 'none';
+
             const container = document.getElementById('viewer-container');
             if (!container) {
                 if (loadingOverlay) loadingOverlay.style.display = 'none';
                 return;
             }
+            container.style.display = 'flex';
             container.querySelectorAll('canvas').forEach(c => { c.width = 0; c.height = 0; });
             container.textContent = '';
             renderedPages = [];

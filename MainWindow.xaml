@@ -476,6 +476,7 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />
@@ -487,41 +488,47 @@
                                         Style="{StaticResource PrimaryButton}" 
                                         Click="BtnSelectWord_Click" Margin="0,0,8,0" />
 
-                                <!-- NÚT 2: TẢI FILE PDF TRỰC TIẾP -->
-                                <Button Grid.Column="1" Content="📑 Tải File PDF" 
+                                <!-- NÚT 2: TẢI BẢNG TÍNH EXCEL -->
+                                <Button Grid.Column="1" Content="📊 Tải Bảng Tính Excel (.xlsx, .xls)" 
+                                        Style="{StaticResource PrimaryButton}" 
+                                        Background="#16A34A"
+                                        Click="BtnSelectExcel_Click" Margin="0,0,8,0" />
+
+                                <!-- NÚT 3: TẢI FILE PDF TRỰC TIẾP -->
+                                <Button Grid.Column="2" Content="📑 Tải File PDF" 
                                         Style="{StaticResource SecondaryButton}" 
                                         Click="BtnSelectPdf_Click" Margin="0,0,12,0" />
 
                                 <!-- TÊN FILE & TRẠNG THÁI HIỆN TẠI -->
-                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,12,0">
+                                <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="0,0,12,0">
                                     <TextBlock x:Name="TxtCurrentFileName" Text="Chưa chọn tệp tin nào." FontWeight="Bold" FontSize="13" Foreground="#1E293B" />
-                                    <TextBlock x:Name="TxtCurrentFileStatus" Text="Chọn file Word hoặc PDF để xem trực tiếp tại đây." FontSize="11" Foreground="#64748B" />
+                                    <TextBlock x:Name="TxtCurrentFileStatus" Text="Chọn file Word, Excel hoặc PDF để xem trực tiếp tại đây." FontSize="11" Foreground="#64748B" />
                                 </StackPanel>
 
-                                <!-- NÚT 3: CHUYỂN QUA PDF ĐỂ KÝ -->
-                                <Button Grid.Column="3" x:Name="BtnConvertToPdfAndReadySign" 
+                                <!-- NÚT 4: CHUYỂN QUA PDF ĐỂ KÝ -->
+                                <Button Grid.Column="4" x:Name="BtnConvertToPdfAndReadySign" 
                                         Content="⚡ Chuyển Qua PDF Để Ký" 
                                         Style="{StaticResource ConvertButton}" 
                                         IsEnabled="False" Margin="0,0,8,0" 
-                                        Click="BtnExecuteConvertWord_Click" />
+                                        Click="BtnExecuteConvertDocument_Click" />
 
-                                <!-- NÚT 4: CHÈN CHỮ KÝ (KÉO THẢ TRỰC TIẾP TRÊN TRANG VĂN BẢN) -->
-                                <Button Grid.Column="4" x:Name="BtnInsertSignatureStamp" 
+                                <!-- NÚT 5: CHÈN CHỮ KÝ (KÉO THẢ TRỰC TIẾP TRÊN TRANG VĂN BẢN) -->
+                                <Button Grid.Column="5" x:Name="BtnInsertSignatureStamp" 
                                         Content="📍 Chèn Chữ Ký" 
                                         Style="{StaticResource SecondaryButton}" 
                                         Background="#FEF3C7" BorderBrush="#F59E0B" Foreground="#92400E" FontWeight="Bold" 
                                         IsEnabled="False" Margin="0,0,8,0" 
                                         Click="BtnInsertSignatureStamp_Click" />
 
-                                <!-- NÚT 5: TIẾN HÀNH KÝ SỐ TÀI LIỆU -->
-                                <Button Grid.Column="5" x:Name="BtnSignCurrentDocument" 
+                                <!-- NÚT 6: TIẾN HÀNH KÝ SỐ TÀI LIỆU -->
+                                <Button Grid.Column="6" x:Name="BtnSignCurrentDocument" 
                                         Content="✍ TIẾN HÀNH KÝ SỐ" 
                                         Style="{StaticResource SignButton}" 
                                         IsEnabled="False" 
                                         Click="BtnSignDocument_Click" />
                             </Grid>
 
-                            <!-- DÒNG 2: THANH CÔNG CỤ ĐIỀU CHỈNH VĂN BẢN TRỰC TIẾP (KHI MỞ FILE WORD) -->
+                            <!-- DÒNG 2: THANH CÔNG CỤ ĐIỀU CHỈNH VĂN BẢN TRỰC TIẾP (KHI MỞ FILE WORD HOẶC EXCEL) -->
                             <Grid Grid.Row="1" x:Name="PnlEditingToolbar" Margin="0,8,0,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
@@ -532,7 +539,7 @@
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Border Background="#FEF3C7" CornerRadius="4" Padding="6,3" Margin="0,0,10,0">
-                                        <TextBlock Text="✏ Chế độ xem &amp; chỉnh sửa trực tiếp Word" FontSize="11" FontWeight="Bold" Foreground="#92400E" />
+                                        <TextBlock x:Name="TxtEditorModeBadge" Text="✏ Chế độ xem &amp; chỉnh sửa trực tiếp Word / Excel" FontSize="11" FontWeight="Bold" Foreground="#92400E" />
                                     </Border>
                                     <Button Content="B" ToolTip="In đậm (Bold)" Style="{StaticResource FormatButton}" Click="BtnFormatBold_Click" />
                                     <Button Content="I" ToolTip="In nghiêng (Italic)" Style="{StaticResource FormatButton}" FontStyle="Italic" Click="BtnFormatItalic_Click" />
@@ -542,6 +549,13 @@
                                     <Button Content="↔ Giữa" ToolTip="Căn giữa" Style="{StaticResource FormatButton}" Click="BtnAlignCenter_Click" />
                                     <Button Content="⇥ Phải" ToolTip="Căn lề phải" Style="{StaticResource FormatButton}" Click="BtnAlignRight_Click" />
                                     <Button Content="⇿ Đều" ToolTip="Căn đều hai bên" Style="{StaticResource FormatButton}" Click="BtnAlignJustify_Click" />
+
+                                    <!-- NÚT ĐỊNH DẠNG KHỔ IN EXCEL (HIỆN KHI MỞ FILE EXCEL) -->
+                                    <StackPanel x:Name="PnlExcelToolbarControls" Orientation="Horizontal" Visibility="Collapsed" Margin="8,0,0,0">
+                                        <Separator Width="1" Height="16" Margin="0,0,8,0" Background="#CBD5E1" />
+                                        <Button Content="📄 Khổ Ngang A4" ToolTip="Định dạng in bảng tính theo khổ ngang A4" Style="{StaticResource FormatButton}" Padding="8,2" Click="BtnExcelLandscape_Click" />
+                                        <Button Content="📄 Khổ Dọc A4" ToolTip="Định dạng in bảng tính theo khổ dọc A4" Style="{StaticResource FormatButton}" Padding="8,2" Margin="4,0,0,0" Click="BtnExcelPortrait_Click" />
+                                    </StackPanel>
                                 </StackPanel>
 
                                 <!-- THANH LOADING CHUYỂN ĐỔI -->

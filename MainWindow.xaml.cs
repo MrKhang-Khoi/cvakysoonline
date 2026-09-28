@@ -16,6 +16,7 @@ namespace VGCASignToolPro
     public partial class MainWindow : Window
     {
         private readonly WordConverterService _wordConverter = new();
+        private readonly ExcelConverterService _excelConverter = new();
         private readonly CertificateService _certService = new();
         private readonly PdfSigningService _pdfSigner = new();
         private readonly PdfVerifierService _pdfVerifier = new();
@@ -28,6 +29,8 @@ namespace VGCASignToolPro
         private CertificateModel? _currentActiveCert;
 
         private string? _originalWordFilePath;
+        private string? _originalExcelFilePath;
+        private string _currentExcelOrientation = "landscape";
         private string? _currentWorkingPdfPath;
         private string? _lastSignedPdfPath;
         private bool _isWebViewInitialized;
@@ -47,6 +50,7 @@ namespace VGCASignToolPro
             Loaded += MainWindow_Loaded;
 
             _wordConverter.StatusChanged += UpdateStatus;
+            _excelConverter.StatusChanged += UpdateStatus;
             _pdfSigner.StatusChanged += UpdateStatus;
             _webUploader.StatusChanged += UpdateStatus;
             _vgcaAuth.LoginStateChanged += OnVgcaLoginStateChanged;
@@ -138,19 +142,19 @@ namespace VGCASignToolPro
             try
             {
                 string jsonString = e.WebMessageAsJson;
-                using var doc = System.Text.Json.JsonDocument.Parse(jsonString);
-                var root = doc.RootElement;
-                if (root.TryGetProperty("type", out var typeProp))
+                using System.Text.Json.JsonDocument doc = System.Text.Json.JsonDocument.Parse(jsonString);
+                System.Text.Json.JsonElement root = doc.RootElement;
+                if (root.TryGetProperty("type", out System.Text.Json.JsonElement typeProp))
                 {
                     string? msgType = typeProp.GetString();
                     if (msgType == "stampCoordinatesChanged")
                     {
-                        if (root.TryGetProperty("coords", out var coords) &&
-                            coords.TryGetProperty("pageNumber", out var pn) && pn.TryGetInt32(out int pageNum) &&
-                            coords.TryGetProperty("x", out var cx) && cx.TryGetDouble(out double xVal) &&
-                            coords.TryGetProperty("y", out var cy) && cy.TryGetDouble(out double yVal) &&
-                            coords.TryGetProperty("width", out var cw) && cw.TryGetDouble(out double wVal) &&
-                            coords.TryGetProperty("height", out var ch) && ch.TryGetDouble(out double hVal))
+                        if (root.TryGetProperty("coords", out System.Text.Json.JsonElement coords) &&
+                            coords.TryGetProperty("pageNumber", out System.Text.Json.JsonElement pn) && pn.TryGetInt32(out int pageNum) &&
+                            coords.TryGetProperty("x", out System.Text.Json.JsonElement cx) && cx.TryGetDouble(out double xVal) &&
+                            coords.TryGetProperty("y", out System.Text.Json.JsonElement cy) && cy.TryGetDouble(out double yVal) &&
+                            coords.TryGetProperty("width", out System.Text.Json.JsonElement cw) && cw.TryGetDouble(out double wVal) &&
+                            coords.TryGetProperty("height", out System.Text.Json.JsonElement ch) && ch.TryGetDouble(out double hVal))
                         {
                             _hasUserPlacedStamp = true;
                             _userStampPage = pageNum;
@@ -175,11 +179,36 @@ namespace VGCASignToolPro
                     }
                     else if (msgType == "pdfLoaded")
                     {
-                        if (root.TryGetProperty("totalPages", out var tp) && tp.TryGetInt32(out int totalPages))
+                        if (root.TryGetProperty("totalPages", out System.Text.Json.JsonElement tp) && tp.TryGetInt32(out int totalPages))
                         {
                             UpdateStatus($"Đã nạp xong tài liệu PDF tương tác ({totalPages} trang).");
                         }
                         BtnInsertSignatureStamp.IsEnabled = true;
+                    }
+                    else if (msgType == "excelLoaded")
+                    {
+                        int sheetCount = 1;
+                        if (root.TryGetProperty("sheetCount", out System.Text.Json.JsonElement scProp) && scProp.TryGetInt32(out int sc))
+                        {
+                            sheetCount = sc;
+                        }
+                        TxtCurrentFileStatus.Text = $"✅ Bảng tính Excel ({sheetCount} sheet). Click đúp vào ô để sửa dữ liệu, chọn khổ in và bấm 'Chuyển Qua PDF Để Ký'.";
+                        UpdateStatus($"Đã nạp thành công bảng tính Excel ({sheetCount} sheet).");
+                    }
+                    else if (msgType == "excelOrientationChanged")
+                    {
+                        if (root.TryGetProperty("orientation", out System.Text.Json.JsonElement orientElem))
+                        {
+                            _currentExcelOrientation = orientElem.GetString() ?? "landscape";
+                            UpdateStatus($"Đã đổi định dạng in bảng tính sang khổ {(_currentExcelOrientation == "portrait" ? "Dọc A4" : "Ngang A4")}.");
+                        }
+                    }
+                    else if (msgType == "requestExportExcelPdf")
+                    {
+                        Dispatcher.Invoke(async () =>
+                        {
+                            await ConvertExcelToPdfAsync();
+                        });
                     }
                 }
             }
@@ -876,7 +905,7 @@ namespace VGCASignToolPro
 
         private async void BtnSelectWord_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new OpenFileDialog
+            OpenFileDialog dialog = new OpenFileDialog
             {
                 Title = "Tải tệp Word (.docx, .doc) lên để xem & điều chỉnh trực tiếp",
                 Filter = "Tài liệu Word (*.docx;*.doc)|*.docx;*.doc|Tất cả tệp (*.*)|*.*"
@@ -886,11 +915,14 @@ namespace VGCASignToolPro
             {
                 string wordPath = dialog.FileName;
                 _originalWordFilePath = wordPath;
+                _originalExcelFilePath = null;
                 _currentWorkingPdfPath = null;
                 BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
 
                 TxtCurrentFileName.Text = Path.GetFileName(wordPath);
                 PnlEditingToolbar.Visibility = Visibility.Visible;
+                PnlExcelToolbarControls.Visibility = Visibility.Collapsed;
+                TxtEditorModeBadge.Text = "✏ Chế độ xem & chỉnh sửa trực tiếp Word";
                 BtnConvertToPdfAndReadySign.IsEnabled = false;
                 BtnInsertSignatureStamp.IsEnabled = false;
                 BtnSignCurrentDocument.IsEnabled = false;
@@ -923,9 +955,126 @@ namespace VGCASignToolPro
             }
         }
 
+        private async void BtnSelectExcel_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog
+            {
+                Title = "Tải bảng tính Excel (.xlsx, .xls) lên để xem & điều chỉnh trực tiếp",
+                Filter = "Bảng tính Excel (*.xlsx;*.xls)|*.xlsx;*.xls|Tất cả tệp (*.*)|*.*"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                string excelPath = dialog.FileName;
+                _originalExcelFilePath = excelPath;
+                _originalWordFilePath = null;
+                _currentWorkingPdfPath = null;
+                BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
+
+                TxtCurrentFileName.Text = Path.GetFileName(excelPath);
+                TxtCurrentFileStatus.Text = "Đang phân tích cấu trúc bảng tính Excel...";
+                PnlEditingToolbar.Visibility = Visibility.Visible;
+                PnlExcelToolbarControls.Visibility = Visibility.Visible;
+                TxtEditorModeBadge.Text = "📊 Chế độ xem & chỉnh sửa Bảng tính Excel";
+                BtnConvertToPdfAndReadySign.IsEnabled = false;
+                BtnInsertSignatureStamp.IsEnabled = false;
+                BtnSignCurrentDocument.IsEnabled = false;
+
+                try
+                {
+                    string base64 = await _excelConverter.ReadExcelAsBase64Async(excelPath);
+
+                    if (_isWebViewInitialized && PdfPreviewControl?.CoreWebView2 != null)
+                    {
+                        PnlPreviewPlaceholder.Visibility = Visibility.Collapsed;
+
+                        // Đảm bảo pdf_viewer.html đã được nạp
+                        string viewerUrl = PdfPreviewControl.Source?.ToString() ?? "";
+                        if (!viewerUrl.Contains("pdf_viewer.html", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string localViewerPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot", "pdf_viewer.html");
+                            if (File.Exists(localViewerPath))
+                            {
+                                TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
+                                EventHandler<Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs>? onNavCompleted = null;
+                                onNavCompleted = (s, args) =>
+                                {
+                                    tcs.TrySetResult(args.IsSuccess);
+                                };
+
+                                PdfPreviewControl.NavigationCompleted += onNavCompleted;
+                                try
+                                {
+                                    PdfPreviewControl.CoreWebView2.Navigate(new Uri(localViewerPath).AbsoluteUri);
+                                    Task completedTask = await Task.WhenAny(tcs.Task, Task.Delay(4000));
+                                    if (completedTask == tcs.Task)
+                                    {
+                                        await tcs.Task;
+                                    }
+                                }
+                                finally
+                                {
+                                    try { PdfPreviewControl.NavigationCompleted -= onNavCompleted; } catch { }
+                                }
+                            }
+                        }
+
+                        // Đảm bảo script loadExcelFromBase64 đã sẵn sàng trong DOM
+                        for (int i = 0; i < 30; i++)
+                        {
+                            if (PdfPreviewControl?.CoreWebView2 == null) break;
+                            string checkScript = await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync("typeof loadExcelFromBase64 === 'function'");
+                            if (checkScript == "true") break;
+                            await Task.Delay(100);
+                        }
+
+                        // Mã hóa an toàn tham số bằng JsonSerializer để triệt tiêu hoàn toàn lỗ hổng JS Injection
+                        string jsonBase64 = System.Text.Json.JsonSerializer.Serialize(base64);
+                        string jsonFileName = System.Text.Json.JsonSerializer.Serialize(Path.GetFileName(excelPath));
+                        string script = $"loadExcelFromBase64({jsonBase64}, {jsonFileName});";
+                        if (PdfPreviewControl?.CoreWebView2 != null)
+                        {
+                            await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync(script);
+                        }
+                    }
+
+                    TxtCurrentFileStatus.Text = "Đang ở chế độ xem & điều chỉnh bảng tính. Bạn có thể click đúp vào ô để sửa dữ liệu, sau đó bấm 'Chuyển Qua PDF Để Ký'.";
+                    BtnConvertToPdfAndReadySign.IsEnabled = true;
+                    UpdateStatus($"Đã nạp bảng tính Excel: {Path.GetFileName(excelPath)}. Sẵn sàng xem và điều chỉnh.");
+                }
+                catch (Exception ex)
+                {
+                    TxtCurrentFileStatus.Text = "Nạp bảng tính thất bại.";
+                    _originalExcelFilePath = null;
+                    System.Diagnostics.Trace.TraceError($"Lỗi nạp bảng tính Excel: {ex}");
+                    MessageBox.Show($"Không thể hiển thị bảng tính Excel:\n{ex.Message}", "Lỗi Nạp Bảng Tính", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private async void BtnExcelLandscape_Click(object sender, RoutedEventArgs e)
+        {
+            _currentExcelOrientation = "landscape";
+            if (PdfPreviewControl?.CoreWebView2 != null)
+            {
+                await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync("setExcelOrientation('landscape');");
+                UpdateStatus("Đã đổi định dạng trang in bảng tính sang Khổ Ngang A4.");
+            }
+        }
+
+        private async void BtnExcelPortrait_Click(object sender, RoutedEventArgs e)
+        {
+            _currentExcelOrientation = "portrait";
+            if (PdfPreviewControl?.CoreWebView2 != null)
+            {
+                await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync("setExcelOrientation('portrait');");
+                UpdateStatus("Đã đổi định dạng trang in bảng tính sang Khổ Dọc A4.");
+            }
+        }
+
         private async void BtnSelectPdf_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new OpenFileDialog
+            OpenFileDialog dialog = new OpenFileDialog
             {
                 Title = "Tải tệp tin PDF lên để ký số",
                 Filter = "Tài liệu PDF (*.pdf)|*.pdf|Tất cả tệp (*.*)|*.*"
@@ -941,6 +1090,7 @@ namespace VGCASignToolPro
                 }
 
                 _originalWordFilePath = null;
+                _originalExcelFilePath = null;
                 _currentWorkingPdfPath = pdfPath;
                 BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
 
@@ -950,6 +1100,7 @@ namespace VGCASignToolPro
                     long fileSizeKb = new FileInfo(pdfPath).Length / 1024;
                     TxtCurrentFileStatus.Text = $"Tệp PDF sẵn sàng ký số ({fileSizeKb:N0} KB).";
                     PnlEditingToolbar.Visibility = Visibility.Collapsed;
+                    PnlExcelToolbarControls.Visibility = Visibility.Collapsed;
                     BtnConvertToPdfAndReadySign.IsEnabled = false;
                     BtnSignCurrentDocument.IsEnabled = true;
 
@@ -967,7 +1118,95 @@ namespace VGCASignToolPro
             }
         }
 
-        private async void BtnExecuteConvertWord_Click(object sender, RoutedEventArgs e)
+        private async void BtnExecuteConvertDocument_Click(object sender, RoutedEventArgs e)
+        {
+            if (!string.IsNullOrWhiteSpace(_originalExcelFilePath) && File.Exists(_originalExcelFilePath))
+            {
+                await ConvertExcelToPdfAsync();
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_originalWordFilePath) && File.Exists(_originalWordFilePath))
+            {
+                await ConvertWordToPdfAsync();
+                return;
+            }
+
+            MessageBox.Show("Vui lòng tải tệp Word hoặc Excel lên trước khi thực hiện chuyển đổi.", "Chưa Có Tệp Tin", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
+        private async Task ConvertExcelToPdfAsync()
+        {
+            if (string.IsNullOrWhiteSpace(_originalExcelFilePath) || !File.Exists(_originalExcelFilePath))
+            {
+                MessageBox.Show("Vui lòng tải tệp Excel lên trước khi chuyển đổi.", "Chưa có file", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (PdfPreviewControl?.CoreWebView2 == null)
+            {
+                MessageBox.Show("Trình xem văn bản chưa sẵn sàng.", "Lỗi Hệ Thống", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            BtnConvertToPdfAndReadySign.IsEnabled = false;
+            PrgConvertLoading.Visibility = Visibility.Visible;
+            TxtCurrentFileStatus.Text = "Đang xuất bảng tính Excel sang PDF chuẩn vector in ấn A4...";
+            UpdateStatus("Bắt đầu chuyển đổi bảng tính Excel sang PDF...");
+
+            try
+            {
+                string outputPdfPath = _excelConverter.GenerateOutputPdfPath(_originalExcelFilePath);
+
+                Microsoft.Web.WebView2.Core.CoreWebView2PrintSettings printSettings = PdfPreviewControl.CoreWebView2.Environment.CreatePrintSettings();
+                printSettings.Orientation = _currentExcelOrientation.Equals("portrait", StringComparison.OrdinalIgnoreCase)
+                    ? Microsoft.Web.WebView2.Core.CoreWebView2PrintOrientation.Portrait
+                    : Microsoft.Web.WebView2.Core.CoreWebView2PrintOrientation.Landscape;
+                printSettings.ShouldPrintBackgrounds = true;
+                printSettings.ShouldPrintHeaderAndFooter = false;
+                printSettings.MarginTop = 0.394;
+                printSettings.MarginBottom = 0.394;
+                printSettings.MarginLeft = 0.394;
+                printSettings.MarginRight = 0.394;
+
+                bool printSuccess = await PdfPreviewControl.CoreWebView2.PrintToPdfAsync(outputPdfPath, printSettings);
+                if (!printSuccess || !File.Exists(outputPdfPath))
+                {
+                    throw new InvalidOperationException("Không thể hoàn tất quá trình xuất PDF từ bảng tính.");
+                }
+
+                _currentWorkingPdfPath = outputPdfPath;
+                _originalExcelFilePath = null;
+                PnlEditingToolbar.Visibility = Visibility.Collapsed;
+                PnlExcelToolbarControls.Visibility = Visibility.Collapsed;
+
+                await DisplayPdfInInteractiveViewerAsync(outputPdfPath);
+
+                TxtCurrentFileName.Text = Path.GetFileName(outputPdfPath);
+                TxtCurrentFileStatus.Text = "Tài liệu PDF bảng tính chuẩn in ấn đã sẵn sàng để ký số.";
+                BtnSignCurrentDocument.IsEnabled = true;
+                BtnInsertSignatureStamp.IsEnabled = true;
+                UpdateStatus($"Đã xuất tệp PDF bảng tính hoàn chỉnh: {Path.GetFileName(outputPdfPath)}");
+
+                MessageBox.Show(
+                    $"Chuyển đổi bảng tính sang PDF thành công!\n\nTệp tin đã lưu tại:\n{outputPdfPath}\n\nNội dung bảng tính chuẩn đã được hiển thị trên màn hình. Bạn có thể bấm '📍 Chèn Chữ Ký' để kéo thả con dấu đến đúng vị trí cần ký, sau đó bấm '✍ TIẾN HÀNH KÝ SỐ'.",
+                    "Chuyển Đổi Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError($"Lỗi chuyển đổi Excel sang PDF: {ex}");
+                MessageBox.Show($"Lỗi chuyển đổi bảng tính sang PDF:\n{ex.Message}", "Lỗi Chuyển Đổi", MessageBoxButton.OK, MessageBoxImage.Error);
+                TxtCurrentFileStatus.Text = "Chuyển đổi bảng tính thất bại.";
+                UpdateStatus("Chuyển đổi Excel sang PDF thất bại.");
+            }
+            finally
+            {
+                PrgConvertLoading.Visibility = Visibility.Collapsed;
+                BtnConvertToPdfAndReadySign.IsEnabled = true;
+            }
+        }
+
+        private async Task ConvertWordToPdfAsync()
         {
             if (_wordConverter == null)
             {
@@ -1153,14 +1392,14 @@ namespace VGCASignToolPro
         {
             if (string.IsNullOrWhiteSpace(_currentWorkingPdfPath) || !File.Exists(_currentWorkingPdfPath))
             {
-                if (!string.IsNullOrWhiteSpace(_originalWordFilePath))
+                if (!string.IsNullOrWhiteSpace(_originalWordFilePath) || !string.IsNullOrWhiteSpace(_originalExcelFilePath))
                 {
-                    MessageBox.Show("Bạn đang xem văn bản ở dạng Word. Vui lòng bấm nút '⚡ Chuyển Qua PDF Để Ký' trước khi thực hiện chèn chữ ký.",
+                    MessageBox.Show("Bạn đang xem văn bản / bảng tính ở chế độ soạn thảo & chỉnh sửa. Vui lòng bấm nút '⚡ Chuyển Qua PDF Để Ký' trước khi thực hiện chèn chữ ký.",
                         "Cần Chuyển Sang PDF", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else
                 {
-                    MessageBox.Show("Vui lòng tải tệp Word hoặc PDF lên trước khi chèn chữ ký.",
+                    MessageBox.Show("Vui lòng tải tệp Word, Excel hoặc PDF lên trước khi chèn chữ ký.",
                         "Chưa Có Tài Liệu", MessageBoxButton.OK, MessageBoxImage.Warning);
                 }
                 return;
@@ -1186,7 +1425,7 @@ namespace VGCASignToolPro
 
             if (string.IsNullOrWhiteSpace(stampPath) || !File.Exists(stampPath))
             {
-                var ofd = new OpenFileDialog
+                OpenFileDialog ofd = new OpenFileDialog
                 {
                     Title = "Chọn hình ảnh con dấu hoặc chữ ký tay để chèn",
                     Filter = "Hình ảnh (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg|Tất cả tệp (*.*)|*.*",
@@ -1244,7 +1483,7 @@ namespace VGCASignToolPro
         {
             if (string.IsNullOrWhiteSpace(_currentWorkingPdfPath) || !File.Exists(_currentWorkingPdfPath))
             {
-                MessageBox.Show("Vui lòng tải file PDF hoặc thực hiện chuyển đổi Word sang PDF trước khi ký.",
+                MessageBox.Show("Vui lòng tải file PDF hoặc thực hiện chuyển đổi Word/Excel sang PDF trước khi ký.",
                     "Chưa có tệp tin PDF", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
