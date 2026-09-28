@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
@@ -35,6 +36,7 @@ namespace VGCASignToolPro
         private string? _currentWorkingPdfPath;
         private string? _lastSignedPdfPath;
         private bool _isWebViewInitialized;
+        private bool _isBusyProcessing;
 
         // VỊ TRÍ CHỮ KÝ DO NGƯỜI DÙNG KÉO THẢ TƯƠNG TÁC TRÊN BẢN XEM TRƯỚC
         private bool _hasUserPlacedStamp;
@@ -48,6 +50,7 @@ namespace VGCASignToolPro
         public MainWindow()
         {
             InitializeComponent();
+            WindowState = WindowState.Maximized; // Khởi động mặc định phóng to toàn màn hình (Maximum)
             Loaded += MainWindow_Loaded;
 
             _wordConverter.StatusChanged += UpdateStatus;
@@ -62,6 +65,7 @@ namespace VGCASignToolPro
         {
             try
             {
+                WindowState = WindowState.Maximized; // Đảm bảo luôn toàn màn hình trên mọi độ phân giải máy tính
                 UpdateStatus("Khởi tạo hệ thống VGCA Sign Tool Pro...");
                 await InitializePreviewEngineAsync();
 
@@ -921,8 +925,191 @@ namespace VGCASignToolPro
 
         #region TAB 2: SOẠN THẢO, XEM & KÝ TRỰC TIẾP TRONG GIAO DIỆN
 
+        #region QUY TRÌNH QUẢN LÝ TỆP & CHỐNG TREO MÁY (ANTI-FREEZE & WORKFLOW SAFEGUARD)
+
+        /// <summary>
+        /// Kiểm tra xem hiện tại ứng dụng có đang mở tệp Word, Excel hoặc PDF nào không.
+        /// </summary>
+        private bool HasActiveDocument()
+        {
+            return (!string.IsNullOrWhiteSpace(_originalWordFilePath) && File.Exists(_originalWordFilePath))
+                || (!string.IsNullOrWhiteSpace(_originalExcelFilePath) && File.Exists(_originalExcelFilePath))
+                || (!string.IsNullOrWhiteSpace(_currentWorkingPdfPath) && File.Exists(_currentWorkingPdfPath));
+        }
+
+        /// <summary>
+        /// Lấy mô tả chi tiết tên và loại tệp đang mở để hiển thị hộp thoại xác nhận.
+        /// </summary>
+        private string GetActiveDocumentDescription()
+        {
+            if (!string.IsNullOrWhiteSpace(_originalWordFilePath))
+            {
+                return $"văn bản Word: \"{Path.GetFileName(_originalWordFilePath)}\"";
+            }
+            if (!string.IsNullOrWhiteSpace(_originalExcelFilePath))
+            {
+                return $"bảng tính Excel: \"{Path.GetFileName(_originalExcelFilePath)}\"";
+            }
+            if (!string.IsNullOrWhiteSpace(_currentWorkingPdfPath))
+            {
+                return $"tài liệu PDF: \"{Path.GetFileName(_currentWorkingPdfPath)}\"";
+            }
+            return "tài liệu hiện tại";
+        }
+
+        /// <summary>
+        /// Hiển thị hộp thoại xác nhận đóng tệp đang mở trước khi nạp tệp mới (ngăn ngừa mất dữ liệu và chống treo máy).
+        /// Trả về true nếu người dùng đồng ý đóng tệp (hoặc không có tệp nào đang mở).
+        /// Trả về false nếu người dùng chọn Cancel/No (giữ nguyên tệp hiện tại).
+        /// </summary>
+        private async Task<bool> ConfirmAndCloseCurrentDocumentAsync(string targetActionDescription = "mở tệp mới", bool isManualClose = false)
+        {
+            if (!HasActiveDocument())
+            {
+                return true;
+            }
+
+            string activeDocDesc = GetActiveDocumentDescription();
+            string message;
+            string title;
+
+            if (isManualClose)
+            {
+                title = "Xác Nhận Đóng Tệp Đang Mở";
+                message = $"Bạn có chắc chắn muốn đóng {activeDocDesc} không?\n\n" +
+                          "• Mọi nội dung chỉnh sửa chưa chuyển đổi hoặc vị trí con dấu chữ ký chưa ký sẽ bị hủy.\n" +
+                          "• Hệ thống sẽ giải phóng tài nguyên bộ nhớ và đưa giao diện về trạng thái ban đầu.";
+            }
+            else
+            {
+                title = "Xác Nhận Đóng Tệp Hiện Tại";
+                message = $"Hệ thống phát hiện bạn đang mở {activeDocDesc}.\n\n" +
+                          $"Bạn có chắc chắn muốn đóng tệp hiện tại để {targetActionDescription} không?\n\n" +
+                          "➡ Chọn [Yes / Có]: Đóng tệp đang mở an toàn và tiếp tục tải tệp mới.\n" +
+                          "➡ Chọn [No / Không]: Giữ nguyên tệp hiện tại, hủy thao tác mở tệp mới.";
+            }
+
+            MessageBoxResult result = MessageBox.Show(message, title, MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result != MessageBoxResult.Yes)
+            {
+                return false;
+            }
+
+            await CloseCurrentDocumentAsync();
+            return true;
+        }
+
+        /// <summary>
+        /// Đóng an toàn tài liệu đang mở, reset toàn bộ trạng thái và giải phóng tài nguyên WebView2 / COM (Chống treo máy).
+        /// </summary>
+        private async Task CloseCurrentDocumentAsync()
+        {
+            try
+            {
+                // 1. Reset các biến đường dẫn tài liệu
+                _originalWordFilePath = null;
+                _currentEditingWordHtmlPath = null;
+                _originalExcelFilePath = null;
+                _currentWorkingPdfPath = null;
+
+                // 2. Reset trạng thái con dấu chữ ký
+                _hasUserPlacedStamp = false;
+                _userStampPage = 1;
+
+                // 3. Reset giao diện thanh công cụ
+                TxtCurrentFileName.Text = "Chưa chọn tệp tin nào.";
+                TxtCurrentFileStatus.Text = "Chọn file Word, Excel hoặc PDF để xem trực tiếp tại đây.";
+                PnlEditingToolbar.Visibility = Visibility.Collapsed;
+                PnlExcelToolbarControls.Visibility = Visibility.Collapsed;
+                BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
+                BtnConvertToPdfAndReadySign.IsEnabled = false;
+                BtnInsertSignatureStamp.IsEnabled = false;
+                BtnSignCurrentDocument.IsEnabled = false;
+                if (BtnCloseCurrentFile != null)
+                {
+                    BtnCloseCurrentFile.Visibility = Visibility.Collapsed;
+                }
+
+                // 4. Giải phóng tài nguyên hiển thị trong WebView2
+                if (_isWebViewInitialized && PdfPreviewControl?.CoreWebView2 != null)
+                {
+                    try
+                    {
+                        await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync("if (typeof resetViewer === 'function') resetViewer();");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Trace.TraceWarning($"Lỗi thực thi resetViewer: {ex.Message}");
+                    }
+                }
+
+                PnlPreviewPlaceholder.Visibility = Visibility.Visible;
+
+                // 5. Thu hồi rác dọn dẹp RAM
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                UpdateStatus("Đã đóng tệp an toàn và dọn dẹp tài nguyên hệ thống.");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError($"Lỗi khi đóng tệp: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// Khóa/mở khóa giao diện và hiển thị con trỏ chờ khi đang xử lý tác vụ nặng (Chống bấm đúp / Chống treo giao diện).
+        /// </summary>
+        private void SetProcessingBusyState(bool isBusy, string? busyMessage = null)
+        {
+            _isBusyProcessing = isBusy;
+            Mouse.OverrideCursor = isBusy ? Cursors.Wait : null;
+
+            if (BtnSelectWord != null) BtnSelectWord.IsEnabled = !isBusy;
+            if (BtnSelectExcel != null) BtnSelectExcel.IsEnabled = !isBusy;
+            if (BtnSelectPdf != null) BtnSelectPdf.IsEnabled = !isBusy;
+            if (BtnCloseCurrentFile != null) BtnCloseCurrentFile.IsEnabled = !isBusy;
+
+            if (isBusy)
+            {
+                BtnConvertToPdfAndReadySign.IsEnabled = false;
+                BtnInsertSignatureStamp.IsEnabled = false;
+                BtnSignCurrentDocument.IsEnabled = false;
+                if (!string.IsNullOrWhiteSpace(busyMessage))
+                {
+                    UpdateStatus(busyMessage);
+                }
+            }
+        }
+
+        private async void BtnCloseCurrentFile_Click(object sender, RoutedEventArgs e)
+        {
+            if (_isBusyProcessing)
+            {
+                return;
+            }
+            await ConfirmAndCloseCurrentDocumentAsync(isManualClose: true);
+        }
+
+        #endregion
+
         private async void BtnSelectWord_Click(object sender, RoutedEventArgs e)
         {
+            if (_isBusyProcessing)
+            {
+                MessageBox.Show("Hệ thống đang xử lý tác vụ khác, vui lòng chờ trong giây lát...",
+                    "Hệ Thống Đang Bận", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Kiểm tra và hỏi đóng tệp đang mở (chống xung đột dữ liệu và treo máy)
+            bool canProceed = await ConfirmAndCloseCurrentDocumentAsync("mở tệp Word mới");
+            if (!canProceed)
+            {
+                // Người dùng chọn Cancel/No: Giữ nguyên trạng thái hiện tại
+                return;
+            }
+
             OpenFileDialog dialog = new OpenFileDialog
             {
                 Title = "Tải tệp Word (.docx, .doc) lên để xem & điều chỉnh trực tiếp",
@@ -931,53 +1118,86 @@ namespace VGCASignToolPro
 
             if (dialog.ShowDialog() == true)
             {
-                string wordPath = dialog.FileName;
-                _originalWordFilePath = wordPath;
+                await LoadWordDocumentAsync(dialog.FileName);
+            }
+        }
+
+        private async Task LoadWordDocumentAsync(string wordPath)
+        {
+            if (string.IsNullOrWhiteSpace(wordPath) || !File.Exists(wordPath))
+            {
+                MessageBox.Show("Tệp Word không tồn tại hoặc đường dẫn không hợp lệ.", "Lỗi Tệp", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            SetProcessingBusyState(true, $"Đang nạp cấu trúc tài liệu Word: {Path.GetFileName(wordPath)}...");
+
+            _originalWordFilePath = wordPath;
+            _currentEditingWordHtmlPath = null;
+            _originalExcelFilePath = null;
+            _currentWorkingPdfPath = null;
+            BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
+
+            TxtCurrentFileName.Text = Path.GetFileName(wordPath);
+            PnlEditingToolbar.Visibility = Visibility.Visible;
+            PnlExcelToolbarControls.Visibility = Visibility.Collapsed;
+            TxtEditorModeBadge.Text = "✏ Chế độ xem & chỉnh sửa trực tiếp Word";
+            BtnConvertToPdfAndReadySign.IsEnabled = false;
+            BtnInsertSignatureStamp.IsEnabled = false;
+            BtnSignCurrentDocument.IsEnabled = false;
+            BtnCloseCurrentFile.Visibility = Visibility.Visible;
+
+            try
+            {
+                long fileSizeKb = new FileInfo(wordPath).Length / 1024;
+                TxtCurrentFileStatus.Text = $"Đang tải cấu trúc tài liệu ({fileSizeKb:N0} KB)...";
+
+                // Chuyển sang HTML có nhúng định dạng A4 và kích hoạt chế độ chỉnh sửa trực tiếp
+                string htmlPath = await _wordConverter.ConvertWordToEditableHtmlAsync(wordPath);
+                _currentEditingWordHtmlPath = htmlPath;
+
+                if (_isWebViewInitialized && PdfPreviewControl?.CoreWebView2 != null)
+                {
+                    PnlPreviewPlaceholder.Visibility = Visibility.Collapsed;
+                    PdfPreviewControl.CoreWebView2.Navigate(new Uri(htmlPath).AbsoluteUri);
+                }
+
+                TxtCurrentFileStatus.Text = "Đang ở chế độ xem & điều chỉnh trực tiếp. Bạn có thể sửa văn bản ngay bên dưới, sau đó bấm 'Chuyển Qua PDF Để Ký'.";
+                BtnConvertToPdfAndReadySign.IsEnabled = true;
+                UpdateStatus($"Đã nạp văn bản Word: {Path.GetFileName(wordPath)}. Sẵn sàng xem và điều chỉnh.");
+            }
+            catch (Exception ex)
+            {
+                TxtCurrentFileStatus.Text = "Nạp tài liệu thất bại.";
+                _originalWordFilePath = null;
                 _currentEditingWordHtmlPath = null;
-                _originalExcelFilePath = null;
-                _currentWorkingPdfPath = null;
-                BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
-
-                TxtCurrentFileName.Text = Path.GetFileName(wordPath);
-                PnlEditingToolbar.Visibility = Visibility.Visible;
-                PnlExcelToolbarControls.Visibility = Visibility.Collapsed;
-                TxtEditorModeBadge.Text = "✏ Chế độ xem & chỉnh sửa trực tiếp Word";
-                BtnConvertToPdfAndReadySign.IsEnabled = false;
-                BtnInsertSignatureStamp.IsEnabled = false;
-                BtnSignCurrentDocument.IsEnabled = false;
-
-                try
-                {
-                    long fileSizeKb = File.Exists(wordPath) ? new FileInfo(wordPath).Length / 1024 : 0;
-                    TxtCurrentFileStatus.Text = $"Đang tải cấu trúc tài liệu ({fileSizeKb:N0} KB)...";
-
-                    // Chuyển sang HTML có nhúng định dạng A4 và kích hoạt chế độ chỉnh sửa trực tiếp (contentEditable)
-                    string htmlPath = await _wordConverter.ConvertWordToEditableHtmlAsync(wordPath);
-                    _currentEditingWordHtmlPath = htmlPath;
-
-                    if (_isWebViewInitialized && PdfPreviewControl?.CoreWebView2 != null)
-                    {
-                        PnlPreviewPlaceholder.Visibility = Visibility.Collapsed;
-                        PdfPreviewControl.CoreWebView2.Navigate(new Uri(htmlPath).AbsoluteUri);
-                    }
-
-                    TxtCurrentFileStatus.Text = "Đang ở chế độ xem & điều chỉnh trực tiếp. Bạn có thể sửa văn bản ngay bên dưới, sau đó bấm 'Chuyển Qua PDF Để Ký'.";
-                    BtnConvertToPdfAndReadySign.IsEnabled = true;
-                    UpdateStatus($"Đã nạp văn bản Word: {Path.GetFileName(wordPath)}. Sẵn sàng xem và điều chỉnh.");
-                }
-                catch (Exception ex)
-                {
-                    TxtCurrentFileStatus.Text = "Nạp tài liệu thất bại.";
-                    _originalWordFilePath = null;
-                    _currentEditingWordHtmlPath = null;
-                    System.Diagnostics.Trace.TraceError($"Lỗi nạp tài liệu Word: {ex}");
-                    MessageBox.Show($"Không thể hiển thị tài liệu Word:\n{ex.Message}", "Lỗi Nạp Tài Liệu", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                BtnCloseCurrentFile.Visibility = Visibility.Collapsed;
+                System.Diagnostics.Trace.TraceError($"Lỗi nạp tài liệu Word: {ex}");
+                MessageBox.Show($"Không thể hiển thị tài liệu Word:\n{ex.Message}", "Lỗi Nạp Tài Liệu", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                SetProcessingBusyState(false);
             }
         }
 
         private async void BtnSelectExcel_Click(object sender, RoutedEventArgs e)
         {
+            if (_isBusyProcessing)
+            {
+                MessageBox.Show("Hệ thống đang xử lý tác vụ khác, vui lòng chờ trong giây lát...",
+                    "Hệ Thống Đang Bận", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Kiểm tra và hỏi đóng tệp đang mở (chống xung đột dữ liệu và treo máy)
+            bool canProceed = await ConfirmAndCloseCurrentDocumentAsync("mở bảng tính Excel mới");
+            if (!canProceed)
+            {
+                // Người dùng chọn Cancel/No: Giữ nguyên trạng thái hiện tại
+                return;
+            }
+
             OpenFileDialog dialog = new OpenFileDialog
             {
                 Title = "Tải bảng tính Excel (.xlsx, .xls) lên để xem & điều chỉnh trực tiếp",
@@ -986,91 +1206,108 @@ namespace VGCASignToolPro
 
             if (dialog.ShowDialog() == true)
             {
-                string excelPath = dialog.FileName;
-                _originalExcelFilePath = excelPath;
-                _originalWordFilePath = null;
-                _currentEditingWordHtmlPath = null;
-                _currentWorkingPdfPath = null;
-                BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
+                await LoadExcelDocumentAsync(dialog.FileName);
+            }
+        }
 
-                TxtCurrentFileName.Text = Path.GetFileName(excelPath);
-                TxtCurrentFileStatus.Text = "Đang phân tích cấu trúc bảng tính Excel...";
-                PnlEditingToolbar.Visibility = Visibility.Visible;
-                PnlExcelToolbarControls.Visibility = Visibility.Visible;
-                TxtEditorModeBadge.Text = "📊 Chế độ xem & chỉnh sửa Bảng tính Excel";
-                BtnConvertToPdfAndReadySign.IsEnabled = false;
-                BtnInsertSignatureStamp.IsEnabled = false;
-                BtnSignCurrentDocument.IsEnabled = false;
+        private async Task LoadExcelDocumentAsync(string excelPath)
+        {
+            if (string.IsNullOrWhiteSpace(excelPath) || !File.Exists(excelPath))
+            {
+                MessageBox.Show("Tệp Excel không tồn tại hoặc đường dẫn không hợp lệ.", "Lỗi Tệp", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
-                try
+            SetProcessingBusyState(true, $"Đang nạp bảng tính Excel: {Path.GetFileName(excelPath)}...");
+
+            _originalExcelFilePath = excelPath;
+            _originalWordFilePath = null;
+            _currentEditingWordHtmlPath = null;
+            _currentWorkingPdfPath = null;
+            BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
+
+            TxtCurrentFileName.Text = Path.GetFileName(excelPath);
+            TxtCurrentFileStatus.Text = "Đang phân tích cấu trúc bảng tính Excel...";
+            PnlEditingToolbar.Visibility = Visibility.Visible;
+            PnlExcelToolbarControls.Visibility = Visibility.Visible;
+            TxtEditorModeBadge.Text = "📊 Chế độ xem & chỉnh sửa Bảng tính Excel";
+            BtnConvertToPdfAndReadySign.IsEnabled = false;
+            BtnInsertSignatureStamp.IsEnabled = false;
+            BtnSignCurrentDocument.IsEnabled = false;
+            BtnCloseCurrentFile.Visibility = Visibility.Visible;
+
+            try
+            {
+                string base64 = await _excelConverter.ReadExcelAsBase64Async(excelPath);
+
+                if (_isWebViewInitialized && PdfPreviewControl?.CoreWebView2 != null)
                 {
-                    string base64 = await _excelConverter.ReadExcelAsBase64Async(excelPath);
+                    PnlPreviewPlaceholder.Visibility = Visibility.Collapsed;
 
-                    if (_isWebViewInitialized && PdfPreviewControl?.CoreWebView2 != null)
+                    // Đảm bảo pdf_viewer.html đã được nạp
+                    string viewerUrl = PdfPreviewControl.Source?.ToString() ?? "";
+                    if (!viewerUrl.Contains("pdf_viewer.html", StringComparison.OrdinalIgnoreCase))
                     {
-                        PnlPreviewPlaceholder.Visibility = Visibility.Collapsed;
-
-                        // Đảm bảo pdf_viewer.html đã được nạp
-                        string viewerUrl = PdfPreviewControl.Source?.ToString() ?? "";
-                        if (!viewerUrl.Contains("pdf_viewer.html", StringComparison.OrdinalIgnoreCase))
+                        TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
+                        EventHandler<Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs>? onNavCompleted = null;
+                        onNavCompleted = (s, args) =>
                         {
-                            string localViewerPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot", "pdf_viewer.html");
-                            if (File.Exists(localViewerPath))
-                            {
-                                TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
-                                EventHandler<Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs>? onNavCompleted = null;
-                                onNavCompleted = (s, args) =>
-                                {
-                                    tcs.TrySetResult(args.IsSuccess);
-                                };
+                            try { PdfPreviewControl.NavigationCompleted -= onNavCompleted; }
+                            catch (Exception ex) { System.Diagnostics.Trace.TraceWarning($"Lỗi gỡ NavigationCompleted handler: {ex.Message}"); }
+                            tcs.TrySetResult(args.IsSuccess);
+                        };
 
-                                PdfPreviewControl.NavigationCompleted += onNavCompleted;
-                                try
-                                {
-                                    PdfPreviewControl.CoreWebView2.Navigate(new Uri(localViewerPath).AbsoluteUri);
-                                    Task completedTask = await Task.WhenAny(tcs.Task, Task.Delay(4000));
-                                    if (completedTask == tcs.Task)
-                                    {
-                                        await tcs.Task;
-                                    }
-                                }
-                                finally
-                                {
-                                    try { PdfPreviewControl.NavigationCompleted -= onNavCompleted; } catch { }
-                                }
+                        PdfPreviewControl.NavigationCompleted += onNavCompleted;
+                        try
+                        {
+                            PdfPreviewControl.CoreWebView2.Navigate("https://vgcaviewer.local/pdf_viewer.html");
+                            Task completedTask = await Task.WhenAny(tcs.Task, Task.Delay(5000));
+                            if (completedTask == tcs.Task)
+                            {
+                                await tcs.Task;
                             }
                         }
-
-                        // Đảm bảo script loadExcelFromBase64 đã sẵn sàng trong DOM
-                        for (int i = 0; i < 30; i++)
+                        finally
                         {
-                            if (PdfPreviewControl?.CoreWebView2 == null) break;
-                            string checkScript = await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync("typeof loadExcelFromBase64 === 'function'");
-                            if (checkScript == "true") break;
-                            await Task.Delay(100);
-                        }
-
-                        // Mã hóa an toàn tham số bằng JsonSerializer để triệt tiêu hoàn toàn lỗ hổng JS Injection
-                        string jsonBase64 = System.Text.Json.JsonSerializer.Serialize(base64);
-                        string jsonFileName = System.Text.Json.JsonSerializer.Serialize(Path.GetFileName(excelPath));
-                        string script = $"loadExcelFromBase64({jsonBase64}, {jsonFileName});";
-                        if (PdfPreviewControl?.CoreWebView2 != null)
-                        {
-                            await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync(script);
+                            try { PdfPreviewControl.NavigationCompleted -= onNavCompleted; }
+                            catch (Exception ex) { System.Diagnostics.Trace.TraceWarning($"Lỗi gỡ NavigationCompleted handler: {ex.Message}"); }
                         }
                     }
 
-                    TxtCurrentFileStatus.Text = "Đang ở chế độ xem & điều chỉnh bảng tính. Bạn có thể click đúp vào ô để sửa dữ liệu, sau đó bấm 'Chuyển Qua PDF Để Ký'.";
-                    BtnConvertToPdfAndReadySign.IsEnabled = true;
-                    UpdateStatus($"Đã nạp bảng tính Excel: {Path.GetFileName(excelPath)}. Sẵn sàng xem và điều chỉnh.");
+                    // Đảm bảo script loadExcelFromBase64 đã sẵn sàng trong DOM
+                    for (int i = 0; i < 30; i++)
+                    {
+                        if (PdfPreviewControl?.CoreWebView2 == null) break;
+                        string checkScript = await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync("typeof loadExcelFromBase64 === 'function'");
+                        if (checkScript == "true") break;
+                        await Task.Delay(100);
+                    }
+
+                    // Mã hóa an toàn tham số bằng JsonSerializer để triệt tiêu hoàn toàn lỗ hổng JS Injection
+                    string jsonBase64 = System.Text.Json.JsonSerializer.Serialize(base64);
+                    string jsonFileName = System.Text.Json.JsonSerializer.Serialize(Path.GetFileName(excelPath));
+                    string script = $"loadExcelFromBase64({jsonBase64}, {jsonFileName});";
+                    if (PdfPreviewControl?.CoreWebView2 != null)
+                    {
+                        await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync(script);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    TxtCurrentFileStatus.Text = "Nạp bảng tính thất bại.";
-                    _originalExcelFilePath = null;
-                    System.Diagnostics.Trace.TraceError($"Lỗi nạp bảng tính Excel: {ex}");
-                    MessageBox.Show($"Không thể hiển thị bảng tính Excel:\n{ex.Message}", "Lỗi Nạp Bảng Tính", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+
+                TxtCurrentFileStatus.Text = "Đang ở chế độ xem & điều chỉnh bảng tính. Bạn có thể click đúp vào ô để sửa dữ liệu, sau đó bấm 'Chuyển Qua PDF Để Ký'.";
+                BtnConvertToPdfAndReadySign.IsEnabled = true;
+                UpdateStatus($"Đã nạp bảng tính Excel: {Path.GetFileName(excelPath)}. Sẵn sàng xem và điều chỉnh.");
+            }
+            catch (Exception ex)
+            {
+                TxtCurrentFileStatus.Text = "Nạp bảng tính thất bại.";
+                _originalExcelFilePath = null;
+                BtnCloseCurrentFile.Visibility = Visibility.Collapsed;
+                System.Diagnostics.Trace.TraceError($"Lỗi nạp bảng tính Excel: {ex}");
+                MessageBox.Show($"Không thể hiển thị bảng tính Excel:\n{ex.Message}", "Lỗi Nạp Bảng Tính", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                SetProcessingBusyState(false);
             }
         }
 
@@ -1096,6 +1333,21 @@ namespace VGCASignToolPro
 
         private async void BtnSelectPdf_Click(object sender, RoutedEventArgs e)
         {
+            if (_isBusyProcessing)
+            {
+                MessageBox.Show("Hệ thống đang xử lý tác vụ khác, vui lòng chờ trong giây lát...",
+                    "Hệ Thống Đang Bận", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            // Kiểm tra và hỏi đóng tệp đang mở (chống xung đột dữ liệu và treo máy)
+            bool canProceed = await ConfirmAndCloseCurrentDocumentAsync("mở tệp PDF mới");
+            if (!canProceed)
+            {
+                // Người dùng chọn Cancel/No: Giữ nguyên trạng thái hiện tại
+                return;
+            }
+
             OpenFileDialog dialog = new OpenFileDialog
             {
                 Title = "Tải tệp tin PDF lên để ký số",
@@ -1104,46 +1356,65 @@ namespace VGCASignToolPro
 
             if (dialog.ShowDialog() == true)
             {
-                string pdfPath = dialog.FileName;
-                if (string.IsNullOrWhiteSpace(pdfPath) || !File.Exists(pdfPath))
-                {
-                    MessageBox.Show("Tệp PDF không hợp lệ hoặc không tồn tại.", "Lỗi Tệp", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
+                await LoadPdfDocumentAsync(dialog.FileName);
+            }
+        }
 
-                _originalWordFilePath = null;
-                _currentEditingWordHtmlPath = null;
-                _originalExcelFilePath = null;
-                _currentWorkingPdfPath = pdfPath;
-                BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
+        private async Task LoadPdfDocumentAsync(string pdfPath)
+        {
+            if (string.IsNullOrWhiteSpace(pdfPath) || !File.Exists(pdfPath))
+            {
+                MessageBox.Show("Tệp PDF không hợp lệ hoặc không tồn tại.", "Lỗi Tệp", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
-                try
-                {
-                    TxtCurrentFileName.Text = Path.GetFileName(pdfPath);
-                    long fileSizeKb = new FileInfo(pdfPath).Length / 1024;
-                    TxtCurrentFileStatus.Text = $"Tệp PDF sẵn sàng ký số ({fileSizeKb:N0} KB).";
-                    PnlEditingToolbar.Visibility = Visibility.Collapsed;
-                    PnlExcelToolbarControls.Visibility = Visibility.Collapsed;
-                    BtnConvertToPdfAndReadySign.IsEnabled = false;
-                    BtnSignCurrentDocument.IsEnabled = true;
-                    BtnInsertSignatureStamp.IsEnabled = true;
+            SetProcessingBusyState(true, $"Đang nạp tệp PDF: {Path.GetFileName(pdfPath)}...");
 
-                    await DisplayPdfInInteractiveViewerAsync(pdfPath);
+            _originalWordFilePath = null;
+            _currentEditingWordHtmlPath = null;
+            _originalExcelFilePath = null;
+            _currentWorkingPdfPath = pdfPath;
+            BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
 
-                    UpdateStatus($"Đã nạp tệp PDF trực tiếp: {Path.GetFileName(pdfPath)}");
-                }
-                catch (Exception ex)
-                {
-                    TxtCurrentFileStatus.Text = "Nạp tệp PDF thất bại.";
-                    _currentWorkingPdfPath = null;
-                    System.Diagnostics.Trace.TraceError($"Lỗi nạp PDF: {ex}");
-                    MessageBox.Show($"Không thể hiển thị tài liệu PDF:\n{ex.Message}", "Lỗi Nạp PDF", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+            try
+            {
+                TxtCurrentFileName.Text = Path.GetFileName(pdfPath);
+                long fileSizeKb = new FileInfo(pdfPath).Length / 1024;
+                TxtCurrentFileStatus.Text = $"Tệp PDF sẵn sàng ký số ({fileSizeKb:N0} KB).";
+                PnlEditingToolbar.Visibility = Visibility.Collapsed;
+                PnlExcelToolbarControls.Visibility = Visibility.Collapsed;
+                BtnConvertToPdfAndReadySign.IsEnabled = false;
+                BtnSignCurrentDocument.IsEnabled = _vgcaAuth.IsLoggedIn;
+                BtnInsertSignatureStamp.IsEnabled = _vgcaAuth.IsLoggedIn;
+                BtnCloseCurrentFile.Visibility = Visibility.Visible;
+
+                await DisplayPdfInInteractiveViewerAsync(pdfPath);
+
+                UpdateStatus($"Đã nạp tệp PDF trực tiếp: {Path.GetFileName(pdfPath)}");
+            }
+            catch (Exception ex)
+            {
+                TxtCurrentFileStatus.Text = "Nạp tệp PDF thất bại.";
+                _currentWorkingPdfPath = null;
+                BtnCloseCurrentFile.Visibility = Visibility.Collapsed;
+                System.Diagnostics.Trace.TraceError($"Lỗi nạp PDF: {ex}");
+                MessageBox.Show($"Không thể hiển thị tài liệu PDF:\n{ex.Message}", "Lỗi Nạp PDF", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                SetProcessingBusyState(false);
             }
         }
 
         private async void BtnExecuteConvertDocument_Click(object sender, RoutedEventArgs e)
         {
+            if (_isBusyProcessing)
+            {
+                MessageBox.Show("Hệ thống đang xử lý tác vụ khác, vui lòng chờ trong giây lát...",
+                    "Hệ Thống Đang Bận", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             if (!string.IsNullOrWhiteSpace(_originalExcelFilePath) && File.Exists(_originalExcelFilePath))
             {
                 await ConvertExcelToPdfAsync();
@@ -1161,6 +1432,11 @@ namespace VGCASignToolPro
 
         private async Task ConvertExcelToPdfAsync()
         {
+            if (_isBusyProcessing)
+            {
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(_originalExcelFilePath) || !File.Exists(_originalExcelFilePath))
             {
                 MessageBox.Show("Vui lòng tải tệp Excel lên trước khi chuyển đổi.", "Chưa có file", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -1173,10 +1449,9 @@ namespace VGCASignToolPro
                 return;
             }
 
-            BtnConvertToPdfAndReadySign.IsEnabled = false;
+            SetProcessingBusyState(true, "Bắt đầu chuyển đổi bảng tính Excel sang PDF...");
             PrgConvertLoading.Visibility = Visibility.Visible;
             TxtCurrentFileStatus.Text = "Đang xuất bảng tính Excel sang PDF chuẩn vector in ấn A4...";
-            UpdateStatus("Bắt đầu chuyển đổi bảng tính Excel sang PDF...");
 
             try
             {
@@ -1209,8 +1484,9 @@ namespace VGCASignToolPro
                 TxtCurrentFileName.Text = Path.GetFileName(outputPdfPath);
                 TxtCurrentFileStatus.Text = "Tài liệu PDF bảng tính chuẩn in ấn đã sẵn sàng để ký số.";
                 BtnConvertToPdfAndReadySign.IsEnabled = false;
-                BtnSignCurrentDocument.IsEnabled = true;
-                BtnInsertSignatureStamp.IsEnabled = true;
+                BtnSignCurrentDocument.IsEnabled = _vgcaAuth.IsLoggedIn;
+                BtnInsertSignatureStamp.IsEnabled = _vgcaAuth.IsLoggedIn;
+                BtnCloseCurrentFile.Visibility = Visibility.Visible;
                 UpdateStatus($"Đã xuất tệp PDF bảng tính hoàn chỉnh: {Path.GetFileName(outputPdfPath)}");
 
                 MessageBox.Show(
@@ -1220,6 +1496,7 @@ namespace VGCASignToolPro
             catch (Exception ex)
             {
                 BtnConvertToPdfAndReadySign.IsEnabled = true;
+                BtnCloseCurrentFile.Visibility = Visibility.Visible;
                 System.Diagnostics.Trace.TraceError($"Lỗi chuyển đổi Excel sang PDF: {ex}");
                 MessageBox.Show($"Lỗi chuyển đổi bảng tính sang PDF:\n{ex.Message}", "Lỗi Chuyển Đổi", MessageBoxButton.OK, MessageBoxImage.Error);
                 TxtCurrentFileStatus.Text = "Chuyển đổi bảng tính thất bại.";
@@ -1228,11 +1505,17 @@ namespace VGCASignToolPro
             finally
             {
                 PrgConvertLoading.Visibility = Visibility.Collapsed;
+                SetProcessingBusyState(false);
             }
         }
 
         private async Task ConvertWordToPdfAsync()
         {
+            if (_isBusyProcessing)
+            {
+                return;
+            }
+
             if (_wordConverter == null)
             {
                 MessageBox.Show("Dịch vụ chuyển đổi Word chưa được khởi tạo.", "Lỗi Hệ Thống", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -1264,10 +1547,9 @@ namespace VGCASignToolPro
 
             bool saveToOriginal = (userChoice == MessageBoxResult.Yes);
 
-            BtnConvertToPdfAndReadySign.IsEnabled = false;
+            SetProcessingBusyState(true, "Bắt đầu chuyển đổi Word sang PDF...");
             PrgConvertLoading.Visibility = Visibility.Visible;
             TxtCurrentFileStatus.Text = "Đang trích xuất nội dung văn bản và xuất sang PDF chuẩn Nghị định 30/2020/NĐ-CP...";
-            UpdateStatus("Bắt đầu chuyển đổi Word sang PDF...");
 
             try
             {
@@ -1318,8 +1600,9 @@ namespace VGCASignToolPro
                 TxtCurrentFileName.Text = Path.GetFileName(pdfPath);
                 TxtCurrentFileStatus.Text = "Tài liệu PDF chuẩn đã được tạo và nạp sẵn sàng ký số.";
                 BtnConvertToPdfAndReadySign.IsEnabled = false;
-                BtnSignCurrentDocument.IsEnabled = true;
-                BtnInsertSignatureStamp.IsEnabled = true;
+                BtnSignCurrentDocument.IsEnabled = _vgcaAuth.IsLoggedIn;
+                BtnInsertSignatureStamp.IsEnabled = _vgcaAuth.IsLoggedIn;
+                BtnCloseCurrentFile.Visibility = Visibility.Visible;
                 UpdateStatus($"Đã xuất tệp PDF hoàn chỉnh: {Path.GetFileName(pdfPath)}");
 
                 string saveNotice = saveToOriginal
@@ -1336,6 +1619,7 @@ namespace VGCASignToolPro
             catch (Exception ex)
             {
                 BtnConvertToPdfAndReadySign.IsEnabled = true;
+                BtnCloseCurrentFile.Visibility = Visibility.Visible;
                 System.Diagnostics.Trace.TraceError($"Lỗi chuyển đổi sang PDF: {ex}");
                 MessageBox.Show($"Lỗi chuyển đổi sang PDF:\n{ex.Message}", "Lỗi Chuyển Đổi", MessageBoxButton.OK, MessageBoxImage.Error);
                 TxtCurrentFileStatus.Text = "Chuyển đổi thất bại.";
@@ -1344,6 +1628,7 @@ namespace VGCASignToolPro
             finally
             {
                 PrgConvertLoading.Visibility = Visibility.Collapsed;
+                SetProcessingBusyState(false);
             }
         }
 
@@ -1412,7 +1697,8 @@ namespace VGCASignToolPro
                     var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(10000));
                     if (completedTask != tcs.Task)
                     {
-                        try { PdfPreviewControl.NavigationCompleted -= navHandler; } catch { }
+                        try { PdfPreviewControl.NavigationCompleted -= navHandler; }
+                        catch (Exception ex) { System.Diagnostics.Trace.TraceWarning($"Lỗi gỡ NavigationCompleted handler: {ex.Message}"); }
                         RollbackViewerUiState("Lỗi: Quá thời gian chờ tải trình xem PDF.");
                         return;
                     }
@@ -1481,6 +1767,13 @@ namespace VGCASignToolPro
 
         private async void BtnInsertSignatureStamp_Click(object sender, RoutedEventArgs e)
         {
+            if (_isBusyProcessing)
+            {
+                MessageBox.Show("Hệ thống đang xử lý tác vụ khác, vui lòng chờ trong giây lát...",
+                    "Hệ Thống Đang Bận", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(_currentWorkingPdfPath) || !File.Exists(_currentWorkingPdfPath))
             {
                 if (!string.IsNullOrWhiteSpace(_originalWordFilePath) || !string.IsNullOrWhiteSpace(_originalExcelFilePath))
@@ -1572,6 +1865,13 @@ namespace VGCASignToolPro
 
         private async void BtnSignDocument_Click(object sender, RoutedEventArgs e)
         {
+            if (_isBusyProcessing)
+            {
+                MessageBox.Show("Hệ thống đang xử lý tác vụ khác, vui lòng chờ trong giây lát...",
+                    "Hệ Thống Đang Bận", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(_currentWorkingPdfPath) || !File.Exists(_currentWorkingPdfPath))
             {
                 MessageBox.Show("Vui lòng tải file PDF hoặc thực hiện chuyển đổi Word/Excel sang PDF trước khi ký.",
@@ -1694,8 +1994,7 @@ namespace VGCASignToolPro
                 TSAUrl = "http://ca.gov.vn/tsa"
             };
 
-            BtnSignCurrentDocument.IsEnabled = false;
-            UpdateStatus("Đang tiến hành ký số văn bản chuẩn PAdES LTV...");
+            SetProcessingBusyState(true, "Đang tiến hành ký số văn bản chuẩn PAdES LTV...");
 
             try
             {
@@ -1710,6 +2009,7 @@ namespace VGCASignToolPro
 
                 // Hiển thị Banner Thành công và các nút thao tác nhanh trên giao diện
                 BorderSignSuccessBanner.Visibility = Visibility.Visible;
+                BtnCloseCurrentFile.Visibility = Visibility.Visible;
                 TxtSignedSummaryNotice.Text = $"Tệp đã ký: {Path.GetFileName(signedPath)} • Đã nhúng chữ ký số và dấu thời gian TSA Ban Cơ yếu.";
 
                 // Cập nhật sẵn sang Tab 3 (Upload Web)
@@ -1738,7 +2038,9 @@ namespace VGCASignToolPro
             }
             finally
             {
-                BtnSignCurrentDocument.IsEnabled = true;
+                SetProcessingBusyState(false);
+                BtnSignCurrentDocument.IsEnabled = _vgcaAuth.IsLoggedIn;
+                BtnInsertSignatureStamp.IsEnabled = _vgcaAuth.IsLoggedIn;
             }
         }
 
