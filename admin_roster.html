@@ -552,7 +552,7 @@
     document.getElementById("editIndex").value = cccd;
     document.getElementById("inpFullName").value = teacher.fullName || "";
     document.getElementById("inpCccd").value = teacher.cccd || "";
-    document.getElementById("inpCccd").disabled = true; // Không sửa CCCD để tránh mất liên kết
+    document.getElementById("inpCccd").disabled = false; // Cho phép nhà trường điều chỉnh CCCD khi nhập nhầm hoặc cấp mới
     document.getElementById("inpTitle").value = teacher.title || "Giáo viên";
     document.getElementById("inpDepartment").value = teacher.department || "";
     document.getElementById("inpPhone").value = teacher.phone || "";
@@ -593,6 +593,17 @@
       // Chỉnh sửa
       const idx = teachers.findIndex(t => t.cccd === editCccd);
       if (idx !== -1) {
+        if (editCccd !== cccd) {
+          // Kiểm tra xem số CCCD mới đã tồn tại ở người khác chưa
+          if (teachers.some(t => t.cccd === cccd)) {
+            alert(`Số CCCD mới (${cccd}) đã được sử dụng bởi một giáo viên khác!`);
+            return;
+          }
+          if (!confirm(`Xác nhận đổi số CCCD của giáo viên ${fullName} từ:\n[${editCccd}] ➔ [${cccd}]?\n\nTài khoản ký số Ban Cơ yếu và liên kết trình ký sẽ được tự động cập nhật theo số CCCD mới.`)) {
+            return;
+          }
+          teachers[idx].cccd = cccd;
+        }
         teachers[idx].fullName = fullName;
         teachers[idx].title = title;
         teachers[idx].department = department;

@@ -52,6 +52,8 @@ namespace VGCASignToolPro
         private float _userStampWidth = 140f;
         private float _userStampHeight = 140f;
 
+        private readonly System.Windows.Threading.DispatcherTimer _certWatcherTimer = new();
+
         public MainWindow()
         {
             InitializeComponent();
@@ -64,6 +66,11 @@ namespace VGCASignToolPro
             _webUploader.StatusChanged += UpdateStatus;
             _vgcaAuth.LoginStateChanged += OnVgcaLoginStateChanged;
             Activated += MainWindow_Activated;
+
+            // Giám sát nhịp tim chứng thư nền (Liveness Watcher): Tự động nhận diện khi giáo viên đăng nhập Virtual CSP
+            _certWatcherTimer.Interval = TimeSpan.FromSeconds(1.5);
+            _certWatcherTimer.Tick += CertWatcherTimer_Tick;
+            _certWatcherTimer.Start();
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -465,12 +472,38 @@ namespace VGCASignToolPro
             }
         }
 
+        private void CertWatcherTimer_Tick(object? sender, EventArgs e)
+        {
+            try
+            {
+                // Kiểm tra nhanh chứng thư Ban Cơ yếu đang hoạt động trong Windows Store
+                CertificateModel? activeVgCa = _certService.GetActiveVGCACertificate();
+                string activeThumbprint = activeVgCa?.Thumbprint ?? string.Empty;
+                string currentThumbprint = _currentActiveCert?.Thumbprint ?? string.Empty;
+
+                // Nếu chứng thư trong Windows Store khác với chứng thư hiện tại của ứng dụng
+                // (Ví dụ: giáo viên vừa đăng nhập tài khoản khác trên Virtual CSP, hoặc vừa rút/cắm USB Token, hoặc đăng xuất)
+                if (!string.Equals(activeThumbprint, currentThumbprint, StringComparison.OrdinalIgnoreCase))
+                {
+                    LoadCertificatesAndVerifyVGCALogin();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceWarning($"Lỗi kiểm tra chứng thư nền: {ex.Message}");
+            }
+        }
+
         private void MainWindow_Activated(object? sender, EventArgs e)
         {
             try
             {
-                // Tự động quét lại và nhận diện nếu hiện tại chưa có phiên đăng nhập
-                if (!_vgcaAuth.IsLoggedIn)
+                // Khi người dùng chuyển cửa sổ từ Virtual CSP về app, kiểm tra và đồng bộ ngay lập tức
+                CertificateModel? activeVgCa = _certService.GetActiveVGCACertificate();
+                string activeThumbprint = activeVgCa?.Thumbprint ?? string.Empty;
+                string currentThumbprint = _currentActiveCert?.Thumbprint ?? string.Empty;
+
+                if (!string.Equals(activeThumbprint, currentThumbprint, StringComparison.OrdinalIgnoreCase) || !_vgcaAuth.IsLoggedIn)
                 {
                     LoadCertificatesAndVerifyVGCALogin();
                 }
@@ -1765,17 +1798,34 @@ namespace VGCASignToolPro
                 return;
             }
 
-            if (_currentActiveCert == null)
+            // CHỐT CHẶN AN TOÀN TRƯỚC KHI KÝ (Pre-Sign Identity Guard):
+            // Kiểm tra tức thì xem chứng thư trong Windows Store có còn kết nối khóa riêng và có bị thay đổi tài khoản hay không
+            CertificateModel? activeVgCa = _certService.GetActiveVGCACertificate();
+            if (activeVgCa == null || !activeVgCa.HasPrivateKey)
             {
-                MessageBoxResult result = MessageBox.Show(
-                    "Chưa phát hiện chứng thư số Ban Cơ yếu Chính phủ đang hoạt động.\nBạn có muốn chuyển sang Tab 1 để kiểm tra và đăng nhập tài khoản VGCA không?",
-                    "Chưa Đăng Nhập VGCA", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    MainTabControl.SelectedIndex = 0;
-                }
+                MessageBox.Show(
+                    "Tài khoản chữ ký số VGCA hiện không còn kết nối khóa riêng trong Windows.\n" +
+                    "Vui lòng kiểm tra lại ứng dụng VGCA Virtual CSP và đảm bảo đã đăng nhập.",
+                    "Mất Kết Nối Khóa Riêng", MessageBoxButton.OK, MessageBoxImage.Warning);
+                LoadCertificatesAndVerifyVGCALogin();
                 return;
+            }
+
+            if (_currentActiveCert == null || !string.Equals(activeVgCa.Thumbprint, _currentActiveCert.Thumbprint, StringComparison.OrdinalIgnoreCase))
+            {
+                LoadCertificatesAndVerifyVGCALogin();
+                MessageBoxResult reConfirm = MessageBox.Show(
+                    $"Hệ thống phát hiện tài khoản chữ ký số trong Windows vừa thay đổi:\n\n" +
+                    $"• Chủ sở hữu: {activeVgCa.CommonName}\n" +
+                    $"• Đơn vị: {activeVgCa.OrganizationUnit}\n" +
+                    $"• Serial: {activeVgCa.SerialNumber}\n\n" +
+                    $"Bạn có muốn tiếp tục ký số với tài khoản của {activeVgCa.CommonName} không?",
+                    "Xác Nhận Đổi Tài Khoản Ký Số", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                if (reConfirm != MessageBoxResult.Yes)
+                {
+                    return;
+                }
             }
 
             // Đọc cấu hình mẫu ký: Ưu tiên tọa độ kéo thả tương tác của người dùng
@@ -1866,7 +1916,7 @@ namespace VGCASignToolPro
             {
                 SourcePdfPath = _currentWorkingPdfPath,
                 OutputPdfPath = outputPath,
-                Certificate = _currentActiveCert,
+                Certificate = _currentActiveCert!,
                 PageNumber = pageNumber,
                 X = coordX,
                 Y = coordY,

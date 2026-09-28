@@ -412,6 +412,21 @@ namespace VGCASignToolPro.Services
                     SaveRosterWithHmacSeal(exportObj.ToString(Formatting.Indented));
                 }
 
+                // Nếu đang có phiên làm việc đăng nhập, tự động liên kết lại với CCCD và chức vụ mới nhất từ danh bạ vừa đồng bộ
+                if (IsLoggedIn && CurrentTeacher != null)
+                {
+                    foreach (var t in _roster.Values)
+                    {
+                        if ((!string.IsNullOrEmpty(CurrentTeacher.SerialNumber) && string.Equals(t.SerialNumber, CurrentTeacher.SerialNumber, StringComparison.OrdinalIgnoreCase)) ||
+                            (!string.IsNullOrEmpty(CurrentTeacher.Email) && string.Equals(t.Email, CurrentTeacher.Email, StringComparison.OrdinalIgnoreCase)) ||
+                            (!string.IsNullOrEmpty(CurrentTeacher.FullName) && string.Equals(t.FullName, CurrentTeacher.FullName, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            CurrentTeacher = t;
+                            break;
+                        }
+                    }
+                }
+
                 _rosterLoadFailed = false;
                 return (true, $"Đã cập nhật đồng bộ {updatedCount} giáo viên thành công.", _roster.Count);
             }
