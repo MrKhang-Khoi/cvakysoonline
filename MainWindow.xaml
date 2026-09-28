@@ -719,7 +719,7 @@
                     </Border>
 
                     <!-- OVERLAY TRÌNH KÝ BÁO CÁO LIÊN THÔNG (POPUP KHI BẤM NÚT TRÌNH KÝ TẠI TAB 2) -->
-                    <Border x:Name="OverlaySubmitWorkflow" Grid.RowSpan="4" Background="#990F172A" Visibility="Collapsed" Panel.ZIndex="150">
+                    <Border x:Name="OverlaySubmitWorkflow" Grid.RowSpan="4" Background="#990F172A" Visibility="Collapsed" Panel.ZIndex="999">
                         <Border Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="12" 
                                 MaxWidth="620" Width="600" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="28">
                             <Border.Effect>

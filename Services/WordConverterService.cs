@@ -132,55 +132,62 @@ namespace VGCASignToolPro.Services
                     "charset=utf-8",
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-                // Chèn CSS định dạng trang giấy A4, font tiếng Việt chuẩn và kích hoạt chế độ chỉnh sửa trực tiếp
-                string customStyles = @"
+                // Phát hiện hướng trang (Landscape vs Portrait) dựa trên thông số @page của Word
+                bool isLandscape = content.Contains("size:841", StringComparison.OrdinalIgnoreCase) ||
+                                   content.Contains("size: 841", StringComparison.OrdinalIgnoreCase) ||
+                                   content.Contains("landscape", StringComparison.OrdinalIgnoreCase);
+
+                string pageWidth = isLandscape ? "297mm" : "210mm";
+                string pageHeight = isLandscape ? "210mm" : "297mm";
+
+                // Chèn CSS định dạng trang giấy chuẩn, bảo toàn vị trí nét kẻ (relative anchors) và kích hoạt chế độ chỉnh sửa trực tiếp
+                string customStyles = $@"
 <meta http-equiv=""Content-Type"" content=""text/html; charset=utf-8"">
 <style id=""vgca-editor-style"">
-    * {
+    * {{
         font-family: 'Times New Roman', 'Segoe UI', Arial, Tahoma, sans-serif !important;
-    }
-    html, body {
+    }}
+    html, body {{
         background-color: #f1f5f9 !important;
         margin: 0;
         padding: 24px 0;
         font-family: 'Times New Roman', 'Segoe UI', Arial, Tahoma, sans-serif !important;
-    }
-    body {
+    }}
+    body {{
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
-    }
-    .WordSection1, .WordSection2, body > div {
+    }}
+    div.WordSection1, div.WordSection2, div[class^=""WordSection""] {{
         background: #ffffff !important;
-        width: 210mm !important;
-        min-height: 297mm !important;
-        padding: 20mm 20mm 20mm 25mm !important;
+        width: {pageWidth} !important;
+        min-height: {pageHeight} !important;
         box-shadow: 0 4px 15px rgba(0,0,0,0.18) !important;
         border: 1px solid #cbd5e1 !important;
         border-radius: 4px;
         box-sizing: border-box !important;
         outline: none !important;
         margin-bottom: 24px !important;
-    }
-    h1, h2, h3, h4, h5, h6, .MsoTitle, .MsoSubtitle {
+    }}
+    h1, h2, h3, h4, h5, h6, .MsoTitle, .MsoSubtitle {{
         font-family: 'Times New Roman', 'Segoe UI', Arial, Tahoma, sans-serif !important;
         color: #0f172a !important;
-    }
-    p, span, li, td, th {
-        line-height: 1.4 !important;
-    }
+    }}
+    p.MsoNormal, p {{
+        position: relative !important;
+    }}
 </style>
 <script id=""vgca-editor-script"">
-    function enableEditing() {
+    function enableEditing() {{
         document.body.contentEditable = 'true';
         document.designMode = 'on';
-        var sections = document.querySelectorAll('.WordSection1, .WordSection2, body > div');
-        sections.forEach(function(sec) {
+        var sections = document.querySelectorAll('div.WordSection1, div.WordSection2, div[class^=""WordSection""]');
+        sections.forEach(function(sec) {{
             sec.contentEditable = 'true';
-        });
+        }});
         window.__vgcaIsModified = false;
-        window.addEventListener('input', function() { window.__vgcaIsModified = true; });
-    }
+        window.addEventListener('input', function() {{ window.__vgcaIsModified = true; }});
+    }}
     window.addEventListener('DOMContentLoaded', enableEditing);
     window.addEventListener('load', enableEditing);
     setTimeout(enableEditing, 500);

@@ -315,6 +315,10 @@ namespace VGCASignToolPro
                     TabItemSignWorkspace.Header = "  2. Soạn Thảo, Xem & Ký Số Trực Tiếp  ";
                     TabItemSignWorkspace.IsEnabled = true;
                     OverlayTab2Locked.Visibility = Visibility.Collapsed;
+                    if (PdfPreviewControl != null)
+                    {
+                        PdfPreviewControl.Visibility = Visibility.Visible;
+                    }
 
                     // Đồng bộ chứng thư trong kho Windows Store nếu có
                     if (_certificates != null && _certificates.Count > 0)
@@ -367,6 +371,10 @@ namespace VGCASignToolPro
                     TabItemSignWorkspace.Header = "  2. Soạn Thảo, Xem & Ký Số Trực Tiếp ( 🔒 Khóa )  ";
                     TabItemSignWorkspace.IsEnabled = false;
                     OverlayTab2Locked.Visibility = Visibility.Visible;
+                    if (PdfPreviewControl != null)
+                    {
+                        PdfPreviewControl.Visibility = Visibility.Hidden;
+                    }
                     if (MainTabControl.SelectedIndex == 1)
                     {
                         MainTabControl.SelectedIndex = 0;
@@ -1488,7 +1496,7 @@ namespace VGCASignToolPro
                 string outputPdfPath = _excelConverter.GenerateOutputPdfPath(_originalExcelFilePath);
 
                 Microsoft.Web.WebView2.Core.CoreWebView2PrintSettings printSettings = PdfPreviewControl.CoreWebView2.Environment.CreatePrintSettings();
-                printSettings.Orientation = _currentExcelOrientation.Equals("portrait", StringComparison.OrdinalIgnoreCase)
+                printSettings.Orientation = string.Equals(_currentExcelOrientation, "portrait", StringComparison.OrdinalIgnoreCase)
                     ? Microsoft.Web.WebView2.Core.CoreWebView2PrintOrientation.Portrait
                     : Microsoft.Web.WebView2.Core.CoreWebView2PrintOrientation.Landscape;
                 printSettings.ShouldPrintBackgrounds = true;
@@ -1558,24 +1566,44 @@ namespace VGCASignToolPro
                 return;
             }
 
-            // HỘP THOẠI XÁC NHẬN LƯU THAY ĐỔI VÀO TỆP WORD GỐC TRÊN MÁY TÍNH
-            MessageBoxResult userChoice = MessageBox.Show(
-                "Bạn có muốn lưu các nội dung đã chỉnh sửa vào tệp Word gốc trên máy tính không?\n\n" +
-                $"• Tệp Word: {Path.GetFileName(_originalWordFilePath)}\n\n" +
-                "➡ Chọn [Yes / Có]: Lưu cập nhật trực tiếp vào tệp Word trên máy và xuất sang PDF.\n" +
-                "➡ Chọn [No / Không]: Không lưu vào tệp Word gốc, chỉ xuất các nội dung đã chỉnh sửa sang PDF.\n" +
-                "➡ Chọn [Cancel / Hủy]: Dừng lại để tiếp tục chỉnh sửa văn bản.",
-                "Lưu Thay Đổi Văn Bản Word",
-                MessageBoxButton.YesNoCancel,
-                MessageBoxImage.Question);
-
-            if (userChoice == MessageBoxResult.Cancel)
+            // Kiểm tra xem người dùng có thực hiện chỉnh sửa nội dung văn bản trên WebView2 hay không
+            bool isModified = false;
+            if (_isWebViewInitialized && PdfPreviewControl?.CoreWebView2 != null)
             {
-                // Người dùng chọn Hủy: giữ nguyên giao diện để tiếp tục chỉnh sửa
-                return;
+                try
+                {
+                    string res = await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync("Boolean(window.__vgcaIsModified)");
+                    bool.TryParse(res, out isModified);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Trace.TraceWarning($"Lỗi kiểm tra cờ sửa đổi Word: {ex.Message}");
+                }
             }
 
-            bool saveToOriginal = (userChoice == MessageBoxResult.Yes);
+            bool saveToOriginal = false;
+            if (isModified)
+            {
+                // HỘP THOẠI XÁC NHẬN LƯU THAY ĐỔI VÀO TỆP WORD GỐC TRÊN MÁY TÍNH
+                MessageBoxResult userChoice = MessageBox.Show(
+                    "Bạn đã chỉnh sửa nội dung văn bản trực tiếp trên giao diện.\n" +
+                    "Bạn có muốn lưu các thay đổi này vào tệp Word gốc trên máy tính không?\n\n" +
+                    $"• Tệp Word: {Path.GetFileName(_originalWordFilePath)}\n\n" +
+                    "➡ Chọn [Yes / Có]: Lưu cập nhật trực tiếp vào tệp Word trên máy và xuất sang PDF.\n" +
+                    "➡ Chọn [No / Không]: Không lưu vào tệp Word gốc, chỉ xuất các nội dung đã chỉnh sửa sang PDF.\n" +
+                    "➡ Chọn [Cancel / Hủy]: Dừng lại để tiếp tục chỉnh sửa văn bản.",
+                    "Lưu Thay Đổi Văn Bản Word",
+                    MessageBoxButton.YesNoCancel,
+                    MessageBoxImage.Question);
+
+                if (userChoice == MessageBoxResult.Cancel)
+                {
+                    // Người dùng chọn Hủy: giữ nguyên giao diện để tiếp tục chỉnh sửa
+                    return;
+                }
+
+                saveToOriginal = (userChoice == MessageBoxResult.Yes);
+            }
 
             SetProcessingBusyState(true, "Bắt đầu chuyển đổi Word sang PDF...");
             PrgConvertLoading.Visibility = Visibility.Visible;
@@ -1585,8 +1613,8 @@ namespace VGCASignToolPro
             {
                 string pdfPath;
 
-                // Nếu đang ở chế độ xem và chỉnh sửa trực tiếp trên WebView2
-                if (_isWebViewInitialized && PdfPreviewControl?.CoreWebView2 != null && !string.IsNullOrWhiteSpace(_currentEditingWordHtmlPath))
+                // Nếu người dùng ĐÃ chỉnh sửa nội dung văn bản trên WebView2
+                if (isModified && _isWebViewInitialized && PdfPreviewControl?.CoreWebView2 != null && !string.IsNullOrWhiteSpace(_currentEditingWordHtmlPath))
                 {
                     // Trích xuất toàn bộ DOM HTML mới nhất từ WebView2 sau khi người dùng đã chỉnh sửa
                     string extractJs = @"
@@ -1615,6 +1643,7 @@ namespace VGCASignToolPro
                 }
                 else
                 {
+                    // Văn bản chưa bị chỉnh sửa: Chuyển đổi trực tiếp từ file Word gốc bằng Word COM (Native) để bảo toàn 100% vector, đường nét, bố cục không bị xê dịch
                     pdfPath = await _wordConverter.ConvertWordToPdfAsync(_originalWordFilePath);
                 }
 
@@ -1635,9 +1664,11 @@ namespace VGCASignToolPro
                 BtnCloseCurrentFile.Visibility = Visibility.Visible;
                 UpdateStatus($"Đã xuất tệp PDF hoàn chỉnh: {Path.GetFileName(pdfPath)}");
 
-                string saveNotice = saveToOriginal
-                    ? $"• Tệp Word gốc trên máy tính ({originalWordFileName}) đã được cập nhật lưu thành công.\n"
-                    : $"• Tệp Word gốc trên máy tính ({originalWordFileName}) được giữ nguyên (không lưu thay đổi).\n";
+                string saveNotice = isModified
+                    ? (saveToOriginal
+                        ? $"• Tệp Word gốc trên máy tính ({originalWordFileName}) đã được cập nhật lưu thành công.\n"
+                        : $"• Tệp Word gốc trên máy tính ({originalWordFileName}) được giữ nguyên (không lưu thay đổi).\n")
+                    : $"• Tệp PDF được tạo trực tiếp từ bản Word gốc chuẩn xác 100% không xê dịch nét kẻ.\n";
 
                 MessageBox.Show(
                     $"Chuyển đổi sang PDF thành công!\n\n" +
@@ -2330,12 +2361,20 @@ namespace VGCASignToolPro
             TxtWorkflowSubmitSender.Text = $"{_vgcaAuth.CurrentTeacher.FullName} (CCCD: {_vgcaAuth.CurrentTeacher.Cccd})";
             TxtWorkflowSubmitNotes.Text = string.Empty;
 
+            if (PdfPreviewControl != null)
+            {
+                PdfPreviewControl.Visibility = Visibility.Hidden;
+            }
             OverlaySubmitWorkflow.Visibility = Visibility.Visible;
         }
 
         private void BtnCancelSubmitWorkflow_Click(object sender, RoutedEventArgs e)
         {
             OverlaySubmitWorkflow.Visibility = Visibility.Collapsed;
+            if (PdfPreviewControl != null)
+            {
+                PdfPreviewControl.Visibility = Visibility.Visible;
+            }
         }
 
         private async void BtnConfirmSubmitWorkflow_Click(object sender, RoutedEventArgs e)
@@ -2377,6 +2416,11 @@ namespace VGCASignToolPro
                 if (result.Success)
                 {
                     OverlaySubmitWorkflow.Visibility = Visibility.Collapsed;
+                    if (PdfPreviewControl != null)
+                    {
+                        PdfPreviewControl.Visibility = Visibility.Visible;
+                    }
+
                     MessageBox.Show(
                         $"Đã gửi trình ký báo cáo thành công!\n\n• Mã báo cáo: {result.ReportId}\n• Người nhận duyệt: {approver.FullName}\n• Trạng thái: Chờ mở duyệt (WAITING_OPEN)",
                         "Trình Ký Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -2400,6 +2444,10 @@ namespace VGCASignToolPro
             finally
             {
                 BtnConfirmSubmitWorkflow.IsEnabled = true;
+                if (OverlaySubmitWorkflow.Visibility != Visibility.Visible && PdfPreviewControl != null)
+                {
+                    PdfPreviewControl.Visibility = Visibility.Visible;
+                }
             }
         }
 

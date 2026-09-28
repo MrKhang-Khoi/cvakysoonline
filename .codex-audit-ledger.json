@@ -27,9 +27,9 @@
       "timestamp": "2026-09-28T03:29:49.769Z"
     },
     "MainWindow.xaml.cs": {
-      "sha256": "b5d1fcf25d5e4259dfe32d3e8e679186f23c7f392c60c11a2faf7156b25a064f",
+      "sha256": "3ffa6950cba6f688fad9475f0ea4c8e1f03d23177e9adbc5e4f14805637ab951",
       "status": "APPROVED",
-      "timestamp": "2026-09-28T07:45:08.031Z"
+      "timestamp": "2026-09-28T08:19:03.324Z"
     },
     "publish/wwwroot/pdf_viewer.html": {
       "sha256": "76a73e2ebf19c192e6d825c7263b78798291e2d18131b5e096b7818fece0f4e7",
@@ -83,9 +83,9 @@
       "timestamp": "2026-09-28T03:03:02.320Z"
     },
     "Services/WordConverterService.cs": {
-      "sha256": "1e7f1505a95c681cb132b48be796a7780c72290f20194ff247dd2d9dcb63a741",
+      "sha256": "b24b8489f8413631a6164559f528ee8048a0afaf9e667206f56c55960abc5f33",
       "status": "APPROVED",
-      "timestamp": "2026-09-28T05:03:37.202Z"
+      "timestamp": "2026-09-28T08:12:19.334Z"
     },
     "Services/ExcelConverterService.cs": {
       "sha256": "1cd25a0825744d1b160828aa96380a7660cbfd4f2823255e9b2cf5e489cecab8",
@@ -2953,6 +2953,196 @@
     ],
     "wwwroot/pdf_viewer.html [Dòng 901 - 936 / Tổng 936 dòng]": [
       "updateStampCoordinates | Chuyển đổi tọa độ HTML sang PDF đáy-trái chuẩn xác, cập nhật nhãn UI an toàn qua innerText chống XSS, kiểm tra tồn tại và đồng bộ tọa độ về WebView2 host qua postMessage."
+    ],
+    "Services/WordConverterService.cs [Dòng 1 - 60 / Tổng 537 dòng]": [
+      "WordConverterService.ConvertWordToEditableHtmlAsync, ConvertWordToEditableHtml | Validate đường dẫn file Word đầu vào, sinh file HTML tạm ngẫu nhiên chống xung đột file lock, khởi tạo COM Word.Application ở chế độ chạy ngầm và mở tài liệu ReadOnly an toàn."
+    ],
+    "Services/WordConverterService.cs [Dòng 61 - 120 / Tổng 537 dòng]": [
+      "EnhanceHtmlForDirectEditing | Export Word sang Filtered HTML qua Interop, giải phóng triệt để COM object và file handle trong finally block, bọc ngoại lệ fail-closed."
+    ],
+    "Services/WordConverterService.cs [Dòng 121 - 180 / Tổng 537 dòng]": [
+      "WordHtmlPostProcessor | Kiểm tra file tồn tại, đọc UTF-8, chuẩn hóa charset, phát hiện khổ giấy A4 dọc/ngang, nội suy template CSS an toàn."
+    ],
+    "Services/WordConverterService.cs [Dòng 181 - 240 / Tổng 537 dòng]": [
+      "ConvertWordToPdfAsync | Chạy bất đồng bộ ConvertWordToPdf trên ThreadPool qua Task.Run.",
+      "ConvertWordToPdf | Kiểm tra null/whitespace, file tồn tại, đúng định dạng (.doc, .docx, .rtf, .dotx) trước khi chuyển đổi.",
+      "HTML Style Injection | Chèn style và script preview an toàn vào HTML, bắt exception ghi TraceWarning tránh crash tiến trình."
+    ],
+    "Services/WordConverterService.cs [Dòng 241 - 300 / Tổng 537 dòng]": [
+      "WordToPdfConverter | Late-bound COM Word.Application khởi tạo an toàn, mở tài liệu ReadOnly, xuất PDF qua ExportAsFixedFormat đúng cấu hình."
+    ],
+    "Services/WordConverterService.cs [Dòng 301 - 360 / Tổng 537 dòng]": [
+      "SaveEditedHtmlAndConvertToPdf / SaveEditedHtmlAndConvertToPdfAsync | COM cleanup an toàn trong block finally qua Marshal.ReleaseComObject và GC, bọc Task.Run async chuẩn, validate tham số htmlContent và originalWordFilePath không rỗng trước khi xử lý HTML."
+    ],
+    "Services/WordConverterService.cs [Dòng 361 - 420 / Tổng 537 dòng]": [
+      "WordConverterService (COM Export Slice) | Tạo thư mục xuất an toàn, kiểm tra Microsoft Word COM type fail-closed, khởi tạo instance ẩn, nạp HTML sạch qua UTF-8 (65001) chuẩn xác."
+    ],
+    "Services/WordConverterService.cs [Dòng 421 - 480 / Tổng 537 dòng]": [
+      "WordDocumentSaveAndExport | Lưu tệp Word gốc kèm cơ chế fallback khi tệp bị khóa COMException, xuất PDF qua ExportAsFixedFormat chuẩn xác, bắt đầu khối finally giải phóng COM object."
+    ],
+    "Services/WordConverterService.cs [Dòng 481 - 537 / Tổng 537 dòng]": [
+      "CleanHtmlForWordConversion | Sanitize HTML stripped style/script editor và contenteditable tag, giải phóng COM Word Interop và temp file an toàn trong khối cleanup."
+    ],
+    "MainWindow.xaml.cs [Dòng 1 - 60 / Tổng 2772 dòng]": [
+      "MainWindow | Khởi tạo instance dịch vụ an toàn, field danh sách và cờ trạng thái init đầy đủ tránh null ref, đăng ký sự kiện giao diện hợp lệ trong constructor."
+    ],
+    "MainWindow.xaml.cs [Dòng 61 - 120 / Tổng 2772 dòng]": [
+      "MainWindow_Loaded | Bao bọc try/catch toàn diện cho async void event handler, ngăn crash UI thread khi khởi tạo thất bại.",
+      "InitializePreviewEngineAsync | Tạo môi trường WebView2 với cache độc lập tại LocalAppData tránh lỗi phân quyền, kiểm tra null PdfPreviewControl trước khi kích hoạt CoreWebView2."
+    ],
+    "MainWindow.xaml.cs [Dòng 121 - 180 / Tổng 2772 dòng]": [
+      "CoreWebView2_WebMessageReceived | Parse JSON an toàn qua JsonDocument và TryGetProperty, giải phóng tài nguyên qua using, validate toàn bộ kiểu số tọa độ trước khi cập nhật state và UI."
+    ],
+    "MainWindow.xaml.cs [Dòng 181 - 240 / Tổng 2772 dòng]": [
+      "WebView2MessageDispatch, UpdateStatus | Xử lý thông điệp WebView2 an toàn qua JsonElement TryGetProperty/TryGetInt32, kiểm tra null chuỗi định dạng in, điều phối UI thread qua Dispatcher.Invoke, try/catch bắt ngoại lệ ghi TraceError không nuốt lỗi."
+    ],
+    "MainWindow.xaml.cs [Dòng 241 - 300 / Tổng 2772 dòng]": [
+      "InitializeVgcaAuthRoster, GenerateAndDisplayVgcaQr, OnVgcaLoginStateChanged | Khởi tạo danh bạ VGCA, sinh QR xác thực, cập nhật trạng thái đăng nhập lên UI qua Dispatcher an toàn luồng, kiểm tra null/empty đầy đủ, bắt ngoại lệ fail-safe không crash app."
+    ],
+    "MainWindow.xaml.cs [Dòng 301 - 360 / Tổng 2772 dòng]": [
+      "SyncTeacherUiState | Cập nhật UI đăng nhập VGCA, mở khóa workspace, tìm kiếm chứng thư số tương thích và làm mới workflow."
+    ],
+    "MainWindow.xaml.cs [Dòng 361 - 420 / Tổng 2772 dòng]": [
+      "CmbRosterQuickSelect_SelectionChanged | Pattern match ép kiểu an toàn null, tự điền CCCD và xóa cờ lỗi UI.",
+      "BtnVgcaLogin_Click | Validate rỗng fail-closed tại UI, kiểm tra null result.Teacher trước khi đọc thuộc tính."
+    ],
+    "MainWindow.xaml.cs [Dòng 421 - 480 / Tổng 2772 dòng]": [
+      "BtnRefreshQr_Click | Tạo lại mã QR và cập nhật thanh trạng thái giao diện.",
+      "BtnApproveQr_Click | Validate rỗng CCCD, kiểm tra null service, phê duyệt xác thực QR và cập nhật giao diện theo kết quả."
+    ],
+    "MainWindow.xaml.cs [Dòng 481 - 540 / Tổng 2772 dòng]": [
+      "BtnVgcaLogout_Click | Dọn dẹp phiên làm việc, xóa biến trạng thái chứng thư/workflow, reset UI và đăng xuất VGCA an toàn.",
+      "BtnGoToLoginTab_Click | Điều hướng tab về chỉ mục 0.",
+      "LoadCertificatesAndVerifyVGCALogin | Tải danh sách chứng thư có private key, gán ItemsSource ComboBox, kiểm tra danh sách rỗng fail-closed."
+    ],
+    "MainWindow.xaml.cs [Dòng 541 - 600 / Tổng 2772 dòng]": [
+      "LoadCertificates/MainWindow_Activated | Validate null VGCA cert, sync UI state, log error fail-closed khi quét cert lỗi."
+    ],
+    "MainWindow.xaml.cs [Dòng 601 - 660 / Tổng 2772 dòng]": [
+      "BtnSyncVgcaCertificate_Click | Tải chứng thư qua LoadCertificatesAndVerifyVGCALogin, kiểm tra null _currentActiveCert trước khi đọc thuộc tính, cập nhật UI tương ứng kết quả.",
+      "BtnUnlockAccount_Click | Validate rỗng input CCCD trước khi gọi _vgcaAuth.UnlockAccount, cập nhật trạng thái UI và thông báo người dùng theo kết quả."
+    ],
+    "MainWindow.xaml.cs [Dòng 661 - 720 / Tổng 2772 dòng]": [
+      "MainWindow UI Handlers & LoadProfiles | UI Event Handlers cập nhật thông tin chứng thư số và quản lý hồ sơ ký số. `CmbCertificates_SelectionChanged` pattern match type-safe chống null dereference. `BtnLaunchVgcaManager_Click` xử lý rẽ nhánh theo kết quả process. `LoadProfiles` load danh sách profile và bind `ItemsSource` trong khối `try` an toàn."
+    ],
+    "MainWindow.xaml.cs [Dòng 721 - 780 / Tổng 2772 dòng]": [
+      "CmbProfiles_SelectionChanged | Pattern matching trích xuất profile, map display mode, fallback file an toàn, gọi ClearStampImage khi không có ảnh.",
+      "SetAndPersistStampImage (dòng 774-780) | Validate null/whitespace và File.Exists fail-safe trước khi nạp ảnh."
+    ],
+    "MainWindow.xaml.cs [Dòng 781 - 840 / Tổng 2772 dòng]": [
+      "LoadStampImage / ClearStampImage | Nạp ảnh giải phóng lock file qua BitmapCacheOption.OnLoad và Freeze(), xử lý ngoại lệ fail-closed với logging và fallback ClearStampImage, cập nhật profile an toàn qua type pattern matching."
+    ],
+    "MainWindow.xaml.cs [Dòng 841 - 900 / Tổng 2772 dòng]": [
+      "ClearStampImage | Reset UI stamp state, gán ImagePath profile về null, lưu profile có try/catch bắt ngoại lệ.",
+      "BtnSelectStampImage_Click & BtnTab2ChangeStamp_Click | Mở OpenFileDialog filter ảnh, chuyển đường dẫn sang SetAndPersistStampImage khi dialog trả về true.",
+      "BtnClearStampImage_Click | Ủy quyền xử lý cho hàm ClearStampImage.",
+      "BtnSaveProfile_Click | Kiểm tra null profile, parse kích thước Width dạng WxH bằng int.TryParse và chặn giá trị <= 0."
+    ],
+    "MainWindow.xaml.cs [Dòng 901 - 960 / Tổng 2772 dòng]": [
+      "CmbDisplayMode_SelectionChanged, BtnGoToSignWorkspace_Click | Đồng bộ UI selection vào SignatureProfile an toàn null, validate trạng thái đăng nhập VGCA trước khi chuyển tab."
+    ],
+    "MainWindow.xaml.cs [Dòng 961 - 1020 / Tổng 2772 dòng]": [
+      "HasActiveDocument, GetActiveDocumentDescription, ConfirmAndCloseCurrentDocumentAsync | Kiểm tra tồn tại tài liệu qua IsNullOrWhiteSpace và File.Exists an toàn. Tạo thông điệp xác nhận đóng tệp chuẩn xác, ngăn mất dữ liệu UI. Logic cắt dòng hợp lệ theo invariant."
+    ],
+    "MainWindow.xaml.cs [Dòng 1021 - 1080 / Tổng 2772 dòng]": [
+      "CloseCurrentDocumentAsync | Xác nhận đóng tệp qua MessageBox, reset toàn bộ biến đường dẫn/trạng thái UI, thực thi script dọn dẹp WebView2 an toàn với try-catch không gây crash UI."
+    ],
+    "MainWindow.xaml.cs [Dòng 1081 - 1140 / Tổng 2772 dòng]": [
+      "ConfirmAndCloseCurrentDocumentAsync | Giải phóng UI placeholder, dọn dẹp bộ nhớ GC, log lỗi qua TraceError khi đóng file thất bại, không crash app.",
+      "SetProcessingBusyState | Cập nhật cờ `_isBusyProcessing`, điều khiển con trỏ `Mouse.OverrideCursor`, vô hiệu hóa/kích hoạt controls tránh reentrancy.",
+      "BtnCloseCurrentFile_Click | Chặn reentrancy qua `_isBusyProcessing`, gọi async đóng document an toàn.",
+      "BtnSelectWord_Click | Kiểm tra trạng thái bận `_isBusyProcessing`, hiển thị cảnh báo người dùng, ngăn race condition khi chọn file."
+    ],
+    "MainWindow.xaml.cs [Dòng 1141 - 1200 / Tổng 2772 dòng]": [
+      "LoadWordDocumentAsync | Kiểm tra file tồn tại trước khi nạp, reset state tài liệu cũ, khóa UI tránh race condition, gọi chuyển đổi Word sang HTML bất đồng bộ và điều hướng WebView2 an toàn khi đã khởi tạo."
+    ],
+    "MainWindow.xaml.cs [Dòng 1201 - 1260 / Tổng 2772 dòng]": [
+      "BtnSelectExcel_Click | Kiểm tra cờ `_isBusyProcessing`, xác nhận giải phóng tài liệu cũ qua `ConfirmAndCloseCurrentDocumentAsync`, mở file dialog và gọi nạp Excel bất đồng bộ an toàn.",
+      "LoadExcelDocumentAsync | Validate chuỗi rỗng và kiểm tra tồn tại tệp vật lý `File.Exists` trước khi chuyển trạng thái bận `SetProcessingBusyState`."
+    ],
+    "MainWindow.xaml.cs [Dòng 1261 - 1320 / Tổng 2772 dòng]": [
+      "ExcelPreviewInitialization | Nạp base64 bảng tính Excel, điều hướng WebView2 sang viewer nội bộ an toàn timeout 5s, gỡ event handler chuẩn xác trong finally và kiểm tra hàm DOM sẵn sàng."
+    ],
+    "MainWindow.xaml.cs [Dòng 1321 - 1380 / Tổng 2772 dòng]": [
+      "BtnExcelLandscape_Click, BtnExcelPortrait_Click, BtnSelectPdf_Click | Nạp dữ liệu Excel qua WebView2 an toàn với JsonSerializer chống injection, kiểm tra null WebView2 trước khi chạy script, bắt ngoại lệ hiển thị UI và giải phóng trạng thái bận trong finally; xử lý chuyển hướng trang in và chặn re-entrancy khi đang xử lý tác vụ."
+    ],
+    "MainWindow.xaml.cs [Dòng 1381 - 1440 / Tổng 2772 dòng]": [
+      "LoadPdfDocumentAsync | Validate đường dẫn tệp tồn tại, cập nhật trạng thái UI và nút chức năng theo quyền đăng nhập, điều phối nạp PDF qua DisplayPdfInInteractiveViewerAsync, bắt ngoại lệ và ghi log lỗi đầy đủ."
+    ],
+    "MainWindow.xaml.cs [Dòng 1441 - 1500 / Tổng 2772 dòng]": [
+      "BtnExecuteConvertDocument_Click | Kiểm tra trạng thái bận, validate file Word/Excel trước khi gọi luồng convert tương ứng.",
+      "ConvertExcelToPdfAsync | Validate tồn tại file và khởi tạo WebView2, thiết lập trạng thái bận và cấu hình print settings sang PDF."
+    ],
+    "MainWindow.xaml.cs [Dòng 1501 - 1560 / Tổng 2772 dòng]": [
+      "ConvertExcelToPdfAsync & ConvertWordToPdfAsync | Hoàn tất xuất PDF từ WebView2, xác thực tệp đầu ra tồn tại, cập nhật UI và phân quyền nút bấm ký số an toàn; try-finally đảm bảo reset trạng thái bận (`_isBusyProcessing`); chặn re-entrancy và kiểm tra null service trước khi thực thi chuyển đổi Word."
+    ],
+    "MainWindow.xaml.cs [Dòng 1561 - 1620 / Tổng 2772 dòng]": [
+      "WordToPdfConversion_PreProcessing | Kiểm tra file nguồn tồn tại, truy vấn an toàn cờ sửa đổi từ WebView2 qua ExecuteScriptAsync, xử lý hộp thoại xác nhận YesNoCancel đúng luồng, cập nhật trạng thái UI busy trước khi trích xuất DOM."
+    ],
+    "MainWindow.xaml.cs [Dòng 1621 - 1680 / Tổng 2772 dòng]": [
+      "MainWindow.ConvertWordToPdfAndReadySign | Trích xuất HTML qua WebView2, chuyển đổi Word/HTML sang PDF qua _wordConverter, cập nhật state UI và nạp viewer tương tác an toàn."
+    ],
+    "MainWindow.xaml.cs [Dòng 1681 - 1740 / Tổng 2772 dòng]": [
+      "DisplayPdfInInteractiveViewerAsync | Giới hạn file <= 30MB, đọc async sang Base64, kiểm tra null trước/sau await, bắt ObjectDisposedException của WebView2 an toàn."
+    ],
+    "MainWindow.xaml.cs [Dòng 1741 - 1800 / Tổng 2772 dòng]": [
+      "PdfPreviewNavigationAndInit | Điều hướng an toàn tới viewer nội bộ, timeout 10s kèm gỡ event handler, kiểm tra tính sẵn sàng của JavaScript engine loadPdfFromBase64, fail-closed rollback UI state khi lỗi hoặc null runtime."
+    ],
+    "MainWindow.xaml.cs [Dòng 1801 - 1860 / Tổng 2772 dòng]": [
+      "RollbackViewerUiState & BtnInsertSignatureStamp_Click | Serialize JSON an toàn cho WebView2 script injection, rollback UI fail-closed khi gặp exception, validate trạng thái bận và đường dẫn tệp con dấu đúng chuẩn."
+    ],
+    "MainWindow.xaml.cs [Dòng 1861 - 1920 / Tổng 2772 dòng]": [
+      "InsertStamp | Đọc ảnh stamp async, encode Base64 chuẩn mimeType, parse kích thước kèm min-bound an toàn, chặn null CoreWebView2 trước khi gọi JavaScript."
+    ],
+    "MainWindow.xaml.cs [Dòng 1921 - 1980 / Tổng 2772 dòng]": [
+      "BtnSignDocument_Click | Kiểm tra trạng thái bận, validate file PDF và chứng thư số hợp lệ trước khi phân giải tọa độ ký; xử lý TryParse an toàn cho cấu hình chữ ký thủ công và tương tác."
+    ],
+    "MainWindow.xaml.cs [Dòng 1981 - 2040 / Tổng 2772 dòng]": [
+      "PrepareSigningRequest | Fallback đường dẫn ảnh con dấu an toàn, probe quyền ghi thư mục output và cấu hình output path với fallback Desktop."
+    ],
+    "MainWindow.xaml.cs [Dòng 2041 - 2100 / Tổng 2772 dòng]": [
+      "DisplayPdfInInteractiveViewerAsync & Sign workflow UI handler | Khởi tạo request ký số, gọi async sign, cập nhật UI và trigger workflow hợp lệ theo lựa chọn người dùng. Không leak resource. Try block mở đúng chuẩn xử lý lỗi."
+    ],
+    "MainWindow.xaml.cs [Dòng 2101 - 2160 / Tổng 2772 dòng]": [
+      "BtnSaveSignedCopy_Click | Kiểm tra file nguồn tồn tại, sao chép file đích qua SaveFileDialog an toàn với try-catch, thông báo trạng thái UI đầy đủ.",
+      "BtnOpenSignedPdfExternal_Click | Validate chuỗi đường dẫn và kiểm tra File.Exists trước khi xử lý mở tệp."
+    ],
+    "MainWindow.xaml.cs [Dòng 2161 - 2220 / Tổng 2772 dòng]": [
+      "BtnOpenSignedFolder_Click | Validate path tồn tại trước khi mở Explorer, bọc try-catch bắt lỗi Process.Start.",
+      "WebView2 Direct Formatting | Dùng null-conditional `?.` với CoreWebView2, an toàn khi web view chưa khởi tạo xong."
+    ],
+    "MainWindow.xaml.cs [Dòng 2221 - 2280 / Tổng 2772 dòng]": [
+      "BtnAlignRight_Click, BtnAlignJustify_Click | Null-safe gọi ExecuteScriptAsync căn lề văn bản trong CoreWebView2.",
+      "WorkflowApproverItem, PopulateWorkflowApprovers | Lấy danh sách giáo viên, lọc currentCccd, phân loại lãnh đạo, sắp xếp và gán ItemsSource cho CboWorkflowApprover."
+    ],
+    "MainWindow.xaml.cs [Dòng 2281 - 2340 / Tổng 2772 dòng]": [
+      "RefreshWorkflowDataAsync | Phân loại inbox/outbox/archive theo CCCD và status, cập nhật ListView và TextBlock an toàn trên UI thread, log lỗi qua Trace."
+    ],
+    "MainWindow.xaml.cs [Dòng 2341 - 2400 / Tổng 2772 dòng]": [
+      "SubmitWorkflowUI | Validate auth/file/input trước khi mở overlay và confirm trình ký. Null-safe PdfPreviewControl và combobox approver."
+    ],
+    "MainWindow.xaml.cs [Dòng 2401 - 2460 / Tổng 2772 dòng]": [
+      "SubmitWorkflow | Disable UI button, await _workflowService.SubmitReportAsync an toàn trong try/catch/finally, re-enable UI và switch tab khi thành công, catch hiển thị thông báo lỗi.",
+      "BtnOpenForReview_Click & LvInboxReports_MouseDoubleClick | Event handler async void gọi hàm điều hướng review đúng chuẩn WPF UI."
+    ],
+    "MainWindow.xaml.cs [Dòng 2461 - 2520 / Tổng 2772 dòng]": [
+      "OpenSelectedInboxReportForReviewAsync | Validate chọn item, kiểm tra phiên đăng nhập, khóa UI button chống re-entry, acquire lock qua _workflowService, nạp file PDF và khôi phục trạng thái button trong finally."
+    ],
+    "MainWindow.xaml.cs [Dòng 2521 - 2580 / Tổng 2772 dòng]": [
+      "BtnExitWorkflowReviewMode_Click, BtnCommitWorkflowApproval_Click | Reset state UI chuẩn xác khi thoát review, validate đầy đủ ReportId và file PDF tồn tại trước khi commit, null-safety approver CCCD an toàn."
+    ],
+    "MainWindow.xaml.cs [Dòng 2581 - 2640 / Tổng 2772 dòng]": [
+      "BtnRecallReport_Click | Kiểm tra trạng thái báo cáo, xác nhận người dùng, gọi RecallReportAsync an toàn null CCCD, bắt ngoại lệ đầy đủ và đồng bộ dữ liệu giao diện."
+    ],
+    "MainWindow.xaml.cs [Dòng 2641 - 2700 / Tổng 2772 dòng]": [
+      "BtnViewArchiveReport_Click | Kiểm tra chọn dòng, tạo thư mục tạm, tải và hiển thị PDF lên giao diện qua async/await, bắt ngoại lệ UI an toàn.",
+      "BtnDownloadArchiveReport_Click | Kiểm tra chọn dòng, mở SaveFileDialog chọn vị trí lưu file báo cáo hoàn tất."
+    ],
+    "MainWindow.xaml.cs [Dòng 2701 - 2760 / Tổng 2772 dòng]": [
+      "BtnRefreshWorkflow_Click, BtnNewReportFromTab3_Click, BtnVerifyPdf_Click | Xử lý sự kiện UI đồng bộ workflow, điều hướng tab và gọi xác minh chữ ký số PDF qua _pdfVerifier đúng luồng, bắt lỗi tải tệp đầy đủ."
+    ],
+    "MainWindow.xaml.cs [Dòng 2761 - 2772 / Tổng 2772 dòng]": [
+      "VerifySignature fallback & EOF | Xử lý thông báo khi không tìm thấy chữ ký số, đóng method và kết thúc tệp MainWindow.xaml.cs an toàn."
     ]
   },
   "sliceHashes": {
@@ -3251,133 +3441,127 @@
       "timestamp": "2026-09-28T07:25:05.523Z"
     },
     "MainWindow.xaml.cs#L301-360": {
-      "hash": "5bfdd5ba435de75f312155f445052ed5c4fe235bd6d6762f97958ecc610af757",
+      "hash": "c1f751ffa0b202dff3c61284038f8cb82742b9c5e25938a68cc9c43761773160",
       "status": "APPROVED",
       "contracts": [
-        "VgcaSessionStateSync | Cập nhật UI trạng thái phiên VGCA, mở khóa Tab ký, đối soát chứng thư Windows Store và dọn sạch dữ liệu UI khi đăng xuất."
+        "SyncTeacherUiState | Cập nhật UI đăng nhập VGCA, mở khóa workspace, tìm kiếm chứng thư số tương thích và làm mới workflow."
       ],
-      "timestamp": "2026-09-28T07:25:15.163Z"
+      "timestamp": "2026-09-28T08:12:39.411Z"
     },
     "MainWindow.xaml.cs#L421-480": {
-      "hash": "7a4c03ea6b90bea133067856605706335a91941fdca16fec4f651b9186f65883",
+      "hash": "fb075ceaaf5a154ba859ba431d68850dd8090c541861d66baadf16bddd73f780",
       "status": "APPROVED",
       "contracts": [
-        "BtnRefreshQr_Click | Tạo mới mã QR VGCA và cập nhật trạng thái UI.",
-        "BtnApproveQr_Click | Validate input CCCD và service instance trước khi gọi xác thực; xử lý hiển thị kết quả phân nhánh an toàn null."
+        "BtnRefreshQr_Click | Tạo lại mã QR và cập nhật thanh trạng thái giao diện.",
+        "BtnApproveQr_Click | Validate rỗng CCCD, kiểm tra null service, phê duyệt xác thực QR và cập nhật giao diện theo kết quả."
       ],
-      "timestamp": "2026-09-28T07:25:31.582Z"
+      "timestamp": "2026-09-28T08:12:52.197Z"
     },
     "MainWindow.xaml.cs#L481-540": {
-      "hash": "a35e28934940d994ce771fca2917c54298bd668ef306a5434b1cc16131e73e8f",
+      "hash": "7fe73d38b26bbe51a4bbb20971903be579e946ea4fb21fd27d3204ae2990f810",
       "status": "APPROVED",
       "contracts": [
-        "BtnVgcaLogout_Click, BtnGoToLoginTab_Click, LoadCertificatesAndVerifyVGCALogin | Xóa sạch session state, hash workflow và cert khi đăng xuất; đóng document async an toàn; load chứng thư số có private key và fail-closed khi rỗng."
+        "BtnVgcaLogout_Click | Dọn dẹp phiên làm việc, xóa biến trạng thái chứng thư/workflow, reset UI và đăng xuất VGCA an toàn.",
+        "BtnGoToLoginTab_Click | Điều hướng tab về chỉ mục 0.",
+        "LoadCertificatesAndVerifyVGCALogin | Tải danh sách chứng thư có private key, gán ItemsSource ComboBox, kiểm tra danh sách rỗng fail-closed."
       ],
-      "timestamp": "2026-09-28T07:25:37.471Z"
+      "timestamp": "2026-09-28T08:13:01.857Z"
     },
     "MainWindow.xaml.cs#L601-660": {
-      "hash": "29ad20812edf04a7f1802046ded5b5e9920d4a26f56b86c7b488e6c75a164f8e",
+      "hash": "a3eea77d5222302b7feb38b1c8ae729617c69f3396f8e761d1793cebbda769d2",
       "status": "APPROVED",
       "contracts": [
-        "BtnSyncVgcaCertificate_Click | Kiểm tra null _currentActiveCert trước khi đọc thuộc tính. Đồng bộ giao diện đúng trạng thái nhận diện chứng thư VGCA.",
-        "BtnUnlockAccount_Click | Validate rỗng input TxtVgcaCccd. Gọi _vgcaAuth.UnlockAccount và phản hồi UI theo kết quả logic.",
-        "BtnRefreshCertificates_Click | Bắt đầu tác vụ cập nhật trạng thái làm mới danh sách chứng thư. Không rò rỉ tài nguyên."
+        "BtnSyncVgcaCertificate_Click | Tải chứng thư qua LoadCertificatesAndVerifyVGCALogin, kiểm tra null _currentActiveCert trước khi đọc thuộc tính, cập nhật UI tương ứng kết quả.",
+        "BtnUnlockAccount_Click | Validate rỗng input CCCD trước khi gọi _vgcaAuth.UnlockAccount, cập nhật trạng thái UI và thông báo người dùng theo kết quả."
       ],
-      "timestamp": "2026-09-28T07:25:53.529Z"
+      "timestamp": "2026-09-28T08:13:16.669Z"
     },
     "MainWindow.xaml.cs#L661-720": {
-      "hash": "543ac8ea2d8a1e937dd0a4172927d7639ae0bf7f172a89b11e44748e11b75a0e",
+      "hash": "0f4c42637b9ce8984c3df1aab9e49b5b9691531ccad1508deea1fbed5bb3b91b",
       "status": "APPROVED",
       "contracts": [
-        "BtnLaunchVgcaManager_Click | Gọi _certService.LaunchVGCALoginApp, điều hướng thông báo UI theo trạng thái khởi chạy.",
-        "CmbCertificates_SelectionChanged | Pattern matching kiểm tra an toàn null CertificateModel, ánh xạ metadata chứng thư lên UI controls.",
-        "LoadProfiles | Nạp danh sách profile qua _profileManager, binding CmbProfiles, bắt ngoại lệ an toàn và ghi vết qua Trace/UpdateStatus."
+        "MainWindow UI Handlers & LoadProfiles | UI Event Handlers cập nhật thông tin chứng thư số và quản lý hồ sơ ký số. `CmbCertificates_SelectionChanged` pattern match type-safe chống null dereference. `BtnLaunchVgcaManager_Click` xử lý rẽ nhánh theo kết quả process. `LoadProfiles` load danh sách profile và bind `ItemsSource` trong khối `try` an toàn."
       ],
-      "timestamp": "2026-09-28T07:26:01.986Z"
+      "timestamp": "2026-09-28T08:13:24.903Z"
     },
     "MainWindow.xaml.cs#L721-780": {
-      "hash": "89662a086be5268341887aadded86e570ddcdfc35d9adaa11303b320ca49bf8f",
+      "hash": "f8edca1bfbd2b74500947b52dbd4713fcbf006146b967798095fa2962fca0799",
       "status": "APPROVED",
       "contracts": [
-        "SetAndPersistStampImage & ProfileSelection | Validate path an toàn, fallback desktop stamp file, nạp BitmapImage dùng BitmapCacheOption.OnLoad tránh khóa file."
+        "CmbProfiles_SelectionChanged | Pattern matching trích xuất profile, map display mode, fallback file an toàn, gọi ClearStampImage khi không có ảnh.",
+        "SetAndPersistStampImage (dòng 774-780) | Validate null/whitespace và File.Exists fail-safe trước khi nạp ảnh."
       ],
-      "timestamp": "2026-09-28T07:26:10.629Z"
+      "timestamp": "2026-09-28T08:13:31.832Z"
     },
     "MainWindow.xaml.cs#L781-840": {
-      "hash": "70ca3f0c646abeeba7513104c77c6155a08ef4ef2faf1266457a64d13658888f",
+      "hash": "525932ea2609a27a9ebc932790b10462051ac3b1f2d2b91d4206a8dfdc717644",
       "status": "APPROVED",
       "contracts": [
-        "LoadStampImage / ClearStampImage | Hiển thị ảnh con dấu, đồng bộ UI đa tab, lưu cấu hình profile an toàn trong try-catch, tự dọn UI khi phát sinh lỗi giải mã."
+        "LoadStampImage / ClearStampImage | Nạp ảnh giải phóng lock file qua BitmapCacheOption.OnLoad và Freeze(), xử lý ngoại lệ fail-closed với logging và fallback ClearStampImage, cập nhật profile an toàn qua type pattern matching."
       ],
-      "timestamp": "2026-09-28T07:26:23.753Z"
+      "timestamp": "2026-09-28T08:13:40.973Z"
     },
     "MainWindow.xaml.cs#L841-900": {
-      "hash": "02a5250c91ea00a14be8399387d2c7ed59e183e48b4c2e9f9cfaa222c8d2c0aa",
+      "hash": "8aa13c5251e43487dc7ec2d7c04cc987277cc0c45c569b08d802b5648befd0c1",
       "status": "APPROVED",
       "contracts": [
-        "BtnSelectStampImage_Click, BtnTab2ChangeStamp_Click, BtnClearStampImage_Click, BtnSaveProfile_Click | Event handler UI mở OpenFileDialog chọn ảnh con dấu, xóa ảnh, parse an toàn chuỗi kích thước WxH qua int.TryParse và cập nhật SignatureProfile có null-check."
+        "ClearStampImage | Reset UI stamp state, gán ImagePath profile về null, lưu profile có try/catch bắt ngoại lệ.",
+        "BtnSelectStampImage_Click & BtnTab2ChangeStamp_Click | Mở OpenFileDialog filter ảnh, chuyển đường dẫn sang SetAndPersistStampImage khi dialog trả về true.",
+        "BtnClearStampImage_Click | Ủy quyền xử lý cho hàm ClearStampImage.",
+        "BtnSaveProfile_Click | Kiểm tra null profile, parse kích thước Width dạng WxH bằng int.TryParse và chặn giá trị <= 0."
       ],
-      "timestamp": "2026-09-28T07:26:51.499Z"
+      "timestamp": "2026-09-28T08:13:48.372Z"
     },
     "MainWindow.xaml.cs#L901-960": {
-      "hash": "c79578ee933bf814f8de10883e34224972c176a37371830aed67237a0d3a72f7",
+      "hash": "79597f42344844c4a5a3ca29730553f412286765a86e71cf2137b4cc9976b9ca",
       "status": "APPROVED",
       "contracts": [
-        "CmbDisplayMode_SelectionChanged | Pattern matching null-safe cho SelectedItem, ánh xạ Mode đúng giá trị mặc định.",
-        "BtnGoToSignWorkspace_Click | Chặn chuyển Tab khi _vgcaAuth.IsLoggedIn false, điều hướng MainTabControl an toàn."
+        "CmbDisplayMode_SelectionChanged, BtnGoToSignWorkspace_Click | Đồng bộ UI selection vào SignatureProfile an toàn null, validate trạng thái đăng nhập VGCA trước khi chuyển tab."
       ],
-      "timestamp": "2026-09-28T07:27:02.555Z"
+      "timestamp": "2026-09-28T08:13:53.667Z"
     },
     "MainWindow.xaml.cs#L1081-1140": {
-      "hash": "451d0034ad9772721a8d211eac7772907cbb9168e18115da9657c70801a0bb96",
+      "hash": "94754b95de1b604331267d267a7a3ecb1376b86a3f7e5ac6ddb4ec71b268b561",
       "status": "APPROVED",
       "contracts": [
-        "SetProcessingBusyState | Khóa mở UI controls, cập nhật con trỏ chuột và trạng thái theo cờ _isBusyProcessing.",
-        "BtnCloseCurrentFile_Click | Chặn re-entrancy khi bận, gọi đóng tài nguyên bất đồng bộ an toàn.",
-        "BtnSelectWord_Click | Chặn re-entrancy, xác nhận đóng tài liệu cũ trước khi mở tệp Word mới."
+        "ConfirmAndCloseCurrentDocumentAsync | Giải phóng UI placeholder, dọn dẹp bộ nhớ GC, log lỗi qua TraceError khi đóng file thất bại, không crash app.",
+        "SetProcessingBusyState | Cập nhật cờ `_isBusyProcessing`, điều khiển con trỏ `Mouse.OverrideCursor`, vô hiệu hóa/kích hoạt controls tránh reentrancy.",
+        "BtnCloseCurrentFile_Click | Chặn reentrancy qua `_isBusyProcessing`, gọi async đóng document an toàn.",
+        "BtnSelectWord_Click | Kiểm tra trạng thái bận `_isBusyProcessing`, hiển thị cảnh báo người dùng, ngăn race condition khi chọn file."
       ],
-      "timestamp": "2026-09-28T07:27:31.223Z"
+      "timestamp": "2026-09-28T08:14:18.043Z"
     },
     "MainWindow.xaml.cs#L1141-1200": {
-      "hash": "038ae30ab39f05d6fe22cbcb92d1cf7507e922cb7ee27fc74f0077482e7458b1",
+      "hash": "26d6e57d760197fd0bbc550d53a05d8289c54a34d3578ee7e3c239a0f11598e3",
       "status": "APPROVED",
       "contracts": [
-        "LoadWordDocumentAsync | Validate file path, convert Word sang HTML async, render WebView2 và cập nhật UI state an toàn null."
+        "LoadWordDocumentAsync | Kiểm tra file tồn tại trước khi nạp, reset state tài liệu cũ, khóa UI tránh race condition, gọi chuyển đổi Word sang HTML bất đồng bộ và điều hướng WebView2 an toàn khi đã khởi tạo."
       ],
-      "timestamp": "2026-09-28T07:27:42.077Z"
+      "timestamp": "2026-09-28T08:14:24.781Z"
     },
     "MainWindow.xaml.cs#L1261-1320": {
-      "hash": "292aabba80de7190cef663c2ee3267b9b87759b65c1ead819228c75bb8807f65",
+      "hash": "5ed6dc04b024312ff69a23b39fc44328543629a9ec37a5e015cde33abb3ac0a2",
       "status": "APPROVED",
       "contracts": [
-        "LoadExcelPreview | Nạp Excel Base64 vào WebView2 an toàn qua `pdf_viewer.html`. Chống JS injection bằng `JsonSerializer.Serialize`. Quản lý event `NavigationCompleted` có timeout 5s và cleanup `finally` chuẩn xác. Polling kiểm tra hàm DOM tối đa 3s."
+        "ExcelPreviewInitialization | Nạp base64 bảng tính Excel, điều hướng WebView2 sang viewer nội bộ an toàn timeout 5s, gỡ event handler chuẩn xác trong finally và kiểm tra hàm DOM sẵn sàng."
       ],
-      "timestamp": "2026-09-28T07:28:00.519Z"
+      "timestamp": "2026-09-28T08:14:42.861Z"
     },
     "MainWindow.xaml.cs#L1321-1380": {
-      "hash": "28123917f5218282ee3828f4e2b04492fc653259cd6f74873d4fbe175d6010a6",
+      "hash": "30babe2d7d787ece955af1fb477c0df18a3a552ed97565733be96f73576b031d",
       "status": "APPROVED",
       "contracts": [
-        "BtnExcelOrientation & BtnSelectPdf | Đổi hướng trang Excel (landscape/portrait) qua CoreWebView2 an toàn null; bắt lỗi nạp Excel fail-closed dọn state và giải phóng busy flag; chặn thao tác khi _isBusyProcessing và xác nhận đóng tài liệu trước khi mở PDF mới."
+        "BtnExcelLandscape_Click, BtnExcelPortrait_Click, BtnSelectPdf_Click | Nạp dữ liệu Excel qua WebView2 an toàn với JsonSerializer chống injection, kiểm tra null WebView2 trước khi chạy script, bắt ngoại lệ hiển thị UI và giải phóng trạng thái bận trong finally; xử lý chuyển hướng trang in và chặn re-entrancy khi đang xử lý tác vụ."
       ],
-      "timestamp": "2026-09-28T07:28:10.538Z"
+      "timestamp": "2026-09-28T08:14:49.711Z"
     },
     "MainWindow.xaml.cs#L1381-1440": {
-      "hash": "c367b4cceb5f499f21b35fbc56ea90649825f6a48a7faa1ac1553c7f7ddbbc55",
+      "hash": "2c26dfca561e329eb79aa5f84f347006af98815766181d3032d915fe63f23170",
       "status": "APPROVED",
       "contracts": [
-        "LoadPdfDocumentAsync | Validate file path tồn tại, set state UI, render PDF viewer qua `DisplayPdfInInteractiveViewerAsync`, catch lỗi rollback state và trace error, finally unblock busy state chuẩn xác.",
-        "BtnExecuteConvertDocument_Click | Handler click event bất đồng bộ, lát cắt mở đúng boundary."
+        "LoadPdfDocumentAsync | Validate đường dẫn tệp tồn tại, cập nhật trạng thái UI và nút chức năng theo quyền đăng nhập, điều phối nạp PDF qua DisplayPdfInInteractiveViewerAsync, bắt ngoại lệ và ghi log lỗi đầy đủ."
       ],
-      "timestamp": "2026-09-28T07:39:41.771Z"
-    },
-    "MainWindow.xaml.cs#L1441-1500": {
-      "hash": "654a3379438e70876236cce5d3f2b418fa97b1ed3a8e31b59489c659537fd038",
-      "status": "APPROVED",
-      "contracts": [
-        "ConvertExcelToPdfAsync, ConvertWordToPdfAsync | Kiểm tra trạng thái bận `_isBusyProcessing`, xác thực tệp nguồn tồn tại và kiểm tra `CoreWebView2` khởi tạo hợp lệ trước khi cấu hình in ấn PDF."
-      ],
-      "timestamp": "2026-09-28T07:39:52.773Z"
+      "timestamp": "2026-09-28T08:14:56.065Z"
     },
     "MainWindow.xaml.cs#L1501-1556": {
       "hash": "177ce3a17502e36ef31e73cf8c9986908a8b79c7191456d60fd688819216fdac",
@@ -3554,28 +3738,30 @@
       "timestamp": "2026-09-28T03:03:19.475Z"
     },
     "Services/WordConverterService.cs#L121-180": {
-      "hash": "89190cf8ba40683918b78e21ca8222bc23b7fa9601a838897ca15c8fa0410e86",
+      "hash": "e217b4658be5a01c288177b1ccb3c49f14141a4cdc04f5b9bdf98c74e5b80518",
       "status": "APPROVED",
       "contracts": [
-        "enableEditing | Chuẩn hóa charset UTF-8, chèn CSS A4 và nhúng script enableEditing cho tài liệu HTML Word an toàn, đúng phân tầng."
+        "WordHtmlPostProcessor | Kiểm tra file tồn tại, đọc UTF-8, chuẩn hóa charset, phát hiện khổ giấy A4 dọc/ngang, nội suy template CSS an toàn."
       ],
-      "timestamp": "2026-09-28T05:02:44.884Z"
+      "timestamp": "2026-09-28T08:11:30.908Z"
     },
     "Services/WordConverterService.cs#L181-240": {
-      "hash": "c5f8c2eea8793c96b95e71681fbc24157a5b219c9ac594e1cb1f6a7149b7b53f",
+      "hash": "a2518d1766f020f19174e685ce76727d95e3f48fa9721590bc4c6a83ddeb374b",
       "status": "APPROVED",
       "contracts": [
-        "ConvertWordToPdfAsync, ConvertWordToPdf | Validate file Word đầu vào (null, tồn tại, định dạng doc/docx/rtf/dotx), tự sinh output path an toàn và offload bất đồng bộ qua Task.Run đúng chuẩn."
+        "ConvertWordToPdfAsync | Chạy bất đồng bộ ConvertWordToPdf trên ThreadPool qua Task.Run.",
+        "ConvertWordToPdf | Kiểm tra null/whitespace, file tồn tại, đúng định dạng (.doc, .docx, .rtf, .dotx) trước khi chuyển đổi.",
+        "HTML Style Injection | Chèn style và script preview an toàn vào HTML, bắt exception ghi TraceWarning tránh crash tiến trình."
       ],
-      "timestamp": "2026-09-28T05:02:52.792Z"
+      "timestamp": "2026-09-28T08:11:39.015Z"
     },
     "Services/WordConverterService.cs#L241-300": {
-      "hash": "261f927dd6bd75ff4b7b787ed25d33b2f39630d4de8ddbb9216dba3ac9f80cd1",
+      "hash": "3cf4e8a9ca944783555622b791c132abcb39033a57c28591beb6e75d9486ed3c",
       "status": "APPROVED",
       "contracts": [
-        "WordToPdfConverter | Khởi tạo Word COM late-binding an toàn, kiểm tra null instance, mở tài liệu ReadOnly/hidden, export PDF chuẩn xác và bọc ngoại lệ có inner exception."
+        "WordToPdfConverter | Late-bound COM Word.Application khởi tạo an toàn, mở tài liệu ReadOnly, xuất PDF qua ExportAsFixedFormat đúng cấu hình."
       ],
-      "timestamp": "2026-09-28T05:03:00.490Z"
+      "timestamp": "2026-09-28T08:11:47.077Z"
     },
     "Services/WordConverterService.cs#L301-318": {
       "hash": "3a2d1bf74b70d0c38e4e60dcd3234ba05f7277f584c054612d6d1e31f7f01df4",
@@ -3610,38 +3796,37 @@
       "timestamp": "2026-09-28T03:29:49.763Z"
     },
     "MainWindow.xaml.cs#L541-600": {
-      "hash": "b979fcc96d12d9a8cc561a6c672ab5412972d3f8b98a2d1e3822d3b7d5624887",
+      "hash": "6d53eb08247637412c286e0d6cfff26078e2ebc31ea5a7647afbcebde872d012",
       "status": "APPROVED",
       "contracts": [
-        "MainWindow_Activated & Certificate Verification | Hiển thị thông tin chứng thư số lên UI có null-coalescing an toàn, tự động đăng nhập khi phát hiện chứng thư hợp lệ, đồng bộ trạng thái đăng nhập về UI fail-closed, tự động quét lại chứng thư khi kích hoạt cửa sổ nếu chưa có phiên đăng nhập. Catch ngoại lệ ghi log `Trace.TraceError` và thông báo lỗi."
+        "LoadCertificates/MainWindow_Activated | Validate null VGCA cert, sync UI state, log error fail-closed khi quét cert lỗi."
       ],
-      "timestamp": "2026-09-28T07:25:45.097Z"
+      "timestamp": "2026-09-28T08:13:08.946Z"
     },
     "MainWindow.xaml.cs#L1201-1260": {
-      "hash": "fc7753fc624e8f082cdc1ee3596c44b21c7b1a10b8bdf9ea555ac070b314849e",
+      "hash": "b906ee21fe011e1765e4cd81c69101b9285c499f2e5d209b36f32ef688f81e1f",
       "status": "APPROVED",
       "contracts": [
-        "BtnSelectExcel_Click | Kiểm tra trạng thái bận `_isBusyProcessing`, xác nhận đóng tài liệu cũ qua `ConfirmAndCloseCurrentDocumentAsync`, mở `OpenFileDialog` lọc đúng đuôi Excel, gọi `LoadExcelDocumentAsync`. Không race condition UI.",
-        "LoadExcelDocumentAsync (phần đầu) | Kiểm tra `string.IsNullOrWhiteSpace` và `File.Exists`, cập nhật trạng thái bận `SetProcessingBusyState(true)`, xóa state tài liệu cũ (`_originalWordFilePath`, `_currentWorkingPdfPath`), hiển thị tên tệp an toàn."
+        "BtnSelectExcel_Click | Kiểm tra cờ `_isBusyProcessing`, xác nhận giải phóng tài liệu cũ qua `ConfirmAndCloseCurrentDocumentAsync`, mở file dialog và gọi nạp Excel bất đồng bộ an toàn.",
+        "LoadExcelDocumentAsync | Validate chuỗi rỗng và kiểm tra tồn tại tệp vật lý `File.Exists` trước khi chuyển trạng thái bận `SetProcessingBusyState`."
       ],
-      "timestamp": "2026-09-28T07:27:51.600Z"
+      "timestamp": "2026-09-28T08:14:33.868Z"
     },
     "MainWindow.xaml.cs#L1501-1560": {
-      "hash": "ce2eff9b2b1e7789d28fc1503f97f7e8e9c0a8623af91450168ead6a8a5bc21e",
+      "hash": "899cf2fa3fc4c9386492050aa177ad610964fe8b8f74310c14a355e0f1fda047",
       "status": "APPROVED",
       "contracts": [
-        "ConvertExcelToPdf (tiếp) | Xuất PDF từ WebView2, kiểm tra file tồn tại, cập nhật trạng thái UI và quyền ký số, xử lý lỗi an toàn qua try/catch/finally.",
-        "ConvertWordToPdfAsync | Chống race condition qua _isBusyProcessing, validate null _wordConverter và kiểm tra tồn tại tệp _originalWordFilePath trước khi xử lý."
+        "ConvertExcelToPdfAsync & ConvertWordToPdfAsync | Hoàn tất xuất PDF từ WebView2, xác thực tệp đầu ra tồn tại, cập nhật UI và phân quyền nút bấm ký số an toàn; try-finally đảm bảo reset trạng thái bận (`_isBusyProcessing`); chặn re-entrancy và kiểm tra null service trước khi thực thi chuyển đổi Word."
       ],
-      "timestamp": "2026-09-28T07:40:01.663Z"
+      "timestamp": "2026-09-28T08:16:13.940Z"
     },
     "MainWindow.xaml.cs#L1561-1620": {
-      "hash": "92bcb8c3db436a1c9bafc078c2b66e68ebb92d6f48b196d3907c47debec2fd47",
+      "hash": "4f54c504a16d7d8436b1799ed31317e38c98597a28afd2f8f63f69add092beca",
       "status": "APPROVED",
       "contracts": [
-        "ExportWordToPdfConfirmationAndExtraction | Xác nhận lưu tệp Word gốc qua MessageBox, trích xuất DOM HTML sạch từ WebView2 và chuyển đổi bất đồng bộ sang PDF an toàn null."
+        "WordToPdfConversion_PreProcessing | Kiểm tra file nguồn tồn tại, truy vấn an toàn cờ sửa đổi từ WebView2 qua ExecuteScriptAsync, xử lý hộp thoại xác nhận YesNoCancel đúng luồng, cập nhật trạng thái UI busy trước khi trích xuất DOM."
       ],
-      "timestamp": "2026-09-28T07:40:10.638Z"
+      "timestamp": "2026-09-28T08:16:21.599Z"
     },
     "MainWindow.xaml.cs#L1621-1659": {
       "hash": "a01a5c0af1cf75af405855891dea0245f2beeb9af64f40a3f8c6a88373646afb",
@@ -3661,44 +3846,44 @@
       "timestamp": "2026-09-28T03:51:44.321Z"
     },
     "MainWindow.xaml.cs#L961-1020": {
-      "hash": "2e6f7ce6070a02d7ff4e0758d1178c49ed57b960ee28369b646cfd39dfbdbe19",
+      "hash": "1314dc0514201c4264cda5417d41472df1873889fafb42ad404d77978f7b58f3",
       "status": "APPROVED",
       "contracts": [
-        "HasActiveDocument, GetActiveDocumentDescription, ConfirmAndCloseCurrentDocumentAsync | Kiểm tra tồn tại file an toàn null, tạo chuỗi mô tả đúng loại tài liệu, dựng thông điệp xác nhận đóng tệp chuẩn logic nghiệp vụ."
+        "HasActiveDocument, GetActiveDocumentDescription, ConfirmAndCloseCurrentDocumentAsync | Kiểm tra tồn tại tài liệu qua IsNullOrWhiteSpace và File.Exists an toàn. Tạo thông điệp xác nhận đóng tệp chuẩn xác, ngăn mất dữ liệu UI. Logic cắt dòng hợp lệ theo invariant."
       ],
-      "timestamp": "2026-09-28T07:27:11.158Z"
+      "timestamp": "2026-09-28T08:14:01.401Z"
     },
     "MainWindow.xaml.cs#L1621-1680": {
-      "hash": "3d298b4ddfd8efef70ad095156baf3746f313c5ab94ad2017d3f7ba15652bd70",
+      "hash": "b8ee2940f505d24084c07a11a3a57a6386528fe90f8704c79b23242ee498c1d7",
       "status": "APPROVED",
       "contracts": [
-        "DisplayPdfInInteractiveViewerAsync | Validate WebView2 và file PDF, chặn nạp file vượt ngưỡng 30MB, cập nhật trạng thái UI an toàn."
+        "MainWindow.ConvertWordToPdfAndReadySign | Trích xuất HTML qua WebView2, chuyển đổi Word/HTML sang PDF qua _wordConverter, cập nhật state UI và nạp viewer tương tác an toàn."
       ],
-      "timestamp": "2026-09-28T07:40:19.235Z"
+      "timestamp": "2026-09-28T08:16:29.111Z"
     },
     "MainWindow.xaml.cs#L1681-1740": {
-      "hash": "65ffc215badc618536f65cd6e426bdaf63fffca50540b7779362189d32a7fa77",
+      "hash": "9da1f2b1de017287cd590506c88ac182fd43b5e981db52c75800cc6b063e7ecb",
       "status": "APPROVED",
       "contracts": [
-        "PdfPreviewNavigation | Đọc byte PDF sang Base64, kiểm tra WebView2 null/disposed, điều hướng trang viewer bất đồng bộ có timeout 10s và rollback UI an toàn khi lỗi."
+        "DisplayPdfInInteractiveViewerAsync | Giới hạn file <= 30MB, đọc async sang Base64, kiểm tra null trước/sau await, bắt ObjectDisposedException của WebView2 an toàn."
       ],
-      "timestamp": "2026-09-28T07:40:29.692Z"
+      "timestamp": "2026-09-28T08:16:36.372Z"
     },
     "MainWindow.xaml.cs#L1741-1800": {
-      "hash": "2e5674195822acbdf332638b1a5a4afd2f2d4dbbfd3553e4b08c524d582aa732",
+      "hash": "b67adfab3f3dac15da961b21bafcc1c81156cc22d4f8cf0e0442b9a0cc83ad9f",
       "status": "APPROVED",
       "contracts": [
-        "RollbackViewerUiState & PreviewEngineLoad | Kiểm tra WebView2 null an toàn, poll DOM script sẵn sàng kèm timeout, serialize JSON chống JS injection, bắt ngoại lệ log Trace và rollback UI fail-closed."
+        "PdfPreviewNavigationAndInit | Điều hướng an toàn tới viewer nội bộ, timeout 10s kèm gỡ event handler, kiểm tra tính sẵn sàng của JavaScript engine loadPdfFromBase64, fail-closed rollback UI state khi lỗi hoặc null runtime."
       ],
-      "timestamp": "2026-09-28T07:40:38.267Z"
+      "timestamp": "2026-09-28T08:16:48.564Z"
     },
     "MainWindow.xaml.cs#L1801-1860": {
-      "hash": "c0a8afb5185117663ea36da8089eab693a5778e7f3efb6a1b37e51b09e25b888",
+      "hash": "dc7530ca753b5262c131e8f22d2517ab2cb441219d6fa15a7cb548705584f577",
       "status": "APPROVED",
       "contracts": [
-        "StampImageResolution | Kiểm tra PDF hợp lệ trước khi chèn; resolve đường dẫn ảnh con dấu theo thứ tự UI Textbox -> Profile -> Desktop default -> OpenFileDialog; chặn xử lý nếu không có file hợp lệ."
+        "RollbackViewerUiState & BtnInsertSignatureStamp_Click | Serialize JSON an toàn cho WebView2 script injection, rollback UI fail-closed khi gặp exception, validate trạng thái bận và đường dẫn tệp con dấu đúng chuẩn."
       ],
-      "timestamp": "2026-09-28T07:40:45.814Z"
+      "timestamp": "2026-09-28T08:16:57.129Z"
     },
     "MainWindow.xaml.cs#L1861-1898": {
       "hash": "ec580128b8c998b761e5f93ffb2a08013a3588ebedbcdf695a8b357bb487ea6d",
@@ -3773,13 +3958,13 @@
       "timestamp": "2026-09-28T04:08:52.661Z"
     },
     "MainWindow.xaml.cs#L361-420": {
-      "hash": "bd777f9b29627d93fc5c40e5f6f707aba2be3a76d7386bac520f0c68f94fa780",
+      "hash": "d2e8f924f0ecdfd203308a4cc8cd6c8f8e490c75d6258fc3c086e4c8f00adfab",
       "status": "APPROVED",
       "contracts": [
-        "CmbRosterQuickSelect_SelectionChanged | Dùng pattern matching `is VgcaTeacherModel` lọc null an toàn. Tự điền CCCD, reset trạng thái UI lỗi.",
-        "BtnVgcaLogin_Click | Validate rỗng/khoảng trắng trước xác thực. Xác thực password trước, fallback token phần cứng an toàn khi có private key. Không nuốt lỗi. Null-safe toàn bộ kết quả trả về."
+        "CmbRosterQuickSelect_SelectionChanged | Pattern match ép kiểu an toàn null, tự điền CCCD và xóa cờ lỗi UI.",
+        "BtnVgcaLogin_Click | Validate rỗng fail-closed tại UI, kiểm tra null result.Teacher trước khi đọc thuộc tính."
       ],
-      "timestamp": "2026-09-28T07:25:22.988Z"
+      "timestamp": "2026-09-28T08:12:45.751Z"
     },
     "MainWindow.xaml.cs#L1861-1919": {
       "hash": "f2b34198c298509bdf692f175cf6a05c8ca7ec12f78de08831c1926443285f18",
@@ -3790,29 +3975,28 @@
       "timestamp": "2026-09-28T04:37:05.307Z"
     },
     "Services/WordConverterService.cs#L301-360": {
-      "hash": "eead4d11b9c1eb32e573fc32e409e360b99bce1d1a87b4d02468a04c365227c5",
+      "hash": "e1665d0ba0b3c3c020a8ef80eb41f6416ff939f80768a11282b0596307f1cb95",
       "status": "APPROVED",
       "contracts": [
-        "Word COM cleanup | Giải phóng wordDoc, wordApp qua Marshal.ReleaseComObject, bắt lỗi log TraceWarning, dọn GC tránh rò rỉ tiến trình Office.",
-        "SaveEditedHtmlAndConvertToPdfAsync / SaveEditedHtmlAndConvertToPdf | Task.Run offload COM thread, validate null/empty htmlContent và originalWordFilePath fail-closed, ghi file HTML trung gian UTF-8 không BOM bảo toàn đường dẫn tài nguyên."
+        "SaveEditedHtmlAndConvertToPdf / SaveEditedHtmlAndConvertToPdfAsync | COM cleanup an toàn trong block finally qua Marshal.ReleaseComObject và GC, bọc Task.Run async chuẩn, validate tham số htmlContent và originalWordFilePath không rỗng trước khi xử lý HTML."
       ],
-      "timestamp": "2026-09-28T05:03:09.934Z"
+      "timestamp": "2026-09-28T08:11:55.288Z"
     },
     "Services/WordConverterService.cs#L361-420": {
-      "hash": "b3084d88869434ee6fc5f10ef608fc079a5ba3e8f8c7384cb5d9e76ff6039151",
+      "hash": "c07e29c280e100b3ffb20a451f6be5ac961af03e4dcf2b0579f8594799ad3213",
       "status": "APPROVED",
       "contracts": [
-        "WordConverterService (COM Export Slice) | Khởi tạo Word COM late-bound an toàn, kiểm tra ProgID null, nạp HTML UTF-8 (encoding 65001), tạo thư mục đích tự động, kiểm tra cờ ReadOnly file gốc."
+        "WordConverterService (COM Export Slice) | Tạo thư mục xuất an toàn, kiểm tra Microsoft Word COM type fail-closed, khởi tạo instance ẩn, nạp HTML sạch qua UTF-8 (65001) chuẩn xác."
       ],
-      "timestamp": "2026-09-28T05:03:18.920Z"
+      "timestamp": "2026-09-28T08:12:04.025Z"
     },
     "Services/WordConverterService.cs#L421-480": {
-      "hash": "eda7e9d3d48a3865c3679778ca5bbb0c046bde717671f1f333d302ade740fa06",
+      "hash": "be40959d7dc427db38e4fabc462b90b2daec6a18dff6855ec27f201fbc80c835",
       "status": "APPROVED",
       "contracts": [
-        "WordConverterService (Save & Export PDF) | Lưu tài liệu Word (có fallback sang backup nếu bị lock), xuất PDF qua Interop ExportAsFixedFormat, giải phóng COM object wordDoc trong finally block an toàn."
+        "WordDocumentSaveAndExport | Lưu tệp Word gốc kèm cơ chế fallback khi tệp bị khóa COMException, xuất PDF qua ExportAsFixedFormat chuẩn xác, bắt đầu khối finally giải phóng COM object."
       ],
-      "timestamp": "2026-09-28T05:03:28.382Z"
+      "timestamp": "2026-09-28T08:12:11.627Z"
     },
     "Services/WordConverterService.cs#L481-530": {
       "hash": "36bcf47ea413fa56e89b2ef0b8331027504ce8f141cd099de2b73f5106b38cee",
@@ -3823,20 +4007,20 @@
       "timestamp": "2026-09-28T05:03:37.182Z"
     },
     "MainWindow.xaml.cs#L1861-1920": {
-      "hash": "50cd9d721940e959122d4812920b556773dd502b703df3e5c0f3e7e97b3f0957",
+      "hash": "fd11379cffd7a9cf879e16bac198e633e521837c31fed81665dbd1a159f859ce",
       "status": "APPROVED",
       "contracts": [
-        "BtnInsertStamp / BtnSignDocument_Click | Chuyển đổi ảnh con dấu base64 an toàn vào WebView2, kiểm tra trạng thái WebView2 sẵn sàng, guard check tiến trình bận, tệp PDF hợp lệ và chứng thư số trước khi thực hiện ký."
+        "InsertStamp | Đọc ảnh stamp async, encode Base64 chuẩn mimeType, parse kích thước kèm min-bound an toàn, chặn null CoreWebView2 trước khi gọi JavaScript."
       ],
-      "timestamp": "2026-09-28T07:40:56.203Z"
+      "timestamp": "2026-09-28T08:17:04.185Z"
     },
     "MainWindow.xaml.cs#L1921-1980": {
-      "hash": "7756df9a59e2c21b6730cecbf7345e69a4859fbe7d459b4cfaf4096c6c7f8e0d",
+      "hash": "766181cfcd54fc1997cccac5def7733b102f1ac7d9cd0da8ed5a062666692951",
       "status": "APPROVED",
       "contracts": [
-        "ParseStampPlacementAndProfile | Đọc tọa độ con dấu (ưu tiên kéo thả trực quan hoặc fallback form input), resolve đường dẫn ảnh dấu hợp lệ (UI / Profile / Desktop fallback), gán an toàn vào profile đang chọn."
+        "BtnSignDocument_Click | Kiểm tra trạng thái bận, validate file PDF và chứng thư số hợp lệ trước khi phân giải tọa độ ký; xử lý TryParse an toàn cho cấu hình chữ ký thủ công và tương tác."
       ],
-      "timestamp": "2026-09-28T07:41:06.883Z"
+      "timestamp": "2026-09-28T08:17:10.551Z"
     },
     "MainWindow.xaml.cs#L1981-1989": {
       "hash": "3bbf96cae282b90685c9c87a6970ac1aeec27e9316c685ee327540d2260d62df",
@@ -3847,48 +4031,46 @@
       "timestamp": "2026-09-28T05:08:12.923Z"
     },
     "MainWindow.xaml.cs#L1021-1080": {
-      "hash": "b77ae9b0743e70d87633afbabbb1555246271cacd1abfa890a6beae7924b42d8",
+      "hash": "1a252425c9156e24b76974b9f9b31afe0b863c9e99c24f08da1a30081098be54",
       "status": "APPROVED",
       "contracts": [
-        "CloseCurrentDocumentAsync | Reset biến đường dẫn, cập nhật trạng thái UI, dọn dẹp WebView2 và thu hồi bộ nhớ an toàn."
+        "CloseCurrentDocumentAsync | Xác nhận đóng tệp qua MessageBox, reset toàn bộ biến đường dẫn/trạng thái UI, thực thi script dọn dẹp WebView2 an toàn với try-catch không gây crash UI."
       ],
-      "timestamp": "2026-09-28T07:27:21.600Z"
+      "timestamp": "2026-09-28T08:14:08.624Z"
     },
     "MainWindow.xaml.cs#L1981-2040": {
-      "hash": "c3aa2626aa18082d073bc495c817e586484f70abdc6ed6e62cc26087170923a0",
+      "hash": "3b2c81ea895619e685ce2974a9a090d82c132d9c18bf896c684365dc062dacc8",
       "status": "APPROVED",
       "contracts": [
-        "DisplayPdfInInteractiveViewerAsync | Chuẩn bị SigningRequest với fallback thư mục ghi hợp lệ, thực thi ký bất đồng bộ và cập nhật kết quả UI an toàn."
+        "PrepareSigningRequest | Fallback đường dẫn ảnh con dấu an toàn, probe quyền ghi thư mục output và cấu hình output path với fallback Desktop."
       ],
-      "timestamp": "2026-09-28T07:41:16.207Z"
+      "timestamp": "2026-09-28T08:17:20.523Z"
     },
     "MainWindow.xaml.cs#L2041-2100": {
-      "hash": "51bc0c03da8cc3d5d36107bf1c26cded191eee0b989f9f643cf43af1068982d8",
+      "hash": "1959e42a4e8fbdb03610afc2f2fbb67dd8bad0362f37bb66572fbc9e51e61ab6",
       "status": "APPROVED",
       "contracts": [
-        "BtnSaveSignedCopy_Click & SignPdf UI flow | Catch hiển thị lỗi rõ ràng, finally khôi phục trạng thái bận và nút bấm, kiểm tra null/tồn tại file trước khi mở SaveFileDialog."
+        "DisplayPdfInInteractiveViewerAsync & Sign workflow UI handler | Khởi tạo request ký số, gọi async sign, cập nhật UI và trigger workflow hợp lệ theo lựa chọn người dùng. Không leak resource. Try block mở đúng chuẩn xử lý lỗi."
       ],
-      "timestamp": "2026-09-28T07:41:25.768Z"
+      "timestamp": "2026-09-28T08:17:29.444Z"
     },
     "MainWindow.xaml.cs#L2101-2160": {
-      "hash": "e5305695453d376584bab435d5694b54943bdd091f2952cc9545bfe7d2f3a5c8",
+      "hash": "fe1fb8c7a73909217d5188233b8f44caf73398cb59fe0bad54d93542dc81048d",
       "status": "APPROVED",
       "contracts": [
-        "BtnOpenSignedPdfExternal_Click | Kiểm tra `_lastSignedPdfPath` tồn tại, mở tệp bằng ứng dụng mặc định qua `ProcessStartInfo(UseShellExecute = true)`, xử lý ngoại lệ UI đầy đủ.",
-        "BtnOpenSignedFolder_Click | Kiểm tra `_lastSignedPdfPath` tồn tại, khởi chạy Windows Explorer chọn đúng tệp, bọc try-catch báo lỗi UI chuẩn xác."
+        "BtnSaveSignedCopy_Click | Kiểm tra file nguồn tồn tại, sao chép file đích qua SaveFileDialog an toàn với try-catch, thông báo trạng thái UI đầy đủ.",
+        "BtnOpenSignedPdfExternal_Click | Validate chuỗi đường dẫn và kiểm tra File.Exists trước khi xử lý mở tệp."
       ],
-      "timestamp": "2026-09-28T07:41:35.069Z"
+      "timestamp": "2026-09-28T08:17:35.713Z"
     },
     "MainWindow.xaml.cs#L2161-2220": {
-      "hash": "ed0c7dfc020be1eb4343887058c0b3f7c206e51921e71ac03992ae623ebed218",
+      "hash": "a0b4cfbdb60f3efa6219a06b359b61d729b3547d4a7ecc84b0cecede5085db8e",
       "status": "APPROVED",
       "contracts": [
-        "BtnGoToUploadWeb_Click | Chuyển MainTabControl.SelectedIndex sang 2 an toàn.",
-        "WebView2 ExecCommand Handlers (Bold, Italic, Underline, Align) | Dùng null-conditional `?.`, script hardcode an toàn, không nguy cơ injection.",
-        "WorkflowApproverItem | Thuộc tính khởi tạo `string.Empty` mặc định, `ToString` trả `DisplayText` an toàn null.",
-        "PopulateWorkflowApprovers | Khai báo hàm hợp lệ theo lát cắt liên tục."
+        "BtnOpenSignedFolder_Click | Validate path tồn tại trước khi mở Explorer, bọc try-catch bắt lỗi Process.Start.",
+        "WebView2 Direct Formatting | Dùng null-conditional `?.` với CoreWebView2, an toàn khi web view chưa khởi tạo xong."
       ],
-      "timestamp": "2026-09-28T07:41:42.991Z"
+      "timestamp": "2026-09-28T08:17:43.153Z"
     },
     "MainWindow.xaml.cs#L2281-2291": {
       "hash": "b0f88725ba91ad53d0bc6beb702bb2f90be14b3d94a56fb903954b44546c21dd",
@@ -3981,72 +4163,71 @@
       "timestamp": "2026-09-28T07:39:10.350Z"
     },
     "MainWindow.xaml.cs#L2221-2280": {
-      "hash": "1123036e6fd97a1a5ded98a77afdf092ddb118487957aefd31c9b5d44c7d2130",
+      "hash": "0ccb4c0d995e9787c9780ddb6763acd1f93784cba3d182415283791d35e3a49e",
       "status": "APPROVED",
       "contracts": [
-        "RefreshWorkflowDataAsync | Lọc nạp danh sách duyệt và inbox workflow theo CCCD người dùng an toàn null-safety, đồng bộ trạng thái UI chuẩn xác."
+        "BtnAlignRight_Click, BtnAlignJustify_Click | Null-safe gọi ExecuteScriptAsync căn lề văn bản trong CoreWebView2.",
+        "WorkflowApproverItem, PopulateWorkflowApprovers | Lấy danh sách giáo viên, lọc currentCccd, phân loại lãnh đạo, sắp xếp và gán ItemsSource cho CboWorkflowApprover."
       ],
-      "timestamp": "2026-09-28T07:44:00.101Z"
+      "timestamp": "2026-09-28T08:17:51.654Z"
     },
     "MainWindow.xaml.cs#L2281-2340": {
-      "hash": "9871a28d94ca834cbbab33f7b358b583459317356c8d89b0ac7cfd4768eb32e6",
+      "hash": "2e54a7d9a4131ea9c0cd9417c8539cc0aa3be37b98f09e6a006d2893ba689915",
       "status": "APPROVED",
       "contracts": [
-        "BtnSubmitWorkflowReport_Click | Kiểm tra file PDF ký và auth VGCA trước khi mở overlay trình ký. Fail-closed nếu thiếu file hoặc chưa login.",
-        "BtnCancelSubmitWorkflow_Click | Đóng overlay trình ký bằng cách set Collapsed. Logic UI an toàn."
+        "RefreshWorkflowDataAsync | Phân loại inbox/outbox/archive theo CCCD và status, cập nhật ListView và TextBlock an toàn trên UI thread, log lỗi qua Trace."
       ],
-      "timestamp": "2026-09-28T07:44:08.009Z"
+      "timestamp": "2026-09-28T08:18:00.460Z"
     },
     "MainWindow.xaml.cs#L2341-2400": {
-      "hash": "1e6ec85c6fff6bed7b51610302109a4231e8e1bfc4d31f3e0da0108cf0e66498",
+      "hash": "5416a5ce01653bef6802fdb16bd40948add3041830aff51dc3632fba00d52aaf",
       "status": "APPROVED",
       "contracts": [
-        "BtnConfirmSubmitWorkflow_Click | Kiểm tra hợp lệ dữ liệu nhập (tiêu đề, approver, tệp PDF đã ký), khóa UI chống submit đúp, gọi bất đồng bộ _workflowService.SubmitReportAsync an toàn với đầy đủ try/catch."
+        "SubmitWorkflowUI | Validate auth/file/input trước khi mở overlay và confirm trình ký. Null-safe PdfPreviewControl và combobox approver."
       ],
-      "timestamp": "2026-09-28T07:44:18.030Z"
+      "timestamp": "2026-09-28T08:18:07.250Z"
     },
     "MainWindow.xaml.cs#L2401-2460": {
-      "hash": "7bcc27c272d31676e94d23afeb7ffc7590b34ca21ae7adecf634f46476379db9",
+      "hash": "2df7fbdb0dd75fb9230c2c0967f2609eb893d471a94f09cea34132ee78a02db7",
       "status": "APPROVED",
       "contracts": [
-        "BtnOpenForReview_Click, LvInboxReports_MouseDoubleClick, OpenSelectedInboxReportForReviewAsync | Kiểm tra chọn item và auth trước khi gọi API; vô hiệu hóa nút tránh re-entrancy; chuyển tab và nạp PDF sau khi lock workflow thành công."
+        "SubmitWorkflow | Disable UI button, await _workflowService.SubmitReportAsync an toàn trong try/catch/finally, re-enable UI và switch tab khi thành công, catch hiển thị thông báo lỗi.",
+        "BtnOpenForReview_Click & LvInboxReports_MouseDoubleClick | Event handler async void gọi hàm điều hướng review đúng chuẩn WPF UI."
       ],
-      "timestamp": "2026-09-28T07:44:26.274Z"
+      "timestamp": "2026-09-28T08:18:13.907Z"
     },
     "MainWindow.xaml.cs#L2461-2520": {
-      "hash": "0732253fd25ab9f9cf159f831a05fa82288cf1b86ec4ad973f788134f19157e2",
+      "hash": "2600de20025553d58e4c581b5445c2fa5343f77ccd962082b282eed49b09071d",
       "status": "APPROVED",
       "contracts": [
-        "BtnExitWorkflowReviewMode_Click, BtnCommitWorkflowApproval_Click | Reset trạng thái UI/phiên phê duyệt đúng guard clauses, kiểm tra tồn tại tệp ký trước khi gọi commit bất đồng bộ, bảo đảm an toàn null-safety."
+        "OpenSelectedInboxReportForReviewAsync | Validate chọn item, kiểm tra phiên đăng nhập, khóa UI button chống re-entry, acquire lock qua _workflowService, nạp file PDF và khôi phục trạng thái button trong finally."
       ],
-      "timestamp": "2026-09-28T07:44:34.620Z"
+      "timestamp": "2026-09-28T08:18:21.355Z"
     },
     "MainWindow.xaml.cs#L2521-2580": {
-      "hash": "1a1b9c8a04ce264f0cc7de24acd21cf2a2a1f95f60a840e3e0a398622cfd8ed8",
+      "hash": "436cef06c8c96a77b8d0e52e8f9a1ab3e7e16fafd5a96b7b8a9d194d438a9daf",
       "status": "APPROVED",
       "contracts": [
-        "MainWindow.xaml.cs [2521-2580] | Phê duyệt hoàn tất reset state, cập nhật UI và RefreshWorkflowDataAsync trong try/finally. BtnRecallReport_Click kiểm tra null pattern matching, chặn thu hồi báo cáo SIGNED_COMMITTED, null-safe lấy CCCD từ _vgcaAuth.CurrentTeacher."
+        "BtnExitWorkflowReviewMode_Click, BtnCommitWorkflowApproval_Click | Reset state UI chuẩn xác khi thoát review, validate đầy đủ ReportId và file PDF tồn tại trước khi commit, null-safety approver CCCD an toàn."
       ],
-      "timestamp": "2026-09-28T07:44:42.929Z"
+      "timestamp": "2026-09-28T08:18:29.848Z"
     },
     "MainWindow.xaml.cs#L2581-2640": {
-      "hash": "cc8fc9ae290da8e57a1e5d31c28dbfddee8281a0d661ccd5a9f0955b686bc360",
+      "hash": "a4bf9f11febad7fa2905d54430ddede7d74778384a4bd5e7cd1ef6f3f2303b52",
       "status": "APPROVED",
       "contracts": [
-        "BtnRecallReport / BtnViewArchiveReport_Click / BtnDownloadArchiveReport_Click | Pattern matching kiểm tra null/type an toàn trước khi xử lý, try-catch bắt ngoại lệ đầy đủ, quản lý trạng thái UI trong finally đúng chuẩn."
+        "BtnRecallReport_Click | Kiểm tra trạng thái báo cáo, xác nhận người dùng, gọi RecallReportAsync an toàn null CCCD, bắt ngoại lệ đầy đủ và đồng bộ dữ liệu giao diện."
       ],
-      "timestamp": "2026-09-28T07:44:49.745Z"
+      "timestamp": "2026-09-28T08:18:40.395Z"
     },
     "MainWindow.xaml.cs#L2641-2700": {
-      "hash": "b7ef63eca709cf5a0a3cebfe3dab62db14f75b4fedca5c9f0a6413f6ad0f1431",
+      "hash": "f87e9c887c250106001119ff020055977c4db880eb5f40695f018cea33505ba8",
       "status": "APPROVED",
       "contracts": [
-        "SaveCompletedReport | Tải báo cáo hoàn tất qua _workflowService.DownloadFileAsync, xử lý ngoại lệ đầy đủ, cập nhật trạng thái UI.",
-        "BtnRefreshWorkflow_Click | Gọi RefreshWorkflowDataAsync bất đồng bộ, cập nhật thanh trạng thái trước và sau khi làm mới.",
-        "BtnNewReportFromTab3_Click | Điều hướng tab lập báo cáo (SelectedIndex = 1).",
-        "BtnVerifyPdf_Click | Mở OpenFileDialog chọn tệp PDF, gán đường dẫn vào TxtVerifyPdfPath.Text."
+        "BtnViewArchiveReport_Click | Kiểm tra chọn dòng, tạo thư mục tạm, tải và hiển thị PDF lên giao diện qua async/await, bắt ngoại lệ UI an toàn.",
+        "BtnDownloadArchiveReport_Click | Kiểm tra chọn dòng, mở SaveFileDialog chọn vị trí lưu file báo cáo hoàn tất."
       ],
-      "timestamp": "2026-09-28T07:44:59.757Z"
+      "timestamp": "2026-09-28T08:18:48.688Z"
     },
     "MainWindow.xaml.cs#L2701-2724": {
       "hash": "9519ff6fae4533b984ae1076a5207552d4f98c66b8bf8ee9e864e401c1cf1964",
@@ -4079,8 +4260,41 @@
         "updateStampCoordinates | Chuyển đổi tọa độ HTML sang PDF đáy-trái chuẩn xác, cập nhật nhãn UI an toàn qua innerText chống XSS, kiểm tra tồn tại và đồng bộ tọa độ về WebView2 host qua postMessage."
       ],
       "timestamp": "2026-09-28T07:49:00.002Z"
+    },
+    "Services/WordConverterService.cs#L481-537": {
+      "hash": "f3527aba3400214ce666c9ab1fc9ce6950f62c866517f49bd653396341d2028e",
+      "status": "APPROVED",
+      "contracts": [
+        "CleanHtmlForWordConversion | Sanitize HTML stripped style/script editor và contenteditable tag, giải phóng COM Word Interop và temp file an toàn trong khối cleanup."
+      ],
+      "timestamp": "2026-09-28T08:12:19.321Z"
+    },
+    "MainWindow.xaml.cs#L1441-1500": {
+      "hash": "4fd4fca7e58a373c85f78a288a8a45cf96826c80dba9bae89c6ce7330adb47b8",
+      "status": "APPROVED",
+      "contracts": [
+        "BtnExecuteConvertDocument_Click | Kiểm tra trạng thái bận, validate file Word/Excel trước khi gọi luồng convert tương ứng.",
+        "ConvertExcelToPdfAsync | Validate tồn tại file và khởi tạo WebView2, thiết lập trạng thái bận và cấu hình print settings sang PDF."
+      ],
+      "timestamp": "2026-09-28T08:16:05.241Z"
+    },
+    "MainWindow.xaml.cs#L2701-2760": {
+      "hash": "a1e3e339b37da16e0ecc0fb877f88cb3cb80a143bb1e9ce20cb874587f791a98",
+      "status": "APPROVED",
+      "contracts": [
+        "BtnRefreshWorkflow_Click, BtnNewReportFromTab3_Click, BtnVerifyPdf_Click | Xử lý sự kiện UI đồng bộ workflow, điều hướng tab và gọi xác minh chữ ký số PDF qua _pdfVerifier đúng luồng, bắt lỗi tải tệp đầy đủ."
+      ],
+      "timestamp": "2026-09-28T08:18:57.781Z"
+    },
+    "MainWindow.xaml.cs#L2761-2772": {
+      "hash": "d9c150722c1c46522fdbf0285423a6408de8eef22a89a62fdf3b5e33b48572f5",
+      "status": "APPROVED",
+      "contracts": [
+        "VerifySignature fallback & EOF | Xử lý thông báo khi không tìm thấy chữ ký số, đóng method và kết thúc tệp MainWindow.xaml.cs an toàn."
+      ],
+      "timestamp": "2026-09-28T08:19:03.299Z"
     }
   },
-  "lastAudit": "2026-09-28T07:49:00.033Z",
+  "lastAudit": "2026-09-28T08:19:03.324Z",
   "lastStatus": "APPROVED"
 }
