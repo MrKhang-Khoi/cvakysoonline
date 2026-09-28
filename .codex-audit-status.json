@@ -1,6 +1,10 @@
 {
-  "timestamp": "2026-09-28T04:08:52.714Z",
+  "timestamp": "2026-09-28T04:37:05.336Z",
   "isAuditing": false,
-  "status": "IDLE",
-  "detail": "Sẵn sàng"
+  "status": "COMPLETED",
+  "file": "",
+  "sliceIndex": 0,
+  "totalSlices": 0,
+  "sliceLabel": "",
+  "detail": "Hoàn tất phê duyệt 100%"
 }

@@ -298,12 +298,13 @@ namespace VGCASignToolPro
 
                     // Mở khóa Tab 2
                     TabItemSignWorkspace.Header = "  2. Soạn Thảo, Xem & Ký Số Trực Tiếp  ";
+                    TabItemSignWorkspace.IsEnabled = true;
                     OverlayTab2Locked.Visibility = Visibility.Collapsed;
 
                     // Đồng bộ chứng thư trong kho Windows Store nếu có
                     if (_certificates != null && _certificates.Count > 0)
                     {
-                        var matchedCert = _certificates.FirstOrDefault(c =>
+                        CertificateModel? matchedCert = _certificates.FirstOrDefault(c =>
                             c.IsVGCACertificate && (
                                 c.CommonName.Contains(teacher.FullName, StringComparison.OrdinalIgnoreCase) ||
                                 (!string.IsNullOrEmpty(teacher.SerialNumber) && string.Equals(c.SerialNumber, teacher.SerialNumber, StringComparison.OrdinalIgnoreCase))
@@ -321,7 +322,7 @@ namespace VGCASignToolPro
                         }
                     }
 
-                    var maskedCccd = teacher.Cccd?.Length > 4 
+                    string maskedCccd = teacher.Cccd?.Length > 4 
                         ? $"***{teacher.Cccd[^4..]}" 
                         : "***";
                     UpdateStatus($"Phiên làm việc VGCA Virtual CSP đã kích hoạt: {teacher.FullName} ({maskedCccd})");
@@ -337,8 +338,13 @@ namespace VGCASignToolPro
                     TxtQuickCertNotice.Text = "Chưa kết nối chứng thư VGCA";
 
                     // Khóa Tab 2
-                    TabItemSignWorkspace.Header = "  2. Soạn Thảo, Xem & Ký Số Trực Tiếp (🔒 Khóa)  ";
+                    TabItemSignWorkspace.Header = "  2. Soạn Thảo, Xem & Ký Số Trực Tiếp ( 🔒 Khóa )  ";
+                    TabItemSignWorkspace.IsEnabled = false;
                     OverlayTab2Locked.Visibility = Visibility.Visible;
+                    if (MainTabControl.SelectedIndex == 1)
+                    {
+                        MainTabControl.SelectedIndex = 0;
+                    }
 
                     UpdateStatus("Tài khoản VGCA chưa đăng nhập. Tab 2 bị khóa để đảm bảo an toàn.");
                 }
@@ -368,7 +374,7 @@ namespace VGCASignToolPro
 
             // ponytail: sync call OK cho local-only auth. Chuyển async + disable button khi tích hợp API thật.
             UpdateStatus("Đang xác thực thông tin đăng nhập VGCA Virtual CSP...");
-            var result = _vgcaAuth.AuthenticatePassword(cccd, password);
+            VgcaLoginResult result = _vgcaAuth.AuthenticatePassword(cccd, password);
 
             if (result.Success && result.Teacher != null)
             {
@@ -380,13 +386,17 @@ namespace VGCASignToolPro
             else
             {
                 // Kiểm tra xem trên máy tính đã có Chứng thư số Ban Cơ yếu Chính phủ đang hoạt động hay không
-                var activeCert = _certService.GetActiveVGCACertificate();
+                CertificateModel? activeCert = _certService.GetActiveVGCACertificate();
                 if (activeCert != null && activeCert.HasPrivateKey)
                 {
-                    _vgcaAuth.UnlockAccount(cccd);
-                    var hwResult = _vgcaAuth.LoginWithHardwareCertificate(activeCert);
+                    VgcaLoginResult hwResult = _vgcaAuth.LoginWithHardwareCertificate(activeCert);
                     if (hwResult.Success && hwResult.Teacher != null)
                     {
+                        if (string.Equals(hwResult.Teacher.Cccd, cccd, StringComparison.OrdinalIgnoreCase))
+                        {
+                            _vgcaAuth.UnlockAccount(cccd);
+                        }
+
                         BorderVgcaAuthError.Visibility = Visibility.Collapsed;
                         MessageBox.Show(
                             $"Hệ thống đã tự động nhận diện và xác thực thành công qua Chứng thư số Ban Cơ yếu Chính phủ trên máy tính!\n\n" +
@@ -487,7 +497,7 @@ namespace VGCASignToolPro
                 }
 
                 // Tìm chứng thư VGCA chuyên dùng của Ban Cơ yếu Chính phủ
-                var vgcaCert = _certService.GetActiveVGCACertificate();
+                CertificateModel? vgcaCert = _certService.GetActiveVGCACertificate();
 
                 if (vgcaCert != null)
                 {
@@ -501,7 +511,7 @@ namespace VGCASignToolPro
                     TxtDetailThumbprint.Text = vgcaCert.Thumbprint ?? "";
 
                     // TỰ ĐỘNG XÁC THỰC KHI ĐÃ CÓ CHỨNG THƯ BAN CƠ YẾU CHÍNH PHỦ TRÊN MÁY TÍNH
-                    var autoLoginResult = _vgcaAuth.LoginWithHardwareCertificate(vgcaCert);
+                    VgcaLoginResult autoLoginResult = _vgcaAuth.LoginWithHardwareCertificate(vgcaCert);
                     if (autoLoginResult.Success && autoLoginResult.Teacher != null)
                     {
                         BorderVgcaAuthError.Visibility = Visibility.Collapsed;
@@ -895,6 +905,13 @@ namespace VGCASignToolPro
 
         private void BtnGoToSignWorkspace_Click(object sender, RoutedEventArgs e)
         {
+            if (!_vgcaAuth.IsLoggedIn)
+            {
+                MessageBox.Show("Vui lòng đăng nhập tài khoản chữ ký số VGCA tại Tab 1 trước khi chuyển sang không gian soạn thảo & ký số.", 
+                                "Yêu Cầu Đăng Nhập VGCA", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             // Chuyển sang Tab 2 (Soạn thảo & Ký Văn Bản)
             MainTabControl.SelectedIndex = 1;
         }
@@ -1103,6 +1120,7 @@ namespace VGCASignToolPro
                     PnlExcelToolbarControls.Visibility = Visibility.Collapsed;
                     BtnConvertToPdfAndReadySign.IsEnabled = false;
                     BtnSignCurrentDocument.IsEnabled = true;
+                    BtnInsertSignatureStamp.IsEnabled = true;
 
                     await DisplayPdfInInteractiveViewerAsync(pdfPath);
 
@@ -1184,6 +1202,7 @@ namespace VGCASignToolPro
 
                 TxtCurrentFileName.Text = Path.GetFileName(outputPdfPath);
                 TxtCurrentFileStatus.Text = "Tài liệu PDF bảng tính chuẩn in ấn đã sẵn sàng để ký số.";
+                BtnConvertToPdfAndReadySign.IsEnabled = false;
                 BtnSignCurrentDocument.IsEnabled = true;
                 BtnInsertSignatureStamp.IsEnabled = true;
                 UpdateStatus($"Đã xuất tệp PDF bảng tính hoàn chỉnh: {Path.GetFileName(outputPdfPath)}");
@@ -1194,6 +1213,7 @@ namespace VGCASignToolPro
             }
             catch (Exception ex)
             {
+                BtnConvertToPdfAndReadySign.IsEnabled = true;
                 System.Diagnostics.Trace.TraceError($"Lỗi chuyển đổi Excel sang PDF: {ex}");
                 MessageBox.Show($"Lỗi chuyển đổi bảng tính sang PDF:\n{ex.Message}", "Lỗi Chuyển Đổi", MessageBoxButton.OK, MessageBoxImage.Error);
                 TxtCurrentFileStatus.Text = "Chuyển đổi bảng tính thất bại.";
@@ -1202,7 +1222,6 @@ namespace VGCASignToolPro
             finally
             {
                 PrgConvertLoading.Visibility = Visibility.Collapsed;
-                BtnConvertToPdfAndReadySign.IsEnabled = true;
             }
         }
 
@@ -1235,7 +1254,9 @@ namespace VGCASignToolPro
 
                 TxtCurrentFileName.Text = Path.GetFileName(pdfPath);
                 TxtCurrentFileStatus.Text = "Tài liệu PDF chuẩn đã được tạo và nạp sẵn sàng ký số.";
+                BtnConvertToPdfAndReadySign.IsEnabled = false;
                 BtnSignCurrentDocument.IsEnabled = true;
+                BtnInsertSignatureStamp.IsEnabled = true;
                 UpdateStatus($"Đã xuất tệp PDF hoàn chỉnh: {Path.GetFileName(pdfPath)}");
 
                 MessageBox.Show(
@@ -1244,6 +1265,7 @@ namespace VGCASignToolPro
             }
             catch (Exception ex)
             {
+                BtnConvertToPdfAndReadySign.IsEnabled = true;
                 System.Diagnostics.Trace.TraceError($"Lỗi chuyển đổi sang PDF: {ex}");
                 MessageBox.Show($"Lỗi chuyển đổi sang PDF:\n{ex.Message}", "Lỗi Chuyển Đổi", MessageBoxButton.OK, MessageBoxImage.Error);
                 TxtCurrentFileStatus.Text = "Chuyển đổi thất bại.";
@@ -1252,7 +1274,6 @@ namespace VGCASignToolPro
             finally
             {
                 PrgConvertLoading.Visibility = Visibility.Collapsed;
-                BtnConvertToPdfAndReadySign.IsEnabled = true;
             }
         }
 
@@ -1266,7 +1287,7 @@ namespace VGCASignToolPro
 
             try
             {
-                var fileInfo = new FileInfo(pdfPath);
+                FileInfo fileInfo = new FileInfo(pdfPath);
                 // Giới hạn kích thước file an toàn cho WebView2 in-memory Base64 (30MB)
                 const long maxFileSize = 30 * 1024 * 1024;
                 if (fileInfo.Length > maxFileSize)

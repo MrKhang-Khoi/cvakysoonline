@@ -8,4 +8,130 @@
 [34m%s[0m ⚡ [GATE 1]: Khởi động Quét Mã Nguồn Zero-Trust (Đối chiếu Sổ cái Ledger)...
 [32m%s[0m ✅ [GATE 0 PASS]: 100% file mã nguồn sạch cú pháp vật lý Native.
 
-[32m%s[0m ✅ [GATE 1]: Toàn bộ mã nguồn trong dự án (kể cả đã commit lên Git) đều KHỚP 100% với Sổ cái Ledger đã được Codex phê duyệt.
+[33m%s[0m ⚠️ [ZERO-TRUST PHÁT HIỆN]: Có 1 file mã nguồn CHƯA ĐƯỢC CODEX XÁC NHẬN (Kể cả đã commit lên Git):
+   • MainWindow.xaml.cs [SHA-256: b7043af56d...]
+[32m%s[0m ✅ [GATE 1 PASS]: Đã cô lập danh sách mã nguồn cần thẩm định chi tiết.
+
+[34m%s[0m 🧩 Thuật toán Cắt lát chi tiết đã chia 1 file thành 32 lát cắt dòng code (đánh số dòng thực tế):
+   1. MainWindow.xaml.cs [Dòng 1 - 60 / Tổng 1919 dòng]
+   2. MainWindow.xaml.cs [Dòng 61 - 120 / Tổng 1919 dòng]
+   3. MainWindow.xaml.cs [Dòng 121 - 180 / Tổng 1919 dòng]
+   4. MainWindow.xaml.cs [Dòng 181 - 240 / Tổng 1919 dòng]
+   5. MainWindow.xaml.cs [Dòng 241 - 300 / Tổng 1919 dòng]
+   6. MainWindow.xaml.cs [Dòng 301 - 360 / Tổng 1919 dòng]
+   7. MainWindow.xaml.cs [Dòng 361 - 420 / Tổng 1919 dòng]
+   8. MainWindow.xaml.cs [Dòng 421 - 480 / Tổng 1919 dòng]
+   9. MainWindow.xaml.cs [Dòng 481 - 540 / Tổng 1919 dòng]
+   10. MainWindow.xaml.cs [Dòng 541 - 600 / Tổng 1919 dòng]
+   11. MainWindow.xaml.cs [Dòng 601 - 660 / Tổng 1919 dòng]
+   12. MainWindow.xaml.cs [Dòng 661 - 720 / Tổng 1919 dòng]
+   13. MainWindow.xaml.cs [Dòng 721 - 780 / Tổng 1919 dòng]
+   14. MainWindow.xaml.cs [Dòng 781 - 840 / Tổng 1919 dòng]
+   15. MainWindow.xaml.cs [Dòng 841 - 900 / Tổng 1919 dòng]
+   16. MainWindow.xaml.cs [Dòng 901 - 960 / Tổng 1919 dòng]
+   17. MainWindow.xaml.cs [Dòng 961 - 1020 / Tổng 1919 dòng]
+   18. MainWindow.xaml.cs [Dòng 1021 - 1080 / Tổng 1919 dòng]
+   19. MainWindow.xaml.cs [Dòng 1081 - 1140 / Tổng 1919 dòng]
+   20. MainWindow.xaml.cs [Dòng 1141 - 1200 / Tổng 1919 dòng]
+   21. MainWindow.xaml.cs [Dòng 1201 - 1260 / Tổng 1919 dòng]
+   22. MainWindow.xaml.cs [Dòng 1261 - 1320 / Tổng 1919 dòng]
+   23. MainWindow.xaml.cs [Dòng 1321 - 1380 / Tổng 1919 dòng]
+   24. MainWindow.xaml.cs [Dòng 1381 - 1440 / Tổng 1919 dòng]
+   25. MainWindow.xaml.cs [Dòng 1441 - 1500 / Tổng 1919 dòng]
+   26. MainWindow.xaml.cs [Dòng 1501 - 1560 / Tổng 1919 dòng]
+   27. MainWindow.xaml.cs [Dòng 1561 - 1620 / Tổng 1919 dòng]
+   28. MainWindow.xaml.cs [Dòng 1621 - 1680 / Tổng 1919 dòng]
+   29. MainWindow.xaml.cs [Dòng 1681 - 1740 / Tổng 1919 dòng]
+   30. MainWindow.xaml.cs [Dòng 1741 - 1800 / Tổng 1919 dòng]
+   31. MainWindow.xaml.cs [Dòng 1801 - 1860 / Tổng 1919 dòng]
+   32. MainWindow.xaml.cs [Dòng 1861 - 1919 / Tổng 1919 dòng]
+
+[34m%s[0m ⚡ [GATE 2]: Khởi chạy Bộ kiểm thử tự động thích ứng đa nền tảng...
+[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 1 - 60 / Tổng 1919 dòng] (Nội dung không đổi) -> [APPROVED]
+[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 61 - 120 / Tổng 1919 dòng] (Nội dung không đổi) -> [APPROVED]
+[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 121 - 180 / Tổng 1919 dòng] (Nội dung không đổi) -> [APPROVED]
+[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 181 - 240 / Tổng 1919 dòng] (Nội dung không đổi) -> [APPROVED]
+[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 241 - 300 / Tổng 1919 dòng] (Nội dung không đổi) -> [APPROVED]
+[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 301 - 360 / Tổng 1919 dòng] (Nội dung không đổi) -> [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 7/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 361 - 420 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 361 - 420 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 8/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 421 - 480 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 421 - 480 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 9/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 481 - 540 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 481 - 540 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 10/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 541 - 600 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 541 - 600 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 11/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 601 - 660 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 601 - 660 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 12/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 661 - 720 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 661 - 720 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 13/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 721 - 780 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 721 - 780 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 14/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 781 - 840 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 781 - 840 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 15/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 841 - 900 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 841 - 900 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 16/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 901 - 960 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 901 - 960 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 17/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 961 - 1020 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 961 - 1020 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 18/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 1021 - 1080 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1021 - 1080 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 19/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 1081 - 1140 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1081 - 1140 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 20/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 1141 - 1200 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1141 - 1200 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 21/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 1201 - 1260 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1201 - 1260 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 22/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 1261 - 1320 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1261 - 1320 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 23/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 1321 - 1380 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1321 - 1380 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 24/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 1381 - 1440 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1381 - 1440 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 25/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 1441 - 1500 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1441 - 1500 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 26/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 1501 - 1560 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1501 - 1560 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 27/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 1561 - 1620 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1561 - 1620 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 28/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 1621 - 1680 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1621 - 1680 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 29/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 1681 - 1740 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1681 - 1740 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 30/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 1741 - 1800 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1741 - 1800 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 31/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 1801 - 1860 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1801 - 1860 / Tổng 1919 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 32/32] Đang thẩm định: MainWindow.xaml.cs [Dòng 1861 - 1919 / Tổng 1919 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1861 - 1919 / Tổng 1919 dòng]: [APPROVED]
+[32m%s[0m    💾 [IMMEDIATE LEDGER COMMIT]: File MainWindow.xaml.cs đã PASS đủ 32/32 lát cắt -> ĐÃ GHI NHẬN VÀO SỔ CÁI!
+
+[32m%s[0m 🎉 XÁC NHẬN: 100% CÁC LÁT CẮT MÃ NGUỒN ĐÃ ĐƯỢC CODEX PHÊ DUYỆT!
+[32m%s[0m 💾 Đã ghi nhận phê duyệt vào Sổ cái Ledger: C:\Users\HPZBook\Desktop\VGCASignToolPro\.codex-audit-ledger.json

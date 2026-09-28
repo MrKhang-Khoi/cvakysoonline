@@ -44,6 +44,11 @@
             <Setter Property="Padding" Value="16,8" />
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#B45309" /></Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#CBD5E1" />
+                    <Setter Property="Foreground" Value="#64748B" />
+                    <Setter Property="Opacity" Value="0.55" />
+                </Trigger>
             </Style.Triggers>
         </Style>
 
@@ -108,6 +113,19 @@
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Foreground" Value="#1E293B" />
         </Style>
+
+        <!-- Style TabItem với hiệu ứng Mờ / Khóa khi IsEnabled=False -->
+        <Style TargetType="TabItem">
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="#94A3B8" />
+                    <Setter Property="Opacity" Value="0.55" />
+                    <Setter Property="Cursor" Value="No" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -131,11 +149,11 @@
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <!-- BADGE TRẠNG THÁI VGCA TOÀN CỤC -->
-                    <Border x:Name="BadgeVgcaGlobalStatus" Background="#065F46" CornerRadius="6" Padding="12,6" Margin="0,0,10,0">
+                    <Border x:Name="BadgeVgcaGlobalStatus" Background="#B91C1C" CornerRadius="6" Padding="12,6" Margin="0,0,10,0">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock x:Name="TxtVgcaGlobalStatusIcon" Text="✅" Margin="0,0,6,0" VerticalAlignment="Center" />
-                            <TextBlock x:Name="TxtVgcaGlobalStatusText" Text="VGCA Virtual CSP: Đã Đăng Nhập" 
-                                       Foreground="#ECFDF5" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" />
+                            <TextBlock x:Name="TxtVgcaGlobalStatusIcon" Text="🔒" Margin="0,0,6,0" VerticalAlignment="Center" />
+                            <TextBlock x:Name="TxtVgcaGlobalStatusText" Text="VGCA: Chưa Đăng Nhập" 
+                                       Foreground="#FEF2F2" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -450,7 +468,7 @@
             </TabItem>
 
             <!-- ================= TAB 2: SOẠN THẢO & KÝ SỐ VĂN BẢN TRỰC TIẾP ================= -->
-            <TabItem x:Name="TabItemSignWorkspace" Header="  2. Soạn Thảo, Xem &amp; Ký Số Trực Tiếp  " FontSize="14" FontWeight="SemiBold">
+            <TabItem x:Name="TabItemSignWorkspace" Header="  2. Soạn Thảo, Xem &amp; Ký Số Trực Tiếp ( 🔒 Khóa )  " IsEnabled="False" FontSize="14" FontWeight="SemiBold">
                 <Grid x:Name="GridTab2Root" Margin="0,10,0,0">
                     <Grid.RowDefinitions>
                         <!-- HÀNG 0: THANH CÔNG CỤ ĐIỀU KHIỂN & SOẠN THẢO TRÊN CÙNG -->
@@ -638,7 +656,7 @@
                     </Border>
 
                     <!-- OVERLAY KHI CHƯA ĐĂNG NHẬP VGCA (KHÓA TOÀN BỘ TAB 2 KHI CHƯA XÁC THỰC) -->
-                    <Border x:Name="OverlayTab2Locked" Grid.RowSpan="4" Background="#F1F5F9" Visibility="Collapsed" Panel.ZIndex="100">
+                    <Border x:Name="OverlayTab2Locked" Grid.RowSpan="4" Background="#F1F5F9" Visibility="Visible" Panel.ZIndex="100">
                         <Border Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="12" 
                                 MaxWidth="580" MaxHeight="350" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="32">
                             <Border.Effect>
