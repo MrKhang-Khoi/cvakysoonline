@@ -483,10 +483,10 @@ namespace VGCASignToolPro
             }
         }
 
-        private void BtnVgcaLogout_Click(object sender, RoutedEventArgs e)
+        private async void BtnVgcaLogout_Click(object sender, RoutedEventArgs e)
         {
             var choice = MessageBox.Show(
-                "Bạn có chắc chắn muốn đăng xuất tài khoản chữ ký số VGCA không?\n(Sau khi đăng xuất, Tab 2 sẽ bị khóa lại cho đến khi đăng nhập lại)",
+                "Bạn có chắc chắn muốn đăng xuất tài khoản chữ ký số VGCA không?\n(Sau khi đăng xuất, tài liệu đang mở sẽ được đóng lại an toàn để bảo mật phiên làm việc)",
                 "Xác Nhận Đăng Xuất", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (choice == MessageBoxResult.Yes)
@@ -496,9 +496,19 @@ namespace VGCASignToolPro
                     UpdateStatus("Dịch vụ xác thực chưa sẵn sàng.");
                     return;
                 }
+
+                // Dọn dẹp an toàn phiên làm việc của người dùng hiện tại (chống lộ dữ liệu giữa các giáo viên dùng chung máy)
+                await ConfirmAndCloseCurrentDocumentAsync(isManualClose: true);
+                _activeWorkflowReportId = null;
+                _activeWorkflowExpectedBaseHash = null;
+                _currentActiveCert = null;
+                BorderWorkflowReviewNotice.Visibility = Visibility.Collapsed;
+                BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
+                BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
+
                 _vgcaAuth.Logout();
                 GenerateAndDisplayVgcaQr();
-                UpdateStatus("Đã đăng xuất tài khoản VGCA Virtual CSP.");
+                UpdateStatus("Đã đăng xuất tài khoản VGCA Virtual CSP an toàn.");
             }
         }
 
