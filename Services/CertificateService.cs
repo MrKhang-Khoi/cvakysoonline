@@ -101,18 +101,33 @@ namespace VGCASignToolPro.Services
         /// </summary>
         public bool LaunchVGCALoginApp()
         {
-            if (File.Exists(VGCAManagerExePath))
+            var candidatePaths = new List<string>
             {
-                try
+                VGCAManagerExePath,
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "VGCA", "Virtual CSP v2.0", "vgca_vcsp_v2_mgr.exe"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "VGCA Virtual CSP v2.0.lnk"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "VGCA Virtual CSP v2.0.lnk"),
+                @"C:\Users\Public\Desktop\VGCA Virtual CSP v2.0.lnk"
+            };
+
+            foreach (string path in candidatePaths)
+            {
+                if (File.Exists(path))
                 {
-                    Process.Start(new ProcessStartInfo
+                    try
                     {
-                        FileName = VGCAManagerExePath,
-                        UseShellExecute = true
-                    });
-                    return true;
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = path,
+                            UseShellExecute = true
+                        });
+                        return true;
+                    }
+                    catch
+                    {
+                        // Tiếp tục thử đường dẫn thay thế
+                    }
                 }
-                catch { }
             }
             return false;
         }

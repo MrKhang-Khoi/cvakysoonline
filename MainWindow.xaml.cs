@@ -246,39 +246,13 @@ namespace VGCASignToolPro
                 var teachers = _vgcaAuth.GetTeacherList();
                 if (teachers == null || teachers.Count == 0)
                 {
-                    UpdateStatus("Danh bạ VGCA trống hoặc không khả dụng.");
+                    UpdateStatus("Danh bạ giáo viên sẵn sàng đồng bộ từ đám mây. Hệ thống tự động nhận diện chứng thư từ Windows.");
                     return;
                 }
-
-                CmbRosterQuickSelect.ItemsSource = teachers;
-                CmbRosterQuickSelect.DisplayMemberPath = "FullName";
-
-                // Chọn phần tử đầu tiên trong danh bạ nếu khả dụng
-                CmbRosterQuickSelect.SelectedIndex = 0;
-
-                GenerateAndDisplayVgcaQr();
             }
             catch (Exception ex)
             {
-                UpdateStatus($"Lỗi khởi tạo danh bạ VGCA: {ex.Message}");
-            }
-        }
-
-        private void GenerateAndDisplayVgcaQr()
-        {
-            try
-            {
-                var qrBitmap = _vgcaAuth.GenerateQrCode(out _);
-                if (qrBitmap == null)
-                {
-                    UpdateStatus("Không thể sinh mã QR VGCA.");
-                    return;
-                }
-                ImgVgcaQrCode.Source = qrBitmap;
-            }
-            catch (Exception ex)
-            {
-                UpdateStatus($"Lỗi sinh mã QR VGCA: {ex.Message}");
+                UpdateStatus($"Lỗi nạp danh bạ: {ex.Message}");
             }
         }
 
@@ -307,8 +281,8 @@ namespace VGCASignToolPro
                     // Đồng bộ thông tin sang Hộp Thư Trình Ký (Tab 3)
                     TxtWorkflowUserGreeting.Text = $"Giáo viên: {teacher.FullName} ({teacher.Title})";
                     TxtWorkflowUserUnit.Text = !string.IsNullOrWhiteSpace(teacher.Department)
-                        ? $"{teacher.Department} - {teacher.Organization ?? "THCS Chu Văn An"}"
-                        : teacher.Organization ?? "Trường THCS Chu Văn An";
+                        ? $"{teacher.Department} - {teacher.Organization ?? ""}"
+                        : (!string.IsNullOrEmpty(teacher.Organization) ? teacher.Organization : "Đơn vị giáo dục");
                     PopulateWorkflowApprovers(teacher.Cccd);
                     _ = RefreshWorkflowDataAsync();
 
@@ -342,10 +316,10 @@ namespace VGCASignToolPro
                         }
                     }
 
-                    string maskedCccd = teacher.Cccd?.Length > 4 
-                        ? $"***{teacher.Cccd[^4..]}" 
-                        : "***";
-                    UpdateStatus($"Phiên làm việc VGCA Virtual CSP đã kích hoạt: {teacher.FullName} ({maskedCccd})");
+                    string maskedId = !string.IsNullOrEmpty(teacher.SerialNumber)
+                        ? $"Serial: {teacher.SerialNumber}"
+                        : (!string.IsNullOrEmpty(teacher.Email) ? teacher.Email : (teacher.Cccd?.Length > 4 ? $"***{teacher.Cccd[^4..]}" : "***"));
+                    UpdateStatus($"Phiên làm việc VGCA Virtual CSP đã kích hoạt: {teacher.FullName} ({maskedId})");
                 }
                 else
                 {
@@ -358,8 +332,8 @@ namespace VGCASignToolPro
                     TxtQuickCertNotice.Text = "Chưa kết nối chứng thư VGCA";
 
                     // Xóa dữ liệu Hộp thư Tab 3
-                    TxtWorkflowUserGreeting.Text = "Giáo viên: Chưa đăng nhập";
-                    TxtWorkflowUserUnit.Text = "Trường THCS Chu Văn An";
+                    TxtWorkflowUserGreeting.Text = "Cán bộ / Giáo viên: Chưa kết nối chứng thư";
+                    TxtWorkflowUserUnit.Text = "Đơn vị giáo dục";
                     CboWorkflowApprover.ItemsSource = null;
                     LvInboxReports.ItemsSource = null;
                     LvOutboxReports.ItemsSource = null;
@@ -386,112 +360,6 @@ namespace VGCASignToolPro
             });
         }
 
-        private void CmbRosterQuickSelect_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (CmbRosterQuickSelect.SelectedItem is VgcaTeacherModel teacher)
-            {
-                TxtVgcaCccd.Text = teacher.Cccd;
-                BorderVgcaAuthError.Visibility = Visibility.Collapsed;
-            }
-        }
-
-        private void BtnVgcaLogin_Click(object sender, RoutedEventArgs e)
-        {
-            string cccd = TxtVgcaCccd.Text.Trim();
-            string password = TxtVgcaPassword.Password;
-
-            if (string.IsNullOrWhiteSpace(cccd) || string.IsNullOrEmpty(password))
-            {
-                BorderVgcaAuthError.Visibility = Visibility.Visible;
-                TxtVgcaAuthError.Text = "Vui lòng nhập đầy đủ số CCCD và mật khẩu.";
-                return;
-            }
-
-            // ponytail: sync call OK cho local-only auth. Chuyển async + disable button khi tích hợp API thật.
-            UpdateStatus("Đang xác thực thông tin đăng nhập VGCA Virtual CSP...");
-            VgcaLoginResult result = _vgcaAuth.AuthenticatePassword(cccd, password);
-
-            if (result.Success && result.Teacher != null)
-            {
-                BorderVgcaAuthError.Visibility = Visibility.Collapsed;
-                MessageBox.Show(
-                    $"Đăng nhập thành công tài khoản VGCA Virtual CSP!\n\nCán bộ: {result.Teacher.FullName}\nĐơn vị: {result.Teacher.Department}\nSố CCCD: {result.Teacher.Cccd}\n\nKhu vực Soạn thảo & Ký số (Tab 2) đã được mở khóa sẵn sàng.",
-                    "Xác Thực Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                // Kiểm tra xem trên máy tính đã có Chứng thư số Ban Cơ yếu Chính phủ đang hoạt động hay không
-                CertificateModel? activeCert = _certService.GetActiveVGCACertificate();
-                if (activeCert != null && activeCert.HasPrivateKey)
-                {
-                    VgcaLoginResult hwResult = _vgcaAuth.LoginWithHardwareCertificate(activeCert);
-                    if (hwResult.Success && hwResult.Teacher != null)
-                    {
-                        if (string.Equals(hwResult.Teacher.Cccd, cccd, StringComparison.OrdinalIgnoreCase))
-                        {
-                            _vgcaAuth.UnlockAccount(cccd);
-                        }
-
-                        BorderVgcaAuthError.Visibility = Visibility.Collapsed;
-                        MessageBox.Show(
-                            $"Hệ thống đã tự động nhận diện và xác thực thành công qua Chứng thư số Ban Cơ yếu Chính phủ trên máy tính!\n\n" +
-                            $"• Cán bộ: {hwResult.Teacher.FullName}\n" +
-                            $"• Đơn vị: {hwResult.Teacher.Department}\n" +
-                            $"• Số CCCD: {hwResult.Teacher.Cccd}\n\n" +
-                            "Tài khoản đã được mở khóa an toàn và Phân hệ Soạn thảo & Ký số (Tab 2) đã sẵn sàng hoạt động.",
-                            "Tự Động Mở Khóa & Đăng Nhập", MessageBoxButton.OK, MessageBoxImage.Information);
-                        return;
-                    }
-                }
-
-                BorderVgcaAuthError.Visibility = Visibility.Visible;
-                TxtVgcaAuthError.Text = result.ErrorDescription;
-                UpdateStatus($"Đăng nhập thất bại: {result.ErrorDescription}");
-            }
-        }
-
-        private void BtnRefreshQr_Click(object sender, RoutedEventArgs e)
-        {
-            GenerateAndDisplayVgcaQr();
-            UpdateStatus("Đã tạo mã QR đăng nhập VGCA mới.");
-        }
-
-        private void BtnApproveQr_Click(object sender, RoutedEventArgs e)
-        {
-            string cccd = TxtVgcaCccd.Text.Trim();
-            if (string.IsNullOrWhiteSpace(cccd))
-            {
-                BorderVgcaAuthError.Visibility = Visibility.Visible;
-                TxtVgcaAuthError.Text = "Vui lòng nhập số CCCD trước khi phê duyệt QR.";
-                return;
-            }
-
-            if (_vgcaAuth == null)
-            {
-                BorderVgcaAuthError.Visibility = Visibility.Visible;
-                TxtVgcaAuthError.Text = "Dịch vụ xác thực chưa sẵn sàng. Vui lòng khởi động lại.";
-                return;
-            }
-
-            // ponytail: sync call OK cho local-only auth. Chuyển async + disable button khi tích hợp API thật.
-            var result = _vgcaAuth.ApproveQrLogin(cccd);
-
-            if (result.Success && result.Teacher != null)
-            {
-                BorderVgcaAuthError.Visibility = Visibility.Collapsed;
-                MessageBox.Show(
-                    $"Xác nhận phê duyệt mã QR thành công từ ứng dụng VGCA Mobile!\n\nCán bộ: {result.Teacher.FullName ?? "(Không rõ)"}\nĐơn vị: {result.Teacher.Department ?? "(Không rõ)"}\nSố CCCD: {result.Teacher.Cccd ?? "(Không rõ)"}\n\nKhu vực Soạn thảo & Ký số (Tab 2) đã được mở khóa.",
-                    "Xác Thực QR Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                BorderVgcaAuthError.Visibility = Visibility.Visible;
-                string err = result.ErrorDescription ?? "Xác thực QR thất bại. Vui lòng thử lại.";
-                TxtVgcaAuthError.Text = err;
-                UpdateStatus($"Lỗi xác thực QR: {err}");
-            }
-        }
-
         private async void BtnVgcaLogout_Click(object sender, RoutedEventArgs e)
         {
             var choice = MessageBox.Show(
@@ -516,7 +384,6 @@ namespace VGCASignToolPro
                 BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
 
                 _vgcaAuth.Logout();
-                GenerateAndDisplayVgcaQr();
                 UpdateStatus("Đã đăng xuất tài khoản VGCA Virtual CSP an toàn.");
             }
         }
@@ -636,31 +503,6 @@ namespace VGCASignToolPro
                 BorderVgcaAuthError.Visibility = Visibility.Visible;
                 TxtVgcaAuthError.Text = "Chưa phát hiện chứng thư Ban Cơ yếu Chính phủ có khóa riêng trong hệ thống. Vui lòng mở ứng dụng VGCA Virtual CSP trên máy để đăng nhập trước, sau đó bấm nút này lần nữa.";
                 UpdateStatus("Chưa tìm thấy chứng thư Ban Cơ yếu hợp lệ trong kho Windows.");
-            }
-        }
-
-        private void BtnUnlockAccount_Click(object sender, RoutedEventArgs e)
-        {
-            string cccd = TxtVgcaCccd.Text.Trim();
-            if (string.IsNullOrWhiteSpace(cccd))
-            {
-                MessageBox.Show("Vui lòng nhập số CCCD của tài khoản cần mở khóa vào ô 'Số CCCD / Mã Định Danh'.", "Yêu Cầu Nhập CCCD", MessageBoxButton.OK, MessageBoxImage.Warning);
-                TxtVgcaCccd.Focus();
-                return;
-            }
-
-            bool unlocked = _vgcaAuth.UnlockAccount(cccd);
-            if (unlocked)
-            {
-                BorderVgcaAuthError.Visibility = Visibility.Collapsed;
-                MessageBox.Show(
-                    $"Tài khoản CCCD {cccd} đã được mở khóa an toàn thành công!\n\nBạn có thể:\n1. Bấm '🔄 ĐỒNG BỘ & NHẬN DIỆN CHỨNG THƯ' để đăng nhập tự động qua chứng thư Ban Cơ yếu trên máy.\n2. Hoặc nhập mật khẩu để đăng nhập tài khoản.",
-                    "Đã Mở Khóa Tài Khoản", MessageBoxButton.OK, MessageBoxImage.Information);
-                UpdateStatus($"Đã mở khóa an toàn cho tài khoản {cccd}.");
-            }
-            else
-            {
-                MessageBox.Show("Không tìm thấy tài khoản cần mở khóa trong danh bạ.", "Thông Báo", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 

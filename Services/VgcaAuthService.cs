@@ -280,27 +280,6 @@ namespace VGCASignToolPro.Services
                 _rosterLoadFailed = true;
                 System.Diagnostics.Trace.TraceError($"Lỗi nghiêm trọng khi nạp school_roster: {ex.Message}");
             }
-
-#if DEBUG
-            // Chỉ nạp tài khoản mẫu trong môi trường Development/Testing
-            if (!_roster.ContainsKey("042084002100"))
-            {
-                _roster["042084002100"] = new VgcaTeacherModel
-                {
-                    Cccd = "042084002100",
-                    FullName = "Hà Văn Tý",
-                    Title = "Giáo viên",
-                    Department = "TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN",
-                    Organization = "ỦY BAN NHÂN DÂN XÃ ĐĂK HÀ - TỈNH QUẢNG NGÃI",
-                    Email = "hvty-dakha@quangngai.gov.vn",
-                    Phone = "0818810007",
-                    Status = "ACTIVE",
-                    RemainingCounter = VgcaTeacherModel.MaxAttempts,
-                    SerialNumber = "7C4C44A8671300AE",
-                    KeyContainer = "6C4D8D31-01AC-6B07-9EB4-D83DD237FB6D"
-                };
-            }
-#endif
         }
 
         public List<VgcaTeacherModel> GetTeacherList()
@@ -818,7 +797,7 @@ namespace VGCASignToolPro.Services
 
             lock (_authLock)
             {
-                // 1. Đối soát danh bạ duy nhất qua SerialNumber chứng thư số hoặc Email công vụ duy nhất
+                // 1. Đối soát danh bạ duy nhất qua SerialNumber chứng thư số, Email công vụ hoặc Họ tên
                 VgcaTeacherModel? matchedTeacher = null;
                 foreach (VgcaTeacherModel teacher in _roster.Values)
                 {
@@ -832,38 +811,39 @@ namespace VGCASignToolPro.Services
                         matchedTeacher = teacher;
                         break;
                     }
+                    if (!string.IsNullOrEmpty(teacher.FullName) && !string.IsNullOrEmpty(cert.CommonName) && string.Equals(teacher.FullName, cert.CommonName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        matchedTeacher = teacher;
+                        break;
+                    }
                 }
 
-                // 2. Nếu chưa có trong danh bạ đơn vị, tạo hồ sơ cách ly an toàn gắn duy nhất với số Serial của chứng thư
+                // 2. Nếu chưa có trong danh bạ đơn vị (giáo viên cài mới trên máy tính khác), tự động tạo hồ sơ trực tiếp từ chứng thư X.509
                 if (matchedTeacher == null)
                 {
-                    if (string.IsNullOrWhiteSpace(cert.SerialNumber))
-                    {
-                        return new VgcaLoginResult
-                        {
-                            Success = false,
-                            ErrorCode = 4007,
-                            ErrorDescription = "Chứng thư không có số Serial hợp lệ để định danh người dùng."
-                        };
-                    }
+                    string uniqueId = !string.IsNullOrWhiteSpace(cert.Email)
+                        ? cert.Email
+                        : (!string.IsNullOrWhiteSpace(cert.SerialNumber) ? cert.SerialNumber : $"VGCA_{Guid.NewGuid():N}");
 
-                    string certUniqueId = $"CERT_{cert.SerialNumber}";
-                    if (!_roster.TryGetValue(certUniqueId, out matchedTeacher))
+                    matchedTeacher = new VgcaTeacherModel
                     {
-                        matchedTeacher = new VgcaTeacherModel
-                        {
-                            Cccd = certUniqueId,
-                            FullName = cert.CommonName,
-                            Title = "Cán bộ / Giáo viên",
-                            Department = !string.IsNullOrEmpty(cert.OrganizationUnit) ? cert.OrganizationUnit : cert.Organization,
-                            Organization = cert.Organization,
-                            Email = cert.Email,
-                            Status = "ACTIVE",
-                            RemainingCounter = VgcaTeacherModel.MaxAttempts,
-                            SerialNumber = cert.SerialNumber
-                        };
-                        _roster[certUniqueId] = matchedTeacher;
-                    }
+                        Cccd = uniqueId,
+                        FullName = !string.IsNullOrWhiteSpace(cert.CommonName) ? cert.CommonName : "Cán bộ / Giáo viên",
+                        Title = "Cán bộ / Giáo viên",
+                        Department = !string.IsNullOrEmpty(cert.OrganizationUnit) ? cert.OrganizationUnit : (!string.IsNullOrEmpty(cert.Organization) ? cert.Organization : "Đơn vị giáo dục"),
+                        Organization = cert.Organization ?? string.Empty,
+                        Email = cert.Email ?? string.Empty,
+                        Status = "ACTIVE",
+                        RemainingCounter = VgcaTeacherModel.MaxAttempts,
+                        SerialNumber = cert.SerialNumber ?? string.Empty
+                    };
+                    _roster[uniqueId] = matchedTeacher;
+                }
+                else
+                {
+                    // Tự động bổ sung thông tin từ chứng thư số thực tế nếu có
+                    if (!string.IsNullOrEmpty(cert.SerialNumber)) matchedTeacher.SerialNumber = cert.SerialNumber;
+                    if (!string.IsNullOrEmpty(cert.Email) && string.IsNullOrEmpty(matchedTeacher.Email)) matchedTeacher.Email = cert.Email;
                 }
 
                 // Tự động mở khóa tài khoản nếu trước đó bị khóa nhầm do thử mật khẩu

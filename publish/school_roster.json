@@ -1,8 +1,18 @@
 ﻿{
   "schoolName": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
   "description": "Danh mục phân quyền tài khoản Giáo viên toàn trường kết nối ký số Ban Cơ Yếu Chính Phủ",
-  "updatedAt": "2026-09-28T15:37:21.3294403Z",
+  "updatedAt": "2026-09-28T16:08:30.0256035Z",
   "roster": [
+    {
+      "cccd": "062189002154",
+      "fullName": "Lê Thị Hồng",
+      "title": "Phó hiệu trưởng",
+      "phone": "0819000215",
+      "department": "Ban Giám hiệu",
+      "organization": "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI",
+      "email": "lthong-chuvanan@quangngai.gov.vn",
+      "status": "ACTIVE"
+    },
     {
       "cccd": "062185001053",
       "fullName": "Nguyễn Thị Mai (CCCD 062185001053)",

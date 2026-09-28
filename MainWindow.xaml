@@ -178,83 +178,46 @@
                         <!-- CỘT TRÁI: KHUNG ĐĂNG NHẬP VGCA VIRTUAL CSP & THÔNG TIN CHỨNG THƯ -->
                         <StackPanel Grid.Column="0">
                             <!-- PANEL 1: KHI CHƯA ĐĂNG NHẬP - GIAO DIỆN TÍCH HỢP VGCA VIRTUAL CSP v2.0 -->
-                            <GroupBox x:Name="GrpVgcaLoginBox" Header="Đăng Nhập VGCA Virtual CSP v2.0 (Ban Cơ Yếu Chính Phủ)">
+                            <GroupBox x:Name="GrpVgcaLoginBox" Header="Kết Nối Chữ Ký Số VGCA Virtual CSP v2.0 (Ban Cơ Yếu Chính Phủ)">
                                 <StackPanel Margin="6">
                                     <!-- HEADER GIỚI THIỆU CHUẨN VGCA -->
-                                    <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1" CornerRadius="6" Padding="12,10" Margin="0,0,0,12">
+                                    <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1" CornerRadius="6" Padding="14,12" Margin="0,0,0,12">
                                         <StackPanel>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                                <TextBlock Text="🛡️" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center" />
-                                                <TextBlock Text="CỔNG XÁC THỰC CHỮ KÝ SỐ CHUYÊN DÙNG CHÍNH PHỦ" FontWeight="Bold" Foreground="#1E3A8A" FontSize="12" VerticalAlignment="Center" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                                <TextBlock Text="🛡️" FontSize="20" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                                <TextBlock Text="CỔNG KẾT NỐI CHỮ KÝ SỐ CHUYÊN DÙNG CHÍNH PHỦ (VGCA)" FontWeight="Bold" Foreground="#1E3A8A" FontSize="13" VerticalAlignment="Center" />
                                             </StackPanel>
-                                            <TextBlock Text="Tích hợp trực tiếp chuẩn xác thực VGCA Virtual CSP v2.0. Đăng nhập để kích hoạt quyền truy cập cặp khóa mật mã ký số và mở khóa khu vực Soạn thảo - Ký số." 
-                                                       TextWrapping="Wrap" FontSize="11" Foreground="#1E40AF" LineHeight="16" />
+                                            <TextBlock Text="Hệ thống tự động đồng bộ và nhận diện Chứng thư số Ban Cơ yếu Chính phủ từ Windows Certificate Store (quản lý bởi VGCA Virtual CSP v2.0 hoặc USB Token). Đảm bảo tuân thủ 100% quy chuẩn bảo mật PKI quốc gia." 
+                                                       TextWrapping="Wrap" FontSize="12" Foreground="#1E40AF" LineHeight="18" />
                                         </StackPanel>
                                     </Border>
 
-                                    <!-- HÌNH THỨC ĐĂNG NHẬP (TAB CONTROL PHỤ) -->
-                                    <TabControl x:Name="TabLoginMethods" Margin="0,0,0,12" Background="White" BorderBrush="#CBD5E1">
-                                        <!-- PHƯƠNG THỨC 1: TÀI KHOẢN & MẬT KHẨU -->
-                                        <TabItem Header="  🔑 Tài Khoản (CCCD) &amp; Mật Khẩu  " FontWeight="SemiBold" FontSize="12">
-                                            <StackPanel Margin="10,12,10,6">
-                                                <!-- CHỌN NHANH DANH SÁCH GIÁO VIÊN ĐÃ CẤP CHỨNG THƯ -->
-                                                <TextBlock Text="Chọn nhanh cán bộ / giáo viên trong danh bạ đơn vị:" FontSize="11" Foreground="#475569" FontWeight="SemiBold" Margin="0,0,0,3" />
-                                                <ComboBox x:Name="CmbRosterQuickSelect" Padding="6" Margin="0,0,0,10" SelectionChanged="CmbRosterQuickSelect_SelectionChanged" />
-
-                                                <!-- NHẬP CCCD -->
-                                                <TextBlock Text="Số Căn cước công dân (12 chữ số):" FontSize="11" Foreground="#475569" FontWeight="SemiBold" Margin="0,0,0,3" />
-                                                <TextBox x:Name="TxtVgcaCccd" Text="042084002100" Padding="8,6" Margin="0,0,0,10" FontFamily="Consolas" FontSize="13" />
-
-                                                <!-- NHẬP MẬT KHẨU -->
-                                                <TextBlock Text="Mật khẩu tài khoản VGCA Virtual CSP:" FontSize="11" Foreground="#475569" FontWeight="SemiBold" Margin="0,0,0,3" />
-                                                <PasswordBox x:Name="TxtVgcaPassword" Password="Password123!" Padding="8,6" Margin="0,0,0,10" FontSize="13" />
-
-                                                <!-- CHECKBOX GHI NHỚ -->
-                                                <CheckBox x:Name="ChkVgcaRemember" Content="Ghi nhớ phiên đăng nhập trên máy tính này" IsChecked="True" FontSize="11" Margin="0,0,0,12" />
-
-                                                <!-- NÚT ĐĂNG NHẬP -->
-                                                <Button x:Name="BtnVgcaLogin" Content="🔑 ĐĂNG NHẬP VGCA VIRTUAL CSP" Style="{StaticResource PrimaryButton}" 
-                                                        Background="#1E40AF" FontSize="13" Padding="14,10" Click="BtnVgcaLogin_Click" />
-                                            </StackPanel>
-                                        </TabItem>
-
-                                        <!-- PHƯƠNG THỨC 2: QUÉT MÃ QR CODE -->
-                                        <TabItem Header="  📱 Quét Mã QR Code  " FontWeight="SemiBold" FontSize="12">
-                                            <StackPanel Margin="10,12,10,6" HorizontalAlignment="Center">
-                                                <TextBlock Text="Quét mã QR bằng ứng dụng VGCA Mobile trên điện thoại:" FontSize="11" Foreground="#475569" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,8" />
-                                                
-                                                <!-- KHUNG HIỂN THỊ MÃ QR -->
-                                                <Border BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="8" Padding="10" Background="White" HorizontalAlignment="Center" Margin="0,0,0,8">
-                                                    <Image x:Name="ImgVgcaQrCode" Width="170" Height="170" Stretch="Uniform" />
-                                                </Border>
-
-                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,10">
-                                                    <Button Content="🔄 Tạo Mã QR Mới" Style="{StaticResource SecondaryButton}" Padding="10,5" FontSize="11" Click="BtnRefreshQr_Click" Margin="0,0,8,0" />
-                                                    <Button Content="📱 Phê Duyệt Quét Mã (Mô phỏng)" Style="{StaticResource SuccessButton}" Padding="10,5" FontSize="11" Click="BtnApproveQr_Click" />
-                                                </StackPanel>
-                                            </StackPanel>
-                                        </TabItem>
-                                    </TabControl>
-
-                                    <!-- KHUNG THÔNG BÁO LỖI ĐĂNG NHẬP -->
-                                    <Border x:Name="BorderVgcaAuthError" Visibility="Collapsed" Background="#FEF2F2" BorderBrush="#FCA5A5" BorderThickness="1" CornerRadius="6" Padding="10,8" Margin="0,0,0,10">
+                                    <!-- HƯỚNG DẪN QUY TRÌNH KẾT NỐI CHUẨN -->
+                                    <Border Background="#FFFBEB" BorderBrush="#FDE68A" BorderThickness="1" CornerRadius="8" Padding="14,12" Margin="0,0,0,14">
                                         <StackPanel>
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="❌" Margin="0,0,8,0" VerticalAlignment="Center" />
-                                                <TextBlock x:Name="TxtVgcaAuthError" Text="Lỗi đăng nhập..." Foreground="#991B1B" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
-                                            </StackPanel>
-                                            <Button x:Name="BtnUnlockAccount" Content="🔓 Mở Khóa Tài Khoản Này Ngay" Style="{StaticResource SecondaryButton}" 
-                                                    Margin="0,6,0,0" Padding="8,4" FontSize="11" HorizontalAlignment="Left" Click="BtnUnlockAccount_Click" />
+                                            <TextBlock Text="📋 Hướng dẫn kết nối chữ ký số:" FontWeight="Bold" Foreground="#92400E" FontSize="12" Margin="0,0,0,8" />
+                                            <TextBlock Text="• Bước 1: Khởi động phần mềm 'VGCA Virtual CSP v2.0' trên máy tính và đăng nhập tài khoản ký số từ xa của Quý Thầy/Cô." 
+                                                       Foreground="#78350F" FontSize="12" LineHeight="18" TextWrapping="Wrap" Margin="0,0,0,6" />
+                                            <TextBlock Text="• Bước 2: Bấm nút '🔄 ĐỒNG BỘ &amp; NHẬN DIỆN CHỨNG THƯ' bên dưới để kích hoạt phiên làm việc và mở khóa Soạn thảo - Ký số." 
+                                                       Foreground="#78350F" FontSize="12" LineHeight="18" TextWrapping="Wrap" />
                                         </StackPanel>
                                     </Border>
+
+                                    <!-- NÚT KHỞI ĐỘNG VGCA VIRTUAL CSP BÊN NGOÀI -->
+                                    <Button x:Name="BtnLaunchVgcaManager" Content="🖥️ KHỞI ĐỘNG ỨNG DỤNG VGCA VIRTUAL CSP v2.0" Style="{StaticResource PrimaryButton}" 
+                                            Background="#2563EB" FontSize="13" FontWeight="Bold" Padding="14,12" Margin="0,0,0,10" Click="BtnLaunchVgcaManager_Click" HorizontalAlignment="Stretch" />
 
                                     <!-- NÚT ĐỒNG BỘ VÀ NHẬN DIỆN CHỨNG THƯ TRỰC TIẾP TỪ VGCA VIRTUAL CSP -->
-                                    <Button x:Name="BtnSyncVgcaCertificate" Content="🔄 ĐỒNG BỘ &amp; NHẬN DIỆN CHỨNG THƯ TỪ VGCA VIRTUAL CSP" Style="{StaticResource PrimaryButton}" 
-                                            Background="#0D9488" FontSize="12" Padding="12,10" Margin="0,0,0,8" Click="BtnSyncVgcaCertificate_Click" HorizontalAlignment="Stretch" />
+                                    <Button x:Name="BtnSyncVgcaCertificate" Content="🔄 ĐỒNG BỘ &amp; NHẬN DIỆN CHỨNG THƯ TỪ WINDOWS" Style="{StaticResource PrimaryButton}" 
+                                            Background="#0D9488" FontSize="13" FontWeight="Bold" Padding="14,12" Margin="0,0,0,10" Click="BtnSyncVgcaCertificate_Click" HorizontalAlignment="Stretch" />
 
-                                    <!-- TÙY CHỌN DỰ PHÒNG: MỞ APP NGOÀI NẾU CẦN -->
-                                    <Button Content="🖥️ Mở Ứng Dụng VGCA Virtual CSP Bên Ngoài" Style="{StaticResource SecondaryButton}" 
-                                            Padding="10,6" FontSize="11" Click="BtnLaunchVgcaManager_Click" HorizontalAlignment="Stretch" />
+                                    <!-- KHUNG THÔNG BÁO LỖI / TRẠNG THÁI -->
+                                    <Border x:Name="BorderVgcaAuthError" Visibility="Collapsed" Background="#FEF2F2" BorderBrush="#FCA5A5" BorderThickness="1" CornerRadius="6" Padding="12,10" Margin="0,0,0,10">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="⚠️" Margin="0,0,8,0" VerticalAlignment="Center" FontSize="16" />
+                                            <TextBlock x:Name="TxtVgcaAuthError" Text="Chưa phát hiện chứng thư số Ban Cơ yếu trong Windows..." Foreground="#991B1B" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Border>
                                 </StackPanel>
                             </GroupBox>
 
