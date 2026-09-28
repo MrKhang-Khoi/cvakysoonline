@@ -218,6 +218,7 @@ namespace VGCASignToolPro.Services
                 foreach (var kvp in dict)
                 {
                     var item = kvp.Value;
+                    if (item == null) continue;
                     item.ReportId = kvp.Key;
 
                     // Kiểm tra tự động quá hạn 60 phút
@@ -231,8 +232,9 @@ namespace VGCASignToolPro.Services
 
                 return list.OrderByDescending(r => r.UpdatedAt).ToList();
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Trace.TraceError($"Lỗi GetAllReportsAsync: {ex}");
                 return new List<ReportModel>();
             }
         }
@@ -365,6 +367,10 @@ namespace VGCASignToolPro.Services
                 };
                 var patchContent = new StringContent(JsonConvert.SerializeObject(lockPayload), Encoding.UTF8, "application/json");
                 var patchRes = await _http.PatchAsync(reportUrl, patchContent).ConfigureAwait(false);
+                if (!patchRes.IsSuccessStatusCode)
+                {
+                    return (false, "Không thể khóa báo cáo để xử lý.", null, null);
+                }
 
                 // Tải nội dung tệp PDF
                 string fileUrl = BuildUrl($"files/{report.DriveFileId}");
@@ -444,6 +450,10 @@ namespace VGCASignToolPro.Services
                 };
                 var patchContent = new StringContent(JsonConvert.SerializeObject(updatePayload), Encoding.UTF8, "application/json");
                 var patchRes = await _http.PatchAsync(reportUrl, patchContent).ConfigureAwait(false);
+                if (!patchRes.IsSuccessStatusCode)
+                {
+                    return (false, "Không thể cập nhật trạng thái thu hồi trên máy chủ.");
+                }
 
                 return (true, "Đã thu hồi báo cáo thành công!");
             }
@@ -510,7 +520,11 @@ namespace VGCASignToolPro.Services
 
                 string fileUrl = BuildUrl($"files/{fileIdV2}");
                 var fileContent = new StringContent(JsonConvert.SerializeObject(filePayload), Encoding.UTF8, "application/json");
-                await _http.PutAsync(fileUrl, fileContent).ConfigureAwait(false);
+                var putRes = await _http.PutAsync(fileUrl, fileContent).ConfigureAwait(false);
+                if (!putRes.IsSuccessStatusCode)
+                {
+                    return (false, "Không thể lưu trữ tệp đã ký lên máy chủ đám mây.");
+                }
 
                 // Cập nhật trạng thái SIGNED_COMMITTED
                 var commitPayload = new
@@ -525,6 +539,10 @@ namespace VGCASignToolPro.Services
 
                 var patchContent = new StringContent(JsonConvert.SerializeObject(commitPayload), Encoding.UTF8, "application/json");
                 var patchRes = await _http.PatchAsync(reportUrl, patchContent).ConfigureAwait(false);
+                if (!patchRes.IsSuccessStatusCode)
+                {
+                    return (false, "Không thể hoàn tất trạng thái phê duyệt trên máy chủ.");
+                }
 
                 return (true, "Phê duyệt và ký số báo cáo thành công!");
             }
@@ -557,8 +575,9 @@ namespace VGCASignToolPro.Services
                 await File.WriteAllBytesAsync(destinationPath, bytes).ConfigureAwait(false);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Trace.TraceError($"Lỗi DownloadFileAsync: {ex}");
                 return false;
             }
         }

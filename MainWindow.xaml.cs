@@ -2226,12 +2226,15 @@ namespace VGCASignToolPro
                 foreach (var t in teachers)
                 {
                     if (string.Equals(t.Cccd, currentCccd, StringComparison.OrdinalIgnoreCase)) continue;
-                    string prefix = (t.Title.Contains("Hiệu trưởng", StringComparison.OrdinalIgnoreCase) || t.Title.Contains("Hiệu phó", StringComparison.OrdinalIgnoreCase)) ? "⭐ " : "";
+                    bool isLeadership = !string.IsNullOrEmpty(t.Title) && 
+                        (t.Title.Contains("Hiệu trưởng", StringComparison.OrdinalIgnoreCase) || 
+                         t.Title.Contains("Hiệu phó", StringComparison.OrdinalIgnoreCase));
+                    string prefix = isLeadership ? "⭐ " : "";
                     items.Add(new WorkflowApproverItem
                     {
                         Cccd = t.Cccd,
                         FullName = t.FullName,
-                        DisplayText = $"{prefix}{t.FullName} — {t.Title} ({t.Department})"
+                        DisplayText = $"{prefix}{t.FullName} — {t.Title ?? "Giáo viên"} ({t.Department ?? ""})"
                     });
                 }
 
@@ -2256,18 +2259,29 @@ namespace VGCASignToolPro
             try
             {
                 string myCccd = _vgcaAuth.CurrentTeacher?.Cccd ?? string.Empty;
+                if (string.IsNullOrEmpty(myCccd))
+                {
+                    LvInboxReports.ItemsSource = null;
+                    LvOutboxReports.ItemsSource = null;
+                    LvArchiveReports.ItemsSource = null;
+                    TxtCountInbox.Text = "0";
+                    TxtCountOutbox.Text = "0";
+                    TxtCountCompleted.Text = "0";
+                    return;
+                }
+
                 var all = await _workflowService.GetAllReportsAsync();
                 _allReports = all;
 
                 // 1. Inbox: Chờ tôi duyệt (người duyệt là tôi và trạng thái còn hiệu lực)
                 var inbox = all.Where(r => 
-                    (string.IsNullOrEmpty(myCccd) || string.Equals(r.ApproverCccd, myCccd, StringComparison.OrdinalIgnoreCase)) &&
+                    string.Equals(r.ApproverCccd, myCccd, StringComparison.OrdinalIgnoreCase) &&
                     (r.Status == "WAITING_OPEN" || r.Status == "ACQUIRED_LOCKED" || r.Status == "LOCK_TIMEOUT")
                 ).ToList();
 
                 // 2. Outbox: Tôi đã gửi
                 var outbox = all.Where(r =>
-                    string.IsNullOrEmpty(myCccd) || string.Equals(r.SenderCccd, myCccd, StringComparison.OrdinalIgnoreCase)
+                    string.Equals(r.SenderCccd, myCccd, StringComparison.OrdinalIgnoreCase)
                 ).ToList();
 
                 // 3. Archive: Toàn trường đã hoàn tất
