@@ -53,9 +53,17 @@ namespace VGCASignToolPro.Services
                 wordApp.Visible = false;
                 wordApp.ScreenUpdating = false;
 
+                // Triệt tiêu hoàn toàn hộp thoại "Microsoft Word Security Notice" khi tài liệu chứa
+                // trường liên kết ngoài (External Links / Fields) — ngăn chặn modal chặn đứng tiến trình nền
+                // msoAutomationSecurityForceDisable = 3: Vô hiệu hóa toàn bộ macro và cảnh báo bảo mật
+                // wdAlertsNone = 0: Triệt tiêu mọi hộp thoại cảnh báo của Word
+                wordApp.AutomationSecurity = 3;
+                wordApp.DisplayAlerts = 0;
+
                 StatusChanged?.Invoke($"Đang nạp cấu trúc tài liệu: {Path.GetFileName(wordFilePath)}...");
                 wordDoc = wordApp.Documents.Open(
                     FileName: wordFilePath,
+                    ConfirmConversions: false,
                     ReadOnly: true,
                     AddToRecentFiles: false,
                     Visible: false);
@@ -269,10 +277,15 @@ namespace VGCASignToolPro.Services
                 wordApp.Visible = false;
                 wordApp.ScreenUpdating = false;
 
+                // Triệt tiêu hộp thoại "Microsoft Word Security Notice" (cùng cơ chế ConvertWordToEditableHtml)
+                wordApp.AutomationSecurity = 3; // msoAutomationSecurityForceDisable
+                wordApp.DisplayAlerts = 0;       // wdAlertsNone
+
                 StatusChanged?.Invoke($"Đang mở tài liệu: {Path.GetFileName(wordFilePath)}...");
 
                 wordDoc = wordApp.Documents.Open(
                     FileName: wordFilePath,
+                    ConfirmConversions: false,
                     ReadOnly: true,
                     AddToRecentFiles: false,
                     Visible: false);
@@ -397,6 +410,10 @@ namespace VGCASignToolPro.Services
 
                 wordApp.Visible = false;
                 wordApp.ScreenUpdating = false;
+
+                // Triệt tiêu hộp thoại "Microsoft Word Security Notice" (cùng cơ chế ConvertWordToEditableHtml)
+                wordApp.AutomationSecurity = 3; // msoAutomationSecurityForceDisable
+                wordApp.DisplayAlerts = 0;       // wdAlertsNone
 
                 StatusChanged?.Invoke("Đang nạp dữ liệu văn bản đã chỉnh sửa vào engine Microsoft Word...");
 
