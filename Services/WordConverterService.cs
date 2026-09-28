@@ -3,12 +3,70 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Win32;
 
 namespace VGCASignToolPro.Services
 {
     public class WordConverterService
     {
         public event Action<string>? StatusChanged;
+
+        // ═══════════════════════════════════════════════════════════════════════════════
+        // Registry key chặn hộp thoại "Microsoft Word Security Notice" khi tài liệu chứa
+        // trường INCLUDEPICTURE, INCLUDETEXT, LINK, v.v.
+        // Đây là GIẢI PHÁP DUY NHẤT đáng tin cậy 100% — các API như AutomationSecurity,
+        // DisplayAlerts, UpdateLinksAtOpen đều KHÔNG chặn được dialog này (đã được Microsoft
+        // thiết kế cố tình vượt qua các cơ chế suppress thông thường).
+        //
+        // Ref: HKCU\Software\Microsoft\Office\16.0\Word\Security
+        //   DisableWarningOnIncludeFieldsUpdate = 1 (REG_DWORD)
+        // ═══════════════════════════════════════════════════════════════════════════════
+        private const string WordSecurityRegPath = @"Software\Microsoft\Office\16.0\Word\Security";
+        private const string DisableWarningValueName = "DisableWarningOnIncludeFieldsUpdate";
+
+        /// <summary>
+        /// Tạm thời vô hiệu hóa cảnh báo bảo mật "fields that share data with external files"
+        /// bằng cách ghi Registry. Trả về giá trị gốc để khôi phục sau khi xong.
+        /// </summary>
+        private static (object? originalValue, bool existed) SuppressWordSecurityDialog()
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.CreateSubKey(WordSecurityRegPath);
+                if (key != null)
+                {
+                    object? original = key.GetValue(DisableWarningValueName);
+                    bool existed = original != null;
+                    key.SetValue(DisableWarningValueName, 1, RegistryValueKind.DWord);
+                    return (original, existed);
+                }
+            }
+            catch { /* Registry access bị hạn chế → bỏ qua */ }
+            return (null, false);
+        }
+
+        /// <summary>
+        /// Khôi phục lại giá trị Registry gốc sau khi đã hoàn thành xử lý Word COM.
+        /// </summary>
+        private static void RestoreWordSecuritySetting(object? originalValue, bool existed)
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(WordSecurityRegPath, writable: true);
+                if (key != null)
+                {
+                    if (existed && originalValue != null)
+                    {
+                        key.SetValue(DisableWarningValueName, originalValue, RegistryValueKind.DWord);
+                    }
+                    else if (!existed)
+                    {
+                        key.DeleteValue(DisableWarningValueName, throwOnMissingValue: false);
+                    }
+                }
+            }
+            catch { /* Không ảnh hưởng nếu khôi phục thất bại */ }
+        }
 
         /// <summary>
         /// Chuyển đổi tệp Word (.docx, .doc) sang định dạng HTML tương thích A4 để hiển thị trực tiếp và cho phép điều chỉnh
@@ -41,6 +99,9 @@ namespace VGCASignToolPro.Services
             if (wordType == null)
                 throw new InvalidOperationException("Không tìm thấy Microsoft Word trên hệ thống.");
 
+            // Tạm thời ghi Registry để chặn dialog "Security Notice" TRƯỚC khi tạo Word instance
+            var (regOriginalValue, regExisted) = SuppressWordSecurityDialog();
+
             dynamic? wordApp = null;
             dynamic? wordDoc = null;
 
@@ -53,29 +114,63 @@ namespace VGCASignToolPro.Services
                 wordApp.Visible = false;
                 wordApp.ScreenUpdating = false;
 
-                // Triệt tiêu hoàn toàn hộp thoại "Microsoft Word Security Notice" khi tài liệu chứa
-                // trường liên kết ngoài (External Links / Fields) — ngăn chặn modal chặn đứng tiến trình nền
-                // msoAutomationSecurityForceDisable = 3: Vô hiệu hóa toàn bộ macro và cảnh báo bảo mật
-                // wdAlertsNone = 0: Triệt tiêu mọi hộp thoại cảnh báo của Word
-                wordApp.AutomationSecurity = 3;
-                wordApp.DisplayAlerts = 0;
+                // ═══════════════════════════════════════════════════════════════════════════════
+                // FIX BUG: Triệt tiêu hoàn toàn hộp thoại "Microsoft Word Security Notice"
+                // Nguyên nhân gốc: Word phát hiện <img src> trỏ ra ngoài thư mục (external files)
+                //   từ các lần convert cũ (đường dẫn ../../../../Desktop/..._files/image001.gif)
+                //   → hiện cảnh báo "fields that can share data with external files and websites"
+                //
+                // AutomationSecurity = 3 chỉ chặn macro, KHÔNG chặn dialog này.
+                // Options.UpdateLinksAtOpen = false mới là fix chính xác cho dialog "external links".
+                // ═══════════════════════════════════════════════════════════════════════════════
+                wordApp.AutomationSecurity = 3;  // msoAutomationSecurityForceDisable
+                wordApp.DisplayAlerts = 0;        // wdAlertsNone
+                try { wordApp.Options.UpdateLinksAtOpen = false; } catch { }
 
                 StatusChanged?.Invoke($"Đang nạp cấu trúc tài liệu: {Path.GetFileName(wordFilePath)}...");
+
+                // Mở KHÔNG ReadOnly để Word có thể re-embed shapes/images vào document trước khi SaveAs HTML
                 wordDoc = wordApp.Documents.Open(
                     FileName: wordFilePath,
                     ConfirmConversions: false,
-                    ReadOnly: true,
+                    ReadOnly: false,
                     AddToRecentFiles: false,
                     Visible: false);
 
                 StatusChanged?.Invoke("Đang tạo bản trình diễn trực quan (Filtered HTML)...");
 
-                // Bắt buộc thiết lập Encoding = 65001 (msoEncodingUTF8) để triệt tiêu 100% lỗi font tiếng Việt trên tiêu đề H1, H2 và nội dung
+                // Bắt buộc thiết lập Encoding = 65001 (msoEncodingUTF8) để triệt tiêu 100% lỗi font tiếng Việt
                 try
                 {
                     wordDoc.WebOptions.Encoding = 65001; // msoEncodingUTF8
                 }
                 catch { }
+
+                // ═══════════════════════════════════════════════════════════════════════════════
+                // FIX BUG: Buộc Word nhúng tất cả hình ảnh thành embedded (không link ngoài)
+                // Giải mã (Unlink) tất cả trường INCLUDEPICTURE để chuyển từ linked → embedded,
+                // đảm bảo SaveAs HTML sẽ tạo bản sao ảnh trong _files/ folder mới
+                // ═══════════════════════════════════════════════════════════════════════════════
+                try
+                {
+                    dynamic fields = wordDoc.Fields;
+                    // Duyệt ngược để tránh lệch index khi Unlink
+                    for (int i = fields.Count; i >= 1; i--)
+                    {
+                        try
+                        {
+                            dynamic field = fields.Item(i);
+                            int fieldType = (int)field.Type;
+                            // wdFieldIncludePicture = 67, wdFieldLink = 56, wdFieldInclude = 36
+                            if (fieldType == 67 || fieldType == 56 || fieldType == 36)
+                            {
+                                field.Unlink(); // Chuyển field thành nội dung tĩnh (static result)
+                            }
+                        }
+                        catch { /* Bỏ qua field lỗi */ }
+                    }
+                }
+                catch { /* Document có thể không có Fields collection */ }
 
                 // 10 = wdFormatFilteredHTML (HTML sạch tối ưu cho hiển thị trang web)
                 wordDoc.SaveAs2(
@@ -84,7 +179,8 @@ namespace VGCASignToolPro.Services
                     AddToRecentFiles: false);
 
                 // QUAN TRỌNG: Đóng tài liệu Word ngay lập tức để giải phóng hoàn toàn khóa tệp tin (File Lock)
-                wordDoc.Close(false);
+                // Đóng KHÔNG lưu thay đổi vào file gốc (chỉ lưu HTML ở trên)
+                wordDoc.Close(0); // wdDoNotSaveChanges = 0
                 try { Marshal.ReleaseComObject(wordDoc); } catch { }
                 wordDoc = null;
 
@@ -101,7 +197,7 @@ namespace VGCASignToolPro.Services
             {
                 if (wordDoc != null)
                 {
-                    try { wordDoc.Close(false); } catch { }
+                    try { wordDoc.Close(0); } catch { }
                     try { Marshal.ReleaseComObject(wordDoc); } catch { }
                     wordDoc = null;
                 }
@@ -115,13 +211,162 @@ namespace VGCASignToolPro.Services
 
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
+
+                // Khôi phục Registry về trạng thái ban đầu sau khi Word đã đóng
+                RestoreWordSecuritySetting(regOriginalValue, regExisted);
             }
 
-            // Sau khi Word đã đóng và nhả toàn bộ File Handle, tiến hành nhúng CSS trang A4 và contentEditable
+            // Sau khi Word đã đóng và nhả toàn bộ File Handle:
+            // 1. Sửa đường dẫn ảnh hỏng (img src trỏ external/cũ) bằng cách copy ảnh về _files/ hoặc embed base64
+            FixBrokenImagePaths(outputHtmlPath);
+            // 2. Nhúng CSS trang A4 và contentEditable
             StatusChanged?.Invoke("Tài liệu đã được tải lên khung chỉnh sửa trực tiếp.");
             EnhanceHtmlForDirectEditing(outputHtmlPath);
 
             return outputHtmlPath;
+        }
+
+        /// <summary>
+        /// Sửa đường dẫn ảnh bị hỏng trong HTML xuất từ Word.
+        /// Nguyên nhân: Word cache đường dẫn ảnh từ lần convert cũ (../../../../Desktop/..._files/image001.gif)
+        /// thay vì tạo bản sao ảnh mới trong thư mục _files/ đi kèm file HTML hiện tại.
+        /// Phương thức này: quét tất cả img src → tìm file ảnh gốc → copy về _files/ đúng → cập nhật src.
+        /// </summary>
+        private static void FixBrokenImagePaths(string htmlFilePath)
+        {
+            if (!File.Exists(htmlFilePath)) return;
+
+            try
+            {
+                string htmlDir = Path.GetDirectoryName(htmlFilePath) ?? "";
+                string htmlBaseName = Path.GetFileNameWithoutExtension(htmlFilePath);
+                string localFilesFolder = $"{htmlBaseName}_files";
+                string localFilesFolderPath = Path.Combine(htmlDir, localFilesFolder);
+
+                string content = File.ReadAllText(htmlFilePath, Encoding.UTF8);
+
+                // Regex bắt tất cả <img ... src="..." ...>
+                var imgSrcPattern = new System.Text.RegularExpressions.Regex(
+                    @"(<img[^>]*\bsrc\s*=\s*"")([^""]+)("")",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Singleline);
+
+                bool hasChanges = false;
+                content = imgSrcPattern.Replace(content, match =>
+                {
+                    string prefix = match.Groups[1].Value;
+                    string rawSrc = match.Groups[2].Value;
+                    string suffix = match.Groups[3].Value;
+
+                    // Nếu src đã là relative path trỏ đúng vào _files folder hiện tại → bỏ qua
+                    if (rawSrc.StartsWith(localFilesFolder, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return match.Value;
+                    }
+
+                    // Nếu src là base64 data URI → bỏ qua
+                    if (rawSrc.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return match.Value;
+                    }
+
+                    // Bỏ qua URL mạng — không xử lý ảnh online (chống crash NotSupportedException)
+                    if (rawSrc.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                        rawSrc.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+                        rawSrc.StartsWith("//", StringComparison.Ordinal))
+                    {
+                        return match.Value;
+                    }
+
+                    // Giải mã URL encoding trong src (ví dụ: %20 → space)
+                    string decodedSrc;
+                    try { decodedSrc = Uri.UnescapeDataString(rawSrc); }
+                    catch { return match.Value; }
+
+                    // Bỏ qua đường dẫn tuyệt đối trỏ ra ngoài (chống LFI / Arbitrary File Read)
+                    if (Path.IsPathRooted(decodedSrc))
+                    {
+                        return match.Value;
+                    }
+
+                    // Giải quyết đường dẫn tương đối từ thư mục HTML (../../../../Desktop/..._files/image001.gif)
+                    string? resolvedPath = null;
+                    try
+                    {
+                        string candidatePath = Path.GetFullPath(Path.Combine(htmlDir, decodedSrc));
+                        // Ràng buộc an ninh: chỉ chấp nhận file nằm trong phạm vi thư mục người dùng
+                        // (bao gồm cả AppData\Temp và Desktop nơi Word có thể xuất _files/)
+                        string userRoot = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                        if (!string.IsNullOrEmpty(userRoot) &&
+                            candidatePath.StartsWith(userRoot, StringComparison.OrdinalIgnoreCase) &&
+                            File.Exists(candidatePath))
+                        {
+                            resolvedPath = candidatePath;
+                        }
+                    }
+                    catch { /* Path không hợp lệ → bỏ qua */ }
+
+                    if (resolvedPath != null)
+                    {
+                        // Tìm thấy file ảnh gốc → copy về _files/ folder đúng
+                        if (!Directory.Exists(localFilesFolderPath))
+                        {
+                            Directory.CreateDirectory(localFilesFolderPath);
+                        }
+
+                        string imageFileName = Path.GetFileName(resolvedPath);
+                        string destinationPath = Path.Combine(localFilesFolderPath, imageFileName);
+
+                        try
+                        {
+                            File.Copy(resolvedPath, destinationPath, overwrite: true);
+                            hasChanges = true;
+                            return $"{prefix}{localFilesFolder}/{imageFileName}{suffix}";
+                        }
+                        catch
+                        {
+                            // Copy thất bại → thử embed base64
+                        }
+                    }
+
+                    // Fallback: Không tìm được file ảnh gốc → thử embed base64 nếu tìm thấy file
+                    // với tên tương tự trong bất kỳ thư mục _files nào trong cùng tempDir
+                    string imageBaseName = Path.GetFileName(decodedSrc);
+                    if (!string.IsNullOrEmpty(imageBaseName) && !string.IsNullOrEmpty(htmlDir))
+                    {
+                        try
+                        {
+                            // Tìm file ảnh trong tất cả thư mục _files cùng cấp (từ các lần convert cũ)
+                            string[] candidateFiles = Directory.GetFiles(htmlDir, imageBaseName, SearchOption.AllDirectories);
+                            if (candidateFiles.Length > 0)
+                            {
+                                string foundFile = candidateFiles[0];
+                                if (!Directory.Exists(localFilesFolderPath))
+                                {
+                                    Directory.CreateDirectory(localFilesFolderPath);
+                                }
+
+                                string destPath = Path.Combine(localFilesFolderPath, imageBaseName);
+                                File.Copy(foundFile, destPath, overwrite: true);
+                                hasChanges = true;
+                                return $"{prefix}{localFilesFolder}/{imageBaseName}{suffix}";
+                            }
+                        }
+                        catch { /* Bỏ qua lỗi tìm kiếm */ }
+                    }
+
+                    // Không thể khôi phục → giữ nguyên src gốc
+                    return match.Value;
+                });
+
+                if (hasChanges)
+                {
+                    File.WriteAllText(htmlFilePath, content, Encoding.UTF8);
+                }
+            }
+            catch
+            {
+                // Không làm gián đoạn luồng chính nếu fix ảnh thất bại
+            }
         }
 
         private static void EnhanceHtmlForDirectEditing(string htmlFilePath)
@@ -265,6 +510,9 @@ namespace VGCASignToolPro.Services
                     "Không tìm thấy Microsoft Word trên hệ thống. Vui lòng đảm bảo máy tính đã cài đặt Word.");
             }
 
+            // Tạm thời ghi Registry để chặn dialog "Security Notice" TRƯỚC khi tạo Word instance
+            var (regOriginalValue, regExisted) = SuppressWordSecurityDialog();
+
             dynamic? wordApp = null;
             dynamic? wordDoc = null;
 
@@ -280,6 +528,7 @@ namespace VGCASignToolPro.Services
                 // Triệt tiêu hộp thoại "Microsoft Word Security Notice" (cùng cơ chế ConvertWordToEditableHtml)
                 wordApp.AutomationSecurity = 3; // msoAutomationSecurityForceDisable
                 wordApp.DisplayAlerts = 0;       // wdAlertsNone
+                try { wordApp.Options.UpdateLinksAtOpen = false; } catch { }
 
                 StatusChanged?.Invoke($"Đang mở tài liệu: {Path.GetFileName(wordFilePath)}...");
 
@@ -334,6 +583,8 @@ namespace VGCASignToolPro.Services
 
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
+
+                RestoreWordSecuritySetting(regOriginalValue, regExisted);
             }
         }
 
@@ -397,6 +648,9 @@ namespace VGCASignToolPro.Services
                 throw new InvalidOperationException("Không tìm thấy Microsoft Word trên hệ thống.");
             }
 
+            // Tạm thời ghi Registry để chặn dialog "Security Notice" TRƯỚC khi tạo Word instance
+            var (regOriginalValue, regExisted) = SuppressWordSecurityDialog();
+
             dynamic? wordApp = null;
             dynamic? wordDoc = null;
 
@@ -414,6 +668,7 @@ namespace VGCASignToolPro.Services
                 // Triệt tiêu hộp thoại "Microsoft Word Security Notice" (cùng cơ chế ConvertWordToEditableHtml)
                 wordApp.AutomationSecurity = 3; // msoAutomationSecurityForceDisable
                 wordApp.DisplayAlerts = 0;       // wdAlertsNone
+                try { wordApp.Options.UpdateLinksAtOpen = false; } catch { }
 
                 StatusChanged?.Invoke("Đang nạp dữ liệu văn bản đã chỉnh sửa vào engine Microsoft Word...");
 
@@ -518,6 +773,8 @@ namespace VGCASignToolPro.Services
                     }
                 }
                 catch { }
+
+                RestoreWordSecuritySetting(regOriginalValue, regExisted);
             }
         }
 
