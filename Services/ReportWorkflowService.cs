@@ -111,7 +111,6 @@ namespace VGCASignToolPro.Services
     public class ReportWorkflowService
     {
         private const string DefaultFirebaseUrl = "https://cva-kyso-lienthong-default-rtdb.asia-southeast1.firebasedatabase.app";
-        private const string DefaultSecret = "TOdsGaw1iflR0dCDtHqQ8pBii9UgiqLaq8nfF250";
         private const long LockTimeoutMs = 60 * 60 * 1000; // 60 phút
 
         private readonly HttpClient _http;
@@ -120,9 +119,51 @@ namespace VGCASignToolPro.Services
 
         public ReportWorkflowService(string? firebaseUrl = null, string? secret = null)
         {
-            _firebaseUrl = (firebaseUrl ?? DefaultFirebaseUrl).TrimEnd('/');
-            _secret = secret ?? DefaultSecret;
+            var config = LoadConfiguration();
+            _firebaseUrl = (firebaseUrl ?? config.Url).TrimEnd('/');
+            _secret = secret ?? config.Secret;
             _http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        }
+
+        private static (string Url, string Secret) LoadConfiguration()
+        {
+            string envUrl = Environment.GetEnvironmentVariable("CVA_FIREBASE_URL") ?? string.Empty;
+            string envSecret = Environment.GetEnvironmentVariable("CVA_FIREBASE_SECRET") ?? string.Empty;
+
+            if (!string.IsNullOrEmpty(envUrl) && !string.IsNullOrEmpty(envSecret))
+            {
+                return (envUrl, envSecret);
+            }
+
+            string[] searchPaths = new[]
+            {
+                Path.Combine(AppContext.BaseDirectory, "workflow_config.json"),
+                Path.Combine(Directory.GetCurrentDirectory(), "workflow_config.json")
+            };
+
+            foreach (string p in searchPaths)
+            {
+                if (File.Exists(p))
+                {
+                    try
+                    {
+                        string json = File.ReadAllText(p, Encoding.UTF8);
+                        var obj = JObject.Parse(json);
+                        string url = obj["firebaseUrl"]?.ToString() ?? DefaultFirebaseUrl;
+                        string sec = obj["databaseSecret"]?.ToString() ?? string.Empty;
+                        if (!string.IsNullOrEmpty(sec))
+                        {
+                            return (url, sec);
+                        }
+                    }
+                    catch
+                    {
+                        // Bỏ qua lỗi cú pháp và chuyển sang cấu hình dự phòng
+                    }
+                }
+            }
+
+            return (!string.IsNullOrEmpty(envUrl) ? envUrl : DefaultFirebaseUrl, envSecret);
         }
 
         public static string ComputeSha256(string filePath)
@@ -141,6 +182,10 @@ namespace VGCASignToolPro.Services
 
         private string BuildUrl(string path)
         {
+            if (string.IsNullOrEmpty(_secret))
+            {
+                return $"{_firebaseUrl}/{path}.json";
+            }
             return $"{_firebaseUrl}/{path}.json?auth={_secret}";
         }
 
