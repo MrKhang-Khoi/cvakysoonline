@@ -42,7 +42,22 @@ namespace VGCASignToolPro.Services
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError($"Lỗi nạp cấu hình chữ ký từ file: {ex}");
+                try
+                {
+                    if (File.Exists(ProfilesFilePath))
+                    {
+                        string backupPath = ProfilesFilePath + ".bak";
+                        File.Copy(ProfilesFilePath, backupPath, overwrite: true);
+                    }
+                }
+                catch (Exception backupEx)
+                {
+                    System.Diagnostics.Trace.TraceWarning($"Không thể sao lưu file profiles hỏng: {backupEx.Message}");
+                }
+            }
 
             // 3. Khởi tạo danh sách mẫu mặc định chuẩn Ban Cơ yếu & Văn bản hành chính
             var defaults = GetDefaultProfiles();
@@ -61,7 +76,10 @@ namespace VGCASignToolPro.Services
                 string json = JsonConvert.SerializeObject(profiles, Formatting.Indented);
                 File.WriteAllText(ProfilesFilePath, json);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError($"Lỗi lưu cấu hình chữ ký vào file: {ex}");
+            }
         }
 
         public static List<SignatureProfile> GetDefaultProfiles()

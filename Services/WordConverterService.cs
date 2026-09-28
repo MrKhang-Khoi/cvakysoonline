@@ -200,9 +200,9 @@ namespace VGCASignToolPro.Services
 
                 File.WriteAllText(htmlFilePath, content, Encoding.UTF8);
             }
-            catch
+            catch (Exception ex)
             {
-                // Bỏ qua nếu có lỗi nhỏ về encoding, file HTML vẫn hiển thị tốt
+                System.Diagnostics.Trace.TraceWarning($"Không thể chèn style bổ sung vào file HTML xem trước: {ex.Message}");
             }
         }
 
@@ -298,15 +298,15 @@ namespace VGCASignToolPro.Services
             {
                 if (wordDoc != null)
                 {
-                    try { wordDoc.Close(false); } catch { }
-                    try { Marshal.ReleaseComObject(wordDoc); } catch { }
+                    try { wordDoc.Close(false); } catch (Exception ex) { System.Diagnostics.Trace.TraceWarning($"Lỗi đóng Word COM doc: {ex.Message}"); }
+                    try { Marshal.ReleaseComObject(wordDoc); } catch (Exception ex) { System.Diagnostics.Trace.TraceWarning($"Lỗi giải phóng Word COM doc: {ex.Message}"); }
                     wordDoc = null;
                 }
 
                 if (wordApp != null)
                 {
-                    try { wordApp.Quit(false); } catch { }
-                    try { Marshal.ReleaseComObject(wordApp); } catch { }
+                    try { wordApp.Quit(false); } catch (Exception ex) { System.Diagnostics.Trace.TraceWarning($"Lỗi đóng Word COM app: {ex.Message}"); }
+                    try { Marshal.ReleaseComObject(wordApp); } catch (Exception ex) { System.Diagnostics.Trace.TraceWarning($"Lỗi giải phóng Word COM app: {ex.Message}"); }
                     wordApp = null;
                 }
 

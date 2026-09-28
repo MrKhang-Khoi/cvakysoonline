@@ -189,17 +189,36 @@
         };
 
         async function loadPdfFromBase64(base64Data) {
+            if (!base64Data || typeof base64Data !== 'string') {
+                console.error('loadPdfFromBase64: invalid input');
+                return;
+            }
+
+            if (window._pdfLoadAbort) window._pdfLoadAbort.aborted = true;
+            const abortFlag = { aborted: false };
+            window._pdfLoadAbort = abortFlag;
+
             const loadingOverlay = document.getElementById('loading-overlay');
-            loadingOverlay.style.display = 'flex';
-            document.getElementById('loading-text').innerText = 'Đang phân tích cấu trúc trang PDF...';
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+            const loadingText = document.getElementById('loading-text');
+            if (loadingText) loadingText.innerText = 'Đang phân tích cấu trúc trang PDF...';
 
             const container = document.getElementById('viewer-container');
+            if (!container) {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                return;
+            }
+            container.querySelectorAll('canvas').forEach(c => { c.width = 0; c.height = 0; });
             container.textContent = '';
             renderedPages = [];
             removeStamp();
 
             try {
-                const binaryString = atob(base64Data);
+                const cleanBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
+                if (!/^[A-Za-z0-9+/\s]+=*$/.test(cleanBase64.trim())) {
+                    throw new Error('Invalid base64 encoding');
+                }
+                const binaryString = atob(cleanBase64.trim());
                 const bytes = new Uint8Array(binaryString.length);
                 for (let i = 0; i < binaryString.length; i++) {
                     bytes[i] = binaryString.charCodeAt(i);
@@ -211,7 +230,9 @@
                 // Tính toán viewport tối ưu cho độ phân giải màn hình (~820px chiều rộng cho khổ A4)
                 const targetWidth = Math.min(window.innerWidth - 60, 850);
 
+                // ponytail: serial render, upgrade to chunked/virtualized if >20 pages needed
                 for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                    if (abortFlag.aborted) return;
                     const page = await currentPdf.getPage(pageNum);
                     const unscaledViewport = page.getViewport({ scale: 1.0 });
                     const scale = targetWidth / unscaledViewport.width;
@@ -236,14 +257,19 @@
 
                     const canvas = document.createElement('canvas');
                     canvas.className = 'page-canvas';
-                    canvas.width = viewport.width;
-                    canvas.height = viewport.height;
+                    canvas.width = Math.round(viewport.width);
+                    canvas.height = Math.round(viewport.height);
                     wrapper.appendChild(canvas);
 
                     container.appendChild(wrapper);
 
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        console.error(`Không thể tạo canvas context cho trang ${pageNum}`);
+                        continue;
+                    }
                     const renderContext = {
-                        canvasContext: canvas.getContext('2d'),
+                        canvasContext: ctx,
                         viewport: viewport
                     };
                     await page.render(renderContext).promise;
@@ -257,21 +283,29 @@
                     });
                 }
 
-                loadingOverlay.style.display = 'none';
-
                 if (window.chrome && window.chrome.webview) {
                     window.chrome.webview.postMessage({ type: 'pdfLoaded', totalPages: totalPages });
                 }
             } catch (err) {
-                loadingOverlay.style.display = 'none';
                 console.error("Lỗi nạp PDF:", err);
-                alert("Không thể nạp file PDF: " + err.message);
+                alert("Không thể nạp file PDF. Vui lòng thử lại.");
+            } finally {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
             }
         }
 
         // HÀM CHÈN CON DẤU / CHỮ KÝ TAY VÀO VỊ TRÍ HIỂN THỊ TRỰC TIẾP
         function insertStamp(imageUrl, widthPx = 140, heightPx = 140) {
-            stampConfig.imageUrl = imageUrl || '';
+            const safeDataPattern = /^data:image\/(png|jpeg|gif|webp);base64,/;
+            if (typeof imageUrl !== 'string' ||
+                (!safeDataPattern.test(imageUrl) && !imageUrl.startsWith('/') && !imageUrl.startsWith('https://vgcaviewer.local/'))) {
+                console.error('insertStamp: imageUrl không hợp lệ');
+                return;
+            }
+            widthPx = Math.max(10, Math.min(Number(widthPx) || 140, 1000));
+            heightPx = Math.max(10, Math.min(Number(heightPx) || 140, 1000));
+
+            stampConfig.imageUrl = imageUrl;
             stampConfig.widthPx = widthPx;
             stampConfig.heightPx = heightPx;
 
@@ -398,11 +432,14 @@
                 const dy = e.clientY - startY;
 
                 if (isDragging && activeStamp) {
+                    if (!stampEl || !stampEl.parentNode) { isDragging = false; return; }
+
                     // Kiểm tra nếu con trỏ chuột di chuyển sang trang PDF khác
                     const elementsUnderCursor = document.elementsFromPoint(e.clientX, e.clientY);
                     for (const el of elementsUnderCursor) {
                         if (el.classList.contains('page-wrapper') && el !== activeStamp.wrapper) {
-                            const pageNum = parseInt(el.dataset.pageNumber);
+                            const pageNum = parseInt(el.dataset.pageNumber, 10);
+                            if (isNaN(pageNum)) continue;
                             const targetPage = renderedPages.find(p => p.pageNum === pageNum);
                             if (targetPage) {
                                 el.appendChild(stampEl);
@@ -430,6 +467,7 @@
                     stampEl.style.top = `${newTop}px`;
                     updateStampCoordinates();
                 } else if (isResizing && activeStamp) {
+                    if (!currentResizeHandle) { isResizing = false; return; }
                     let newWidth = startWidth;
                     let newHeight = startHeight;
                     let newLeft = startLeft;
@@ -476,12 +514,14 @@
 
             const el = activeStamp.element;
             const p = activeStamp.targetPageObj;
+            if (!p || !p.wrapper) return null;
             const scale = p.scale;
+            if (!scale || scale <= 0) return null;
 
-            const domLeft = parseFloat(el.style.left);
-            const domTop = parseFloat(el.style.top);
-            const domWidth = parseFloat(el.style.width);
-            const domHeight = parseFloat(el.style.height);
+            const domLeft = parseFloat(el.style.left) || 0;
+            const domTop = parseFloat(el.style.top) || 0;
+            const domWidth = parseFloat(el.style.width) || 0;
+            const domHeight = parseFloat(el.style.height) || 0;
 
             // Chuyển đổi từ Pixel màn hình sang Point của PDF (1 inch = 72 points)
             const pdfX = Math.round((domLeft / scale) * 100) / 100;

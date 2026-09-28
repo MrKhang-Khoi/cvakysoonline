@@ -21,6 +21,7 @@ namespace VGCASignToolPro
         private readonly PdfVerifierService _pdfVerifier = new();
         private readonly ProfileManager _profileManager = new();
         private readonly WebUploadService _webUploader = new();
+        private readonly VgcaAuthService _vgcaAuth = new();
 
         private List<CertificateModel> _certificates = new();
         private List<SignatureProfile> _profiles = new();
@@ -32,8 +33,9 @@ namespace VGCASignToolPro
         private bool _isWebViewInitialized;
 
         // VỊ TRÍ CHỮ KÝ DO NGƯỜI DÙNG KÉO THẢ TƯƠNG TÁC TRÊN BẢN XEM TRƯỚC
-        private bool _hasUserPlacedStamp = false;
+        private bool _hasUserPlacedStamp;
         private int _userStampPage = 1;
+        // ponytail: clamp stamp coords to page size at sign-time
         private float _userStampX = 380f;
         private float _userStampY = 120f;
         private float _userStampWidth = 140f;
@@ -47,15 +49,26 @@ namespace VGCASignToolPro
             _wordConverter.StatusChanged += UpdateStatus;
             _pdfSigner.StatusChanged += UpdateStatus;
             _webUploader.StatusChanged += UpdateStatus;
+            _vgcaAuth.LoginStateChanged += OnVgcaLoginStateChanged;
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            UpdateStatus("Khởi tạo hệ thống VGCA Sign Tool Pro...");
-            await InitializePreviewEngineAsync();
+            try
+            {
+                UpdateStatus("Khởi tạo hệ thống VGCA Sign Tool Pro...");
+                await InitializePreviewEngineAsync();
 
-            LoadCertificatesAndVerifyVGCALogin();
-            LoadProfiles();
+                InitializeVgcaAuthRoster();
+                LoadCertificatesAndVerifyVGCALogin();
+                LoadProfiles();
+            }
+            catch (Exception ex)
+            {
+                UpdateStatus($"Lỗi khởi tạo: {ex.Message}");
+                MessageBox.Show($"Không thể khởi tạo ứng dụng:\n{ex.Message}",
+                    "Lỗi Khởi Tạo", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private async Task InitializePreviewEngineAsync()
@@ -69,6 +82,11 @@ namespace VGCASignToolPro
                 if (!Directory.Exists(webView2CacheDir))
                 {
                     Directory.CreateDirectory(webView2CacheDir);
+                }
+
+                if (PdfPreviewControl == null)
+                {
+                    throw new InvalidOperationException("PdfPreviewControl chưa được khởi tạo từ XAML.");
                 }
 
                 var env = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, webView2CacheDir);
@@ -91,13 +109,15 @@ namespace VGCASignToolPro
                     }
                 }
 
-                if (Directory.Exists(wwwroot))
+                if (!Directory.Exists(wwwroot))
                 {
-                    PdfPreviewControl.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                        "vgcaviewer.local",
-                        wwwroot,
-                        Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow);
+                    throw new DirectoryNotFoundException($"Không tìm thấy thư mục wwwroot. Đã tìm tại: {wwwroot}");
                 }
+
+                PdfPreviewControl.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                    "vgcaviewer.local",
+                    wwwroot,
+                    Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.DenyCors);
 
                 PdfPreviewControl.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
                 _isWebViewInitialized = true;
@@ -105,6 +125,9 @@ namespace VGCASignToolPro
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Trace.TraceError($"Lỗi khởi tạo WebView2: {ex}");
+                _isWebViewInitialized = false;
+                BtnInsertSignatureStamp.IsEnabled = false;
                 UpdateStatus($"Lỗi khởi tạo WebView2: {ex.Message}");
             }
         }
@@ -121,14 +144,19 @@ namespace VGCASignToolPro
                     string? msgType = typeProp.GetString();
                     if (msgType == "stampCoordinatesChanged")
                     {
-                        if (root.TryGetProperty("coords", out var coords))
+                        if (root.TryGetProperty("coords", out var coords) &&
+                            coords.TryGetProperty("pageNumber", out var pn) && pn.TryGetInt32(out int pageNum) &&
+                            coords.TryGetProperty("x", out var cx) && cx.TryGetDouble(out double xVal) &&
+                            coords.TryGetProperty("y", out var cy) && cy.TryGetDouble(out double yVal) &&
+                            coords.TryGetProperty("width", out var cw) && cw.TryGetDouble(out double wVal) &&
+                            coords.TryGetProperty("height", out var ch) && ch.TryGetDouble(out double hVal))
                         {
                             _hasUserPlacedStamp = true;
-                            _userStampPage = coords.GetProperty("pageNumber").GetInt32();
-                            _userStampX = (float)coords.GetProperty("x").GetDouble();
-                            _userStampY = (float)coords.GetProperty("y").GetDouble();
-                            _userStampWidth = (float)coords.GetProperty("width").GetDouble();
-                            _userStampHeight = (float)coords.GetProperty("height").GetDouble();
+                            _userStampPage = pageNum;
+                            _userStampX = (float)xVal;
+                            _userStampY = (float)yVal;
+                            _userStampWidth = (float)wVal;
+                            _userStampHeight = (float)hVal;
 
                             // Đồng bộ ngược lại các ô nhập liệu ở Tab 1 để người dùng quan sát
                             TxtPageNumber.Text = _userStampPage.ToString();
@@ -146,15 +174,18 @@ namespace VGCASignToolPro
                     }
                     else if (msgType == "pdfLoaded")
                     {
-                        int totalPages = root.GetProperty("totalPages").GetInt32();
-                        UpdateStatus($"Đã nạp xong tài liệu PDF tương tác ({totalPages} trang).");
+                        if (root.TryGetProperty("totalPages", out var tp) && tp.TryGetInt32(out int totalPages))
+                        {
+                            UpdateStatus($"Đã nạp xong tài liệu PDF tương tác ({totalPages} trang).");
+                        }
                         BtnInsertSignatureStamp.IsEnabled = true;
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Bỏ qua lỗi parsing không mong muốn
+                System.Diagnostics.Trace.TraceError($"Lỗi xử lý thông điệp WebView: {ex}");
+                UpdateStatus($"Lỗi xử lý thông điệp WebView: {ex.Message}");
             }
         }
 
@@ -166,7 +197,229 @@ namespace VGCASignToolPro
             });
         }
 
-        #region TAB 1: THÔNG TIN CHỨNG THƯ & ĐĂNG NHẬP VGCA
+        #region TAB 1: THÔNG TIN CHỨNG THƯ & ĐĂNG NHẬP VGCA TÍCH HỢP
+
+        private void InitializeVgcaAuthRoster()
+        {
+            try
+            {
+                var teachers = _vgcaAuth.GetTeacherList();
+                if (teachers == null || teachers.Count == 0)
+                {
+                    UpdateStatus("Danh bạ VGCA trống hoặc không khả dụng.");
+                    return;
+                }
+
+                CmbRosterQuickSelect.ItemsSource = teachers;
+                CmbRosterQuickSelect.DisplayMemberPath = "FullName";
+
+                // Chọn phần tử đầu tiên trong danh bạ nếu khả dụng
+                CmbRosterQuickSelect.SelectedIndex = 0;
+
+                GenerateAndDisplayVgcaQr();
+            }
+            catch (Exception ex)
+            {
+                UpdateStatus($"Lỗi khởi tạo danh bạ VGCA: {ex.Message}");
+            }
+        }
+
+        private void GenerateAndDisplayVgcaQr()
+        {
+            try
+            {
+                var qrBitmap = _vgcaAuth.GenerateQrCode(out _);
+                if (qrBitmap == null)
+                {
+                    UpdateStatus("Không thể sinh mã QR VGCA.");
+                    return;
+                }
+                ImgVgcaQrCode.Source = qrBitmap;
+            }
+            catch (Exception ex)
+            {
+                UpdateStatus($"Lỗi sinh mã QR VGCA: {ex.Message}");
+            }
+        }
+
+        private void OnVgcaLoginStateChanged(bool isLoggedIn, VgcaTeacherModel? teacher)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                if (isLoggedIn && teacher != null)
+                {
+                    GrpVgcaLoginBox.Visibility = Visibility.Collapsed;
+                    GrpVgcaActiveCard.Visibility = Visibility.Visible;
+                    BorderVgcaAuthError.Visibility = Visibility.Collapsed;
+
+                    BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(6, 95, 70));
+                    TxtVgcaGlobalStatusIcon.Text = "✅";
+                    TxtVgcaGlobalStatusText.Text = $"VGCA: {teacher.FullName}";
+
+                    TxtDetailSignerName.Text = teacher.FullName;
+                    TxtDetailEmail.Text = !string.IsNullOrWhiteSpace(teacher.Email) ? teacher.Email : "Chưa đăng ký email trong chứng thư";
+                    TxtDetailOrg.Text = !string.IsNullOrWhiteSpace(teacher.Department)
+                        ? $"{teacher.Department} - {teacher.Organization ?? "N/A"}"
+                        : teacher.Organization ?? "Không rõ tổ chức";
+                    TxtSignerDisplayName.Text = teacher.FullName;
+                    TxtUploadSigner.Text = teacher.FullName;
+                    TxtUploadDepartment.Text = teacher.Department ?? "";
+                    TxtQuickCertNotice.Text = $"Chứng thư: {teacher.FullName} (Ban Cơ yếu G2)";
+
+                    // Mở khóa Tab 2
+                    TabItemSignWorkspace.Header = "  2. Soạn Thảo, Xem & Ký Số Trực Tiếp  ";
+                    OverlayTab2Locked.Visibility = Visibility.Collapsed;
+
+                    // Đồng bộ chứng thư trong kho Windows Store nếu có
+                    if (_certificates != null && _certificates.Count > 0)
+                    {
+                        var matchedCert = _certificates.FirstOrDefault(c =>
+                            c.IsVGCACertificate && (
+                                c.CommonName.Contains(teacher.FullName, StringComparison.OrdinalIgnoreCase) ||
+                                (!string.IsNullOrEmpty(teacher.SerialNumber) && string.Equals(c.SerialNumber, teacher.SerialNumber, StringComparison.OrdinalIgnoreCase))
+                            ));
+
+                        if (matchedCert != null)
+                        {
+                            _currentActiveCert = matchedCert;
+                            CmbCertificates.SelectedItem = matchedCert;
+                            TxtDetailIssuer.Text = matchedCert.Issuer;
+                            TxtDetailSerial.Text = matchedCert.SerialNumber;
+                            TxtDetailValidity.Text = $"{matchedCert.NotBefore:dd/MM/yyyy} đến {matchedCert.NotAfter:dd/MM/yyyy} ({(matchedCert.IsValidNow ? "Còn hiệu lực" : "Đã hết hạn")})";
+                            TxtDetailAlgorithm.Text = matchedCert.KeyAlgorithm;
+                            TxtDetailThumbprint.Text = matchedCert.Thumbprint;
+                        }
+                    }
+
+                    var maskedCccd = teacher.Cccd?.Length > 4 
+                        ? $"***{teacher.Cccd[^4..]}" 
+                        : "***";
+                    UpdateStatus($"Phiên làm việc VGCA Virtual CSP đã kích hoạt: {teacher.FullName} ({maskedCccd})");
+                }
+                else
+                {
+                    GrpVgcaLoginBox.Visibility = Visibility.Visible;
+                    GrpVgcaActiveCard.Visibility = Visibility.Collapsed;
+
+                    BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(185, 28, 28));
+                    TxtVgcaGlobalStatusIcon.Text = "🔒";
+                    TxtVgcaGlobalStatusText.Text = "VGCA: Chưa Đăng Nhập";
+                    TxtQuickCertNotice.Text = "Chưa kết nối chứng thư VGCA";
+
+                    // Khóa Tab 2
+                    TabItemSignWorkspace.Header = "  2. Soạn Thảo, Xem & Ký Số Trực Tiếp (🔒 Khóa)  ";
+                    OverlayTab2Locked.Visibility = Visibility.Visible;
+
+                    UpdateStatus("Tài khoản VGCA chưa đăng nhập. Tab 2 bị khóa để đảm bảo an toàn.");
+                }
+            });
+        }
+
+        private void CmbRosterQuickSelect_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbRosterQuickSelect.SelectedItem is VgcaTeacherModel teacher)
+            {
+                TxtVgcaCccd.Text = teacher.Cccd;
+                BorderVgcaAuthError.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void BtnVgcaLogin_Click(object sender, RoutedEventArgs e)
+        {
+            string cccd = TxtVgcaCccd.Text.Trim();
+            string password = TxtVgcaPassword.Password;
+
+            if (string.IsNullOrWhiteSpace(cccd) || string.IsNullOrEmpty(password))
+            {
+                BorderVgcaAuthError.Visibility = Visibility.Visible;
+                TxtVgcaAuthError.Text = "Vui lòng nhập đầy đủ số CCCD và mật khẩu.";
+                return;
+            }
+
+            // ponytail: sync call OK cho local-only auth. Chuyển async + disable button khi tích hợp API thật.
+            UpdateStatus("Đang xác thực thông tin đăng nhập VGCA Virtual CSP...");
+            var result = _vgcaAuth.AuthenticatePassword(cccd, password);
+
+            if (result.Success && result.Teacher != null)
+            {
+                BorderVgcaAuthError.Visibility = Visibility.Collapsed;
+                MessageBox.Show(
+                    $"Đăng nhập thành công tài khoản VGCA Virtual CSP!\n\nCán bộ: {result.Teacher.FullName}\nĐơn vị: {result.Teacher.Department}\nSố CCCD: {result.Teacher.Cccd}\n\nKhu vực Soạn thảo & Ký số (Tab 2) đã được mở khóa sẵn sàng.",
+                    "Xác Thực Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                BorderVgcaAuthError.Visibility = Visibility.Visible;
+                TxtVgcaAuthError.Text = result.ErrorDescription;
+                UpdateStatus($"Đăng nhập thất bại: {result.ErrorDescription}");
+            }
+        }
+
+        private void BtnRefreshQr_Click(object sender, RoutedEventArgs e)
+        {
+            GenerateAndDisplayVgcaQr();
+            UpdateStatus("Đã tạo mã QR đăng nhập VGCA mới.");
+        }
+
+        private void BtnApproveQr_Click(object sender, RoutedEventArgs e)
+        {
+            string cccd = TxtVgcaCccd.Text.Trim();
+            if (string.IsNullOrWhiteSpace(cccd))
+            {
+                BorderVgcaAuthError.Visibility = Visibility.Visible;
+                TxtVgcaAuthError.Text = "Vui lòng nhập số CCCD trước khi phê duyệt QR.";
+                return;
+            }
+
+            if (_vgcaAuth == null)
+            {
+                BorderVgcaAuthError.Visibility = Visibility.Visible;
+                TxtVgcaAuthError.Text = "Dịch vụ xác thực chưa sẵn sàng. Vui lòng khởi động lại.";
+                return;
+            }
+
+            // ponytail: sync call OK cho local-only auth. Chuyển async + disable button khi tích hợp API thật.
+            var result = _vgcaAuth.ApproveQrLogin(cccd);
+
+            if (result.Success && result.Teacher != null)
+            {
+                BorderVgcaAuthError.Visibility = Visibility.Collapsed;
+                MessageBox.Show(
+                    $"Xác nhận phê duyệt mã QR thành công từ ứng dụng VGCA Mobile!\n\nCán bộ: {result.Teacher.FullName ?? "(Không rõ)"}\nĐơn vị: {result.Teacher.Department ?? "(Không rõ)"}\nSố CCCD: {result.Teacher.Cccd ?? "(Không rõ)"}\n\nKhu vực Soạn thảo & Ký số (Tab 2) đã được mở khóa.",
+                    "Xác Thực QR Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                BorderVgcaAuthError.Visibility = Visibility.Visible;
+                string err = result.ErrorDescription ?? "Xác thực QR thất bại. Vui lòng thử lại.";
+                TxtVgcaAuthError.Text = err;
+                UpdateStatus($"Lỗi xác thực QR: {err}");
+            }
+        }
+
+        private void BtnVgcaLogout_Click(object sender, RoutedEventArgs e)
+        {
+            var choice = MessageBox.Show(
+                "Bạn có chắc chắn muốn đăng xuất tài khoản chữ ký số VGCA không?\n(Sau khi đăng xuất, Tab 2 sẽ bị khóa lại cho đến khi đăng nhập lại)",
+                "Xác Nhận Đăng Xuất", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (choice == MessageBoxResult.Yes)
+            {
+                if (_vgcaAuth == null)
+                {
+                    UpdateStatus("Dịch vụ xác thực chưa sẵn sàng.");
+                    return;
+                }
+                _vgcaAuth.Logout();
+                GenerateAndDisplayVgcaQr();
+                UpdateStatus("Đã đăng xuất tài khoản VGCA Virtual CSP.");
+            }
+        }
+
+        private void BtnGoToLoginTab_Click(object sender, RoutedEventArgs e)
+        {
+            MainTabControl.SelectedIndex = 0;
+        }
 
         private void LoadCertificatesAndVerifyVGCALogin()
         {
@@ -176,6 +429,13 @@ namespace VGCASignToolPro
                 CmbCertificates.ItemsSource = null;
                 CmbCertificates.ItemsSource = _certificates;
 
+                if (_certificates == null || _certificates.Count == 0)
+                {
+                    UpdateStatus("Không tìm thấy chứng thư số nào có khóa riêng.");
+                    OnVgcaLoginStateChanged(false, null);
+                    return;
+                }
+
                 // Tìm chứng thư VGCA chuyên dùng của Ban Cơ yếu Chính phủ
                 var vgcaCert = _certService.GetActiveVGCACertificate();
 
@@ -184,50 +444,41 @@ namespace VGCASignToolPro
                     _currentActiveCert = vgcaCert;
                     CmbCertificates.SelectedItem = vgcaCert;
 
-                    // Hiển thị trạng thái ĐÃ ĐĂNG NHẬP
-                    PnlVgcaLoggedInDetails.Visibility = Visibility.Visible;
-                    PnlVgcaNotLoggedInWarning.Visibility = Visibility.Collapsed;
-
-                    BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(6, 95, 70));
-                    TxtVgcaGlobalStatusIcon.Text = "✅";
-                    TxtVgcaGlobalStatusText.Text = $"VGCA Virtual CSP: {vgcaCert.CommonName}";
-
-                    // Điền chi tiết thông tin chứng thư
-                    TxtDetailSignerName.Text = vgcaCert.CommonName;
-                    TxtDetailEmail.Text = !string.IsNullOrWhiteSpace(vgcaCert.Email) ? vgcaCert.Email : "Chưa đăng ký email trong chứng thư";
-                    TxtDetailOrg.Text = !string.IsNullOrWhiteSpace(vgcaCert.OrganizationUnit) 
-                        ? $"{vgcaCert.OrganizationUnit} - {vgcaCert.Organization}" 
-                        : vgcaCert.Subject;
-                    TxtDetailIssuer.Text = vgcaCert.Issuer;
-                    TxtDetailSerial.Text = vgcaCert.SerialNumber;
+                    TxtDetailIssuer.Text = vgcaCert.Issuer ?? "";
+                    TxtDetailSerial.Text = vgcaCert.SerialNumber ?? "";
                     TxtDetailValidity.Text = $"{vgcaCert.NotBefore:dd/MM/yyyy} đến {vgcaCert.NotAfter:dd/MM/yyyy} ({(vgcaCert.IsValidNow ? "Còn hiệu lực" : "Đã hết hạn")})";
-                    TxtDetailAlgorithm.Text = vgcaCert.KeyAlgorithm;
-                    TxtDetailThumbprint.Text = vgcaCert.Thumbprint;
+                    TxtDetailAlgorithm.Text = vgcaCert.KeyAlgorithm ?? "";
+                    TxtDetailThumbprint.Text = vgcaCert.Thumbprint ?? "";
 
-                    TxtSignerDisplayName.Text = vgcaCert.CommonName;
-                    TxtUploadSigner.Text = vgcaCert.CommonName;
-                    TxtQuickCertNotice.Text = $"Chứng thư: {vgcaCert.CommonName} ({vgcaCert.KeyAlgorithm})";
+                    if (_vgcaAuth.IsLoggedIn && _vgcaAuth.CurrentTeacher != null)
+                    {
+                        OnVgcaLoginStateChanged(true, _vgcaAuth.CurrentTeacher);
+                    }
+                    else
+                    {
+                        OnVgcaLoginStateChanged(false, null);
+                    }
 
-                    UpdateStatus($"Đã xác thực chứng thư Ban Cơ yếu: {vgcaCert.CommonName} (Serial: {vgcaCert.SerialNumber})");
+                    UpdateStatus($"Đã phát hiện chứng thư Ban Cơ yếu: {vgcaCert.CommonName ?? "VGCA"} (Serial: {vgcaCert.SerialNumber ?? "N/A"}). Vui lòng đăng nhập Tab 1.");
                 }
                 else
                 {
                     _currentActiveCert = null;
-
-                    // Hiển thị cảnh báo CHƯA ĐĂNG NHẬP
-                    PnlVgcaLoggedInDetails.Visibility = Visibility.Collapsed;
-                    PnlVgcaNotLoggedInWarning.Visibility = Visibility.Visible;
-
-                    BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(185, 28, 28));
-                    TxtVgcaGlobalStatusIcon.Text = "⚠️";
-                    TxtVgcaGlobalStatusText.Text = "VGCA: Chưa Đăng Nhập";
-                    TxtQuickCertNotice.Text = "Chưa kết nối chứng thư VGCA";
+                    if (_vgcaAuth.IsLoggedIn && _vgcaAuth.CurrentTeacher != null)
+                    {
+                        OnVgcaLoginStateChanged(true, _vgcaAuth.CurrentTeacher);
+                    }
+                    else
+                    {
+                        OnVgcaLoginStateChanged(false, null);
+                    }
 
                     UpdateStatus("Cảnh báo: Chưa phát hiện tài khoản chữ ký số Ban Cơ yếu Chính phủ.");
                 }
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Trace.TraceError($"Lỗi kiểm tra chứng thư số: {ex}");
                 UpdateStatus($"Lỗi kiểm tra chứng thư số: {ex.Message}");
             }
         }
@@ -249,7 +500,7 @@ namespace VGCASignToolPro
             }
             else
             {
-                MessageBox.Show("Đã mở ứng dụng VGCA Virtual CSP v2.0.\nVui lòng đăng nhập tài khoản chữ ký số Ban Cơ yếu của bạn, sau đó nhấn nút 'Quét Lại (F5)' trên phần mềm.",
+                MessageBox.Show("Đã mở ứng dụng VGCA Virtual CSP v2.0.\nVui lòng đăng nhập tài khoản chữ ký số Ban Cơ yếu của bạn, sau đó nhấn nút 'Quét Lại Token' trên phần mềm.",
                     "Đăng Nhập VGCA", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
@@ -289,6 +540,8 @@ namespace VGCASignToolPro
             }
             catch (Exception ex)
             {
+                // ponytail: internal-only, thay bằng generic msg khi phân phối
+                System.Diagnostics.Trace.TraceError($"Lỗi nạp mẫu chữ ký: {ex}");
                 UpdateStatus($"Lỗi nạp mẫu chữ ký: {ex.Message}");
             }
         }
@@ -317,10 +570,19 @@ namespace VGCASignToolPro
                 else
                 {
                     // Tự động kiểm tra file quyen.png trên Desktop người dùng nếu có
-                    string defaultDesktopStamp = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "quyen.png");
-                    if (File.Exists(defaultDesktopStamp))
+                    string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                    if (!string.IsNullOrEmpty(desktopPath))
                     {
-                        SetAndPersistStampImage(defaultDesktopStamp);
+                        string defaultDesktopStamp = Path.Combine(desktopPath, "quyen.png");
+                        if (File.Exists(defaultDesktopStamp))
+                        {
+                            SetAndPersistStampImage(defaultDesktopStamp);
+                            UpdateStatus($"Tự động nạp ảnh con dấu từ: {defaultDesktopStamp}");
+                        }
+                        else
+                        {
+                            ClearStampImage();
+                        }
                     }
                     else
                     {
@@ -338,16 +600,26 @@ namespace VGCASignToolPro
                 return;
             }
 
+            var bitmap = new BitmapImage();
             try
             {
-                TxtStampImagePath.Text = filePath;
-
-                // Nạp ảnh xem trước trong Tab 1
-                var bitmap = new BitmapImage();
                 bitmap.BeginInit();
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
                 bitmap.UriSource = new Uri(filePath);
                 bitmap.EndInit();
+                bitmap.Freeze();
+            }
+            catch (Exception ex)
+            {
+                ClearStampImage();
+                System.Diagnostics.Trace.TraceError($"Lỗi giải mã ảnh con dấu: {ex}");
+                UpdateStatus($"Không thể nạp ảnh con dấu: {Path.GetFileName(filePath)}");
+                return;
+            }
+
+            try
+            {
+                TxtStampImagePath.Text = filePath;
 
                 ImgStampPreview.Source = bitmap;
                 PnlStampPlaceholder.Visibility = Visibility.Collapsed;
@@ -375,6 +647,8 @@ namespace VGCASignToolPro
             }
             catch (Exception ex)
             {
+                ClearStampImage();
+                System.Diagnostics.Trace.TraceError($"Lỗi hiển thị ảnh con dấu: {ex}");
                 UpdateStatus($"Lỗi hiển thị ảnh con dấu: {ex.Message}");
             }
         }
@@ -395,7 +669,15 @@ namespace VGCASignToolPro
             if (CmbProfiles.SelectedItem is SignatureProfile profile)
             {
                 profile.ImagePath = null;
-                _profileManager.SaveProfiles(_profiles);
+                try
+                {
+                    _profileManager.SaveProfiles(_profiles);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Trace.TraceError($"Lỗi lưu profile: {ex}");
+                    UpdateStatus($"Lỗi lưu profile: {ex.Message}");
+                }
             }
 
             UpdateStatus("Đã gỡ bỏ ảnh con dấu.");
@@ -430,11 +712,15 @@ namespace VGCASignToolPro
         {
             if (CmbProfiles.SelectedItem is SignatureProfile profile)
             {
-                var dimParts = TxtDimensions.Text.Split('x', 'X');
-                if (dimParts.Length == 2)
+                var dimText = TxtDimensions?.Text;
+                if (!string.IsNullOrWhiteSpace(dimText))
                 {
-                    if (int.TryParse(dimParts[0].Trim(), out int w)) profile.SignatureWidth = w;
-                    if (int.TryParse(dimParts[1].Trim(), out int h)) profile.SignatureHeight = h;
+                    var dimParts = dimText.Split('x', 'X');
+                    if (dimParts.Length == 2)
+                    {
+                        if (int.TryParse(dimParts[0].Trim(), out int w) && w > 0) profile.SignatureWidth = w;
+                        if (int.TryParse(dimParts[1].Trim(), out int h) && h > 0) profile.SignatureHeight = h;
+                    }
                 }
 
                 if (CmbDisplayMode != null)
@@ -452,10 +738,18 @@ namespace VGCASignToolPro
                 profile.ImagePath = (!string.IsNullOrWhiteSpace(stampPath) && File.Exists(stampPath)) ? stampPath : null;
                 profile.SignerName = TxtSignerDisplayName.Text.Trim();
 
-                _profileManager.SaveProfiles(_profiles);
-                UpdateStatus($"Đã lưu thành công cấu hình mẫu chữ ký: '{profile.Name}'");
-                MessageBox.Show($"Đã lưu mẫu chữ ký '{profile.Name}' thành công!\nẢnh con dấu: {(profile.ImagePath != null ? Path.GetFileName(profile.ImagePath) : "Chưa chọn")}\nKích thước: {profile.SignatureWidth}x{profile.SignatureHeight}px", 
-                    "Lưu Cấu Hình Mẫu Ký", MessageBoxButton.OK, MessageBoxImage.Information);
+                try
+                {
+                    _profileManager.SaveProfiles(_profiles);
+                    UpdateStatus($"Đã lưu thành công cấu hình mẫu chữ ký: '{profile.Name}'");
+                    MessageBox.Show($"Đã lưu mẫu chữ ký '{profile.Name}' thành công!\nẢnh con dấu: {(profile.ImagePath != null ? Path.GetFileName(profile.ImagePath) : "Chưa chọn")}\nKích thước: {profile.SignatureWidth}x{profile.SignatureHeight}px", 
+                        "Lưu Cấu Hình Mẫu Ký", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Trace.TraceError($"Lỗi lưu profile: {ex}");
+                    UpdateStatus($"Lỗi lưu profile: {ex.Message}");
+                }
             }
         }
 
@@ -496,9 +790,9 @@ namespace VGCASignToolPro
                 string wordPath = dialog.FileName;
                 _originalWordFilePath = wordPath;
                 _currentWorkingPdfPath = null;
+                BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
 
                 TxtCurrentFileName.Text = Path.GetFileName(wordPath);
-                TxtCurrentFileStatus.Text = $"Đang tải cấu trúc tài liệu ({new FileInfo(wordPath).Length / 1024:N0} KB)...";
                 PnlEditingToolbar.Visibility = Visibility.Visible;
                 BtnConvertToPdfAndReadySign.IsEnabled = false;
                 BtnInsertSignatureStamp.IsEnabled = false;
@@ -506,10 +800,13 @@ namespace VGCASignToolPro
 
                 try
                 {
+                    long fileSizeKb = File.Exists(wordPath) ? new FileInfo(wordPath).Length / 1024 : 0;
+                    TxtCurrentFileStatus.Text = $"Đang tải cấu trúc tài liệu ({fileSizeKb:N0} KB)...";
+
                     // Chuyển sang HTML có nhúng định dạng A4 và kích hoạt chế độ chỉnh sửa trực tiếp (contentEditable)
                     string htmlPath = await _wordConverter.ConvertWordToEditableHtmlAsync(wordPath);
 
-                    if (_isWebViewInitialized)
+                    if (_isWebViewInitialized && PdfPreviewControl?.CoreWebView2 != null)
                     {
                         PnlPreviewPlaceholder.Visibility = Visibility.Collapsed;
                         PdfPreviewControl.CoreWebView2.Navigate(new Uri(htmlPath).AbsoluteUri);
@@ -521,6 +818,9 @@ namespace VGCASignToolPro
                 }
                 catch (Exception ex)
                 {
+                    TxtCurrentFileStatus.Text = "Nạp tài liệu thất bại.";
+                    _originalWordFilePath = null;
+                    System.Diagnostics.Trace.TraceError($"Lỗi nạp tài liệu Word: {ex}");
                     MessageBox.Show($"Không thể hiển thị tài liệu Word:\n{ex.Message}", "Lỗi Nạp Tài Liệu", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
@@ -537,23 +837,47 @@ namespace VGCASignToolPro
             if (dialog.ShowDialog() == true)
             {
                 string pdfPath = dialog.FileName;
+                if (string.IsNullOrWhiteSpace(pdfPath) || !File.Exists(pdfPath))
+                {
+                    MessageBox.Show("Tệp PDF không hợp lệ hoặc không tồn tại.", "Lỗi Tệp", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 _originalWordFilePath = null;
                 _currentWorkingPdfPath = pdfPath;
+                BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
 
-                TxtCurrentFileName.Text = Path.GetFileName(pdfPath);
-                TxtCurrentFileStatus.Text = $"Tệp PDF sẵn sàng ký số ({new FileInfo(pdfPath).Length / 1024:N0} KB).";
-                PnlEditingToolbar.Visibility = Visibility.Collapsed;
-                BtnConvertToPdfAndReadySign.IsEnabled = false;
-                BtnSignCurrentDocument.IsEnabled = true;
+                try
+                {
+                    TxtCurrentFileName.Text = Path.GetFileName(pdfPath);
+                    long fileSizeKb = new FileInfo(pdfPath).Length / 1024;
+                    TxtCurrentFileStatus.Text = $"Tệp PDF sẵn sàng ký số ({fileSizeKb:N0} KB).";
+                    PnlEditingToolbar.Visibility = Visibility.Collapsed;
+                    BtnConvertToPdfAndReadySign.IsEnabled = false;
+                    BtnSignCurrentDocument.IsEnabled = true;
 
-                await DisplayPdfInInteractiveViewerAsync(pdfPath);
+                    await DisplayPdfInInteractiveViewerAsync(pdfPath);
 
-                UpdateStatus($"Đã nạp tệp PDF trực tiếp: {Path.GetFileName(pdfPath)}");
+                    UpdateStatus($"Đã nạp tệp PDF trực tiếp: {Path.GetFileName(pdfPath)}");
+                }
+                catch (Exception ex)
+                {
+                    TxtCurrentFileStatus.Text = "Nạp tệp PDF thất bại.";
+                    _currentWorkingPdfPath = null;
+                    System.Diagnostics.Trace.TraceError($"Lỗi nạp PDF: {ex}");
+                    MessageBox.Show($"Không thể hiển thị tài liệu PDF:\n{ex.Message}", "Lỗi Nạp PDF", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
             }
         }
 
         private async void BtnExecuteConvertWord_Click(object sender, RoutedEventArgs e)
         {
+            if (_wordConverter == null)
+            {
+                MessageBox.Show("Dịch vụ chuyển đổi Word chưa được khởi tạo.", "Lỗi Hệ Thống", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(_originalWordFilePath) || !File.Exists(_originalWordFilePath))
             {
                 MessageBox.Show("Vui lòng tải tệp Word lên trước khi chuyển đổi.", "Chưa có file", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -584,53 +908,148 @@ namespace VGCASignToolPro
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Trace.TraceError($"Lỗi chuyển đổi sang PDF: {ex}");
                 MessageBox.Show($"Lỗi chuyển đổi sang PDF:\n{ex.Message}", "Lỗi Chuyển Đổi", MessageBoxButton.OK, MessageBoxImage.Error);
-                BtnConvertToPdfAndReadySign.IsEnabled = true;
+                TxtCurrentFileStatus.Text = "Chuyển đổi thất bại.";
+                UpdateStatus("Chuyển đổi Word sang PDF thất bại.");
             }
             finally
             {
                 PrgConvertLoading.Visibility = Visibility.Collapsed;
+                BtnConvertToPdfAndReadySign.IsEnabled = true;
             }
         }
 
         private async Task DisplayPdfInInteractiveViewerAsync(string pdfPath)
         {
-            if (!_isWebViewInitialized || !File.Exists(pdfPath)) return;
-
-            PnlPreviewPlaceholder.Visibility = Visibility.Collapsed;
-            _hasUserPlacedStamp = false;
-            BtnInsertSignatureStamp.IsEnabled = true;
-
-            // Đọc byte của PDF và chuyển sang Base64
-            byte[] pdfBytes = await File.ReadAllBytesAsync(pdfPath);
-            string base64Pdf = Convert.ToBase64String(pdfBytes);
-
-            string currentSource = PdfPreviewControl.Source?.ToString() ?? "";
-            bool isViewerAlreadyLoaded = currentSource.Contains("pdf_viewer.html", StringComparison.OrdinalIgnoreCase);
-
-            if (!isViewerAlreadyLoaded)
+            if (!_isWebViewInitialized || !File.Exists(pdfPath) || PdfPreviewControl?.CoreWebView2 == null)
             {
-                var tcs = new TaskCompletionSource<bool>();
-                EventHandler<Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs>? navHandler = null;
-                navHandler = (s, e) =>
+                TxtCurrentFileStatus.Text = "Trình xem tương tác chưa sẵn sàng.";
+                return;
+            }
+
+            try
+            {
+                var fileInfo = new FileInfo(pdfPath);
+                // Giới hạn kích thước file an toàn cho WebView2 in-memory Base64 (30MB)
+                const long maxFileSize = 30 * 1024 * 1024;
+                if (fileInfo.Length > maxFileSize)
                 {
-                    PdfPreviewControl.NavigationCompleted -= navHandler;
-                    tcs.TrySetResult(e.IsSuccess);
-                };
-                PdfPreviewControl.NavigationCompleted += navHandler;
-                PdfPreviewControl.CoreWebView2.Navigate("https://vgcaviewer.local/pdf_viewer.html");
-                await tcs.Task;
-            }
+                    RollbackViewerUiState("Tệp PDF quá lớn (>30MB) để nạp vào trình xem tương tác.");
+                    return;
+                }
 
-            // Đảm bảo DOM và script loadPdfFromBase64 đã sẵn sàng
-            for (int i = 0; i < 30; i++)
+                // Đọc byte của PDF và chuyển sang Base64, sau đó giải phóng mảng byte ngay lập tức
+                byte[]? pdfBytes = await File.ReadAllBytesAsync(pdfPath);
+                string base64Pdf = Convert.ToBase64String(pdfBytes);
+                pdfBytes = null;
+
+                if (PdfPreviewControl == null || PdfPreviewControl.CoreWebView2 == null)
+                {
+                    RollbackViewerUiState("Lỗi: Thành phần trình xem đã bị giải phóng.");
+                    return;
+                }
+
+                string currentSource = "";
+                try
+                {
+                    currentSource = PdfPreviewControl.Source?.ToString() ?? "";
+                }
+                catch (ObjectDisposedException)
+                {
+                    RollbackViewerUiState("Lỗi: Trình xem đã đóng hoặc bị hủy.");
+                    return;
+                }
+
+                bool isViewerAlreadyLoaded = currentSource.Contains("pdf_viewer.html", StringComparison.OrdinalIgnoreCase);
+
+                if (!isViewerAlreadyLoaded)
+                {
+                    var tcs = new TaskCompletionSource<bool>();
+                    EventHandler<Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs>? navHandler = null;
+                    navHandler = (s, e) =>
+                    {
+                        try
+                        {
+                            PdfPreviewControl.NavigationCompleted -= navHandler;
+                        }
+                        catch (Exception)
+                        {
+                            // Bỏ qua lỗi gỡ handler nếu control đã unbind
+                        }
+                        tcs.TrySetResult(e.IsSuccess);
+                    };
+                    PdfPreviewControl.NavigationCompleted += navHandler;
+                    PdfPreviewControl.CoreWebView2.Navigate("https://vgcaviewer.local/pdf_viewer.html");
+
+                    var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(10000));
+                    if (completedTask != tcs.Task)
+                    {
+                        try { PdfPreviewControl.NavigationCompleted -= navHandler; } catch { }
+                        RollbackViewerUiState("Lỗi: Quá thời gian chờ tải trình xem PDF.");
+                        return;
+                    }
+
+                    bool navSuccess = await tcs.Task;
+                    if (!navSuccess)
+                    {
+                        RollbackViewerUiState("Lỗi: Không thể điều hướng tới trang xem PDF.");
+                        return;
+                    }
+                }
+
+                if (PdfPreviewControl == null || PdfPreviewControl.CoreWebView2 == null)
+                {
+                    RollbackViewerUiState("Lỗi: WebView2 runtime không khả dụng.");
+                    return;
+                }
+
+                // Đảm bảo DOM và script loadPdfFromBase64 đã sẵn sàng
+                bool isScriptReady = false;
+                for (int i = 0; i < 30; i++)
+                {
+                    if (PdfPreviewControl?.CoreWebView2 == null) break;
+                    string checkScript = await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync("typeof loadPdfFromBase64 === 'function'");
+                    if (checkScript == "true")
+                    {
+                        isScriptReady = true;
+                        break;
+                    }
+                    await Task.Delay(100);
+                }
+
+                if (!isScriptReady || PdfPreviewControl?.CoreWebView2 == null)
+                {
+                    RollbackViewerUiState("Lỗi: Trình xem PDF không tải được engine hiển thị.");
+                    return;
+                }
+
+                string safeJsonBase64 = System.Text.Json.JsonSerializer.Serialize(base64Pdf);
+                await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync($"loadPdfFromBase64({safeJsonBase64});");
+
+                // Chỉ kích hoạt UI thành công sau khi PDF đã được nạp hoàn tất
+                PnlPreviewPlaceholder.Visibility = Visibility.Collapsed;
+                _hasUserPlacedStamp = false;
+                BtnInsertSignatureStamp.IsEnabled = true;
+            }
+            catch (ObjectDisposedException)
             {
-                string checkScript = await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync("typeof loadPdfFromBase64 === 'function'");
-                if (checkScript == "true") break;
-                await Task.Delay(100);
+                RollbackViewerUiState("Lỗi: Trình xem đã bị hủy trong quá trình xử lý.");
             }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError($"Lỗi nạp PDF tương tác: {ex}");
+                RollbackViewerUiState($"Lỗi tải tài liệu: {ex.Message}");
+            }
+        }
 
-            await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync($"loadPdfFromBase64('{base64Pdf}');");
+        private void RollbackViewerUiState(string errorMessage)
+        {
+            PnlPreviewPlaceholder.Visibility = Visibility.Visible;
+            _hasUserPlacedStamp = false;
+            BtnInsertSignatureStamp.IsEnabled = false;
+            TxtCurrentFileStatus.Text = errorMessage;
+            UpdateStatus(errorMessage);
         }
 
         private async void BtnInsertSignatureStamp_Click(object sender, RoutedEventArgs e)
@@ -856,12 +1275,21 @@ namespace VGCASignToolPro
                 TxtCurrentFileName.Text = Path.GetFileName(signedPath);
                 TxtCurrentFileStatus.Text = "✅ VĂN BẢN ĐÃ ĐƯỢC KÝ SỐ THÀNH CÔNG VỚI CHỨNG THƯ BAN CƠ YẾU CHÍNH PHỦ.";
 
+                // Hiển thị Banner Thành công và các nút thao tác nhanh trên giao diện
+                BorderSignSuccessBanner.Visibility = Visibility.Visible;
+                TxtSignedSummaryNotice.Text = $"Tệp đã ký: {Path.GetFileName(signedPath)} • Đã nhúng chữ ký số và dấu thời gian TSA Ban Cơ yếu.";
+
                 // Cập nhật sẵn sang Tab 3 (Upload Web)
                 TxtUploadFilePath.Text = signedPath;
                 TxtUploadDocTitle.Text = Path.GetFileNameWithoutExtension(signedPath);
+                if (_vgcaAuth.CurrentTeacher != null)
+                {
+                    TxtUploadSigner.Text = _vgcaAuth.CurrentTeacher.FullName;
+                    TxtUploadDepartment.Text = _vgcaAuth.CurrentTeacher.Department;
+                }
 
                 var choice = MessageBox.Show(
-                    $"Ký số văn bản thành công!\n\nTệp tin đã lưu tại:\n{signedPath}\n\nChữ ký số đã được nhúng chính xác tại vị trí bạn chọn với dấu thời gian TSA Ban Cơ yếu.\nBạn có muốn chuyển sang Tab 3 để tải tệp lên Cổng Web ngay không?",
+                    $"Ký số văn bản thành công!\n\nTệp tin đã lưu tại:\n{signedPath}\n\nChữ ký số đã được nhúng chính xác tại vị trí bạn chọn với dấu thời gian TSA Ban Cơ yếu.\nNội dung văn bản đã ký được hiển thị trực tiếp trên màn hình.\n\nBạn có muốn chuyển sang Tab 3 để tải tệp lên Cổng Web ngay không?",
                     "Ký Số Thành Công", MessageBoxButton.YesNo, MessageBoxImage.Information);
 
                 if (choice == MessageBoxResult.Yes)
@@ -879,6 +1307,84 @@ namespace VGCASignToolPro
             {
                 BtnSignCurrentDocument.IsEnabled = true;
             }
+        }
+
+        private void BtnSaveSignedCopy_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(_lastSignedPdfPath) || !File.Exists(_lastSignedPdfPath))
+            {
+                MessageBox.Show("Chưa có tệp tin văn bản đã ký để lưu.", "Thông Báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var sfd = new SaveFileDialog
+            {
+                Title = "Lưu bản sao tài liệu đã ký số",
+                FileName = Path.GetFileName(_lastSignedPdfPath),
+                Filter = "Tài liệu PDF (*.pdf)|*.pdf|Tất cả tệp (*.*)|*.*",
+                InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+            };
+
+            if (sfd.ShowDialog() == true)
+            {
+                try
+                {
+                    File.Copy(_lastSignedPdfPath, sfd.FileName, true);
+                    UpdateStatus($"Đã lưu bản sao tệp đã ký tại: {sfd.FileName}");
+                    MessageBox.Show($"Đã lưu bản sao thành công tại:\n{sfd.FileName}", "Lưu Bản Sao", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi lưu tệp:\n{ex.Message}", "Lỗi Lưu Tệp", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void BtnOpenSignedPdfExternal_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(_lastSignedPdfPath) || !File.Exists(_lastSignedPdfPath))
+            {
+                MessageBox.Show("Chưa có tệp tin văn bản đã ký để mở.", "Thông Báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = _lastSignedPdfPath,
+                    UseShellExecute = true
+                });
+                UpdateStatus($"Đã mở tệp ngoài hệ thống: {Path.GetFileName(_lastSignedPdfPath)}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Không thể mở tệp:\n{ex.Message}", "Lỗi Mở Tệp", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void BtnOpenSignedFolder_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(_lastSignedPdfPath) || !File.Exists(_lastSignedPdfPath))
+            {
+                MessageBox.Show("Chưa có tệp tin văn bản đã ký.", "Thông Báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{_lastSignedPdfPath}\"");
+                UpdateStatus("Đã mở thư mục chứa tệp tin đã ký.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Không thể mở thư mục:\n{ex.Message}", "Lỗi Mở Thư Mục", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void BtnGoToUploadWeb_Click(object sender, RoutedEventArgs e)
+        {
+            MainTabControl.SelectedIndex = 2; // Chuyển sang Tab 3
         }
 
         #region Các lệnh điều chỉnh văn bản trực tiếp (ExecCommand trong WebView2)

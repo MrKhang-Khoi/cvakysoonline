@@ -44,9 +44,12 @@ namespace VGCASignToolPro.Services
             }
 
             // Gán các Headers tùy chỉnh nếu có
-            foreach (var header in request.ExtraHeaders)
+            if (request.ExtraHeaders != null)
             {
-                httpClient.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
+                foreach (var header in request.ExtraHeaders)
+                {
+                    httpClient.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
+                }
             }
 
             using var form = new MultipartFormDataContent();
@@ -75,9 +78,12 @@ namespace VGCASignToolPro.Services
             form.Add(new StringContent(fileBytes.Length.ToString()), "file_size");
 
             // Đính kèm các trường form tùy biến
-            foreach (var field in request.ExtraFormData)
+            if (request.ExtraFormData != null)
             {
-                form.Add(new StringContent(field.Value), field.Key);
+                foreach (var field in request.ExtraFormData)
+                {
+                    form.Add(new StringContent(field.Value), field.Key);
+                }
             }
 
             StatusChanged?.Invoke($"Đang tải tệp ({fileBytes.Length:N0} bytes) lên máy chủ Web...");
