@@ -327,9 +327,11 @@ namespace VGCASignToolPro.Services
         }
 
         /// <summary>
-        /// Tự động làm sạch dải thông báo bản quyền dùng thử và các liên kết Syncfusion (nếu có)
-        /// khi phải kích hoạt chế độ Fallback trên máy tính không có cài đặt Microsoft Word.
-        /// Sử dụng thư viện iText7 xóa bỏ link annotation và phủ dải trắng mép trên cùng của trang giấy.
+        /// Tự động làm sạch dải thông báo bản quyền dùng thử và các liên kết Syncfusion (nếu có).
+        /// Sử dụng thư viện iText7:
+        /// 1. Xóa toàn bộ annotation link trỏ về trang claim license của Syncfusion.
+        /// 2. Làm rỗng (Empty) toàn bộ Content Stream chứa dòng chữ đỏ cảnh báo trial của Syncfusion.
+        /// 3. Phủ dải màu trắng mép trên cùng (Top 55pt) như một tầng bảo vệ kép nếu cần.
         /// </summary>
         public static void SanitizeSyncfusionWatermark(string pdfPath)
         {
@@ -371,13 +373,36 @@ namespace VGCASignToolPro.Services
                             }
                         }
 
-                        // 2. Phủ dải màu trắng đè lên mép trên cùng (Top 36pt trong lề trên) để xóa dòng chữ đỏ trial
-                        var canvas = new iText.Kernel.Pdf.Canvas.PdfCanvas(page.NewContentStreamAfter(), page.GetResources(), pdfDoc);
-                        canvas.SaveState();
-                        canvas.SetFillColor(iText.Kernel.Colors.ColorConstants.WHITE);
-                        canvas.Rectangle(0, pageSize.GetHeight() - 36, pageSize.GetWidth(), 36);
-                        canvas.Fill();
-                        canvas.RestoreState();
+                        // 2. Tầng diệt tận gốc 1: Làm rỗng (Empty) các Content Stream chứa văn bản watermark của Syncfusion
+                        int streamCount = page.GetContentStreamCount();
+                        bool foundTrialStream = false;
+                        for (int sIdx = 0; sIdx < streamCount; sIdx++)
+                        {
+                            var stream = page.GetContentStream(sIdx);
+                            if (stream == null) continue;
+                            byte[] streamBytes = stream.GetBytes();
+                            if (streamBytes == null || streamBytes.Length == 0) continue;
+
+                            string streamText = System.Text.Encoding.UTF8.GetString(streamBytes);
+                            if (streamText.Contains("trial version", StringComparison.OrdinalIgnoreCase) ||
+                                streamText.Contains("Syncfusion", StringComparison.OrdinalIgnoreCase) ||
+                                streamText.Contains("obtain the valid key", StringComparison.OrdinalIgnoreCase))
+                            {
+                                stream.SetData(Array.Empty<byte>());
+                                foundTrialStream = true;
+                            }
+                        }
+
+                        // 3. Tầng diệt tận gốc 2: Nếu không phát hiện stream riêng, phủ dải trắng mép trên cùng (Top 55pt) dự phòng
+                        if (!foundTrialStream)
+                        {
+                            var canvas = new iText.Kernel.Pdf.Canvas.PdfCanvas(page.NewContentStreamAfter(), page.GetResources(), pdfDoc);
+                            canvas.SaveState();
+                            canvas.SetFillColor(iText.Kernel.Colors.ColorConstants.WHITE);
+                            canvas.Rectangle(0, pageSize.GetHeight() - 55, pageSize.GetWidth(), 55);
+                            canvas.Fill();
+                            canvas.RestoreState();
+                        }
                     }
                 }
 

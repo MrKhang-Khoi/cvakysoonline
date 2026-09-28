@@ -1,50 +1,17 @@
-{
+﻿{
   "schoolName": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
   "description": "Danh mục phân quyền tài khoản Giáo viên toàn trường kết nối ký số Ban Cơ Yếu Chính Phủ",
+  "updatedAt": "2026-09-28T15:37:21.3294403Z",
   "roster": [
     {
-      "cccd": "062187000641",
-      "fullName": "Trần Thị Thúy Loan",
-      "title": "Giáo viên",
-      "phone": "0819810007",
-      "department": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+      "cccd": "062185001053",
+      "fullName": "Nguyễn Thị Mai (CCCD 062185001053)",
+      "title": "Tổ trưởng",
+      "phone": "0819000105",
+      "department": "Tổ Ngữ Văn - Trường THCS Nguyễn Huệ",
       "organization": "ỦY BAN NHÂN DÂN XÃ ĐAK MAR - TỈNH QUẢNG NGÃI",
-      "email": "tttloan-dakmar@quangngai.gov.vn",
-      "status": "ACTIVE",
-      "salt": "salt_gv_062187000641",
-      "passwordHash": "a3a880b236f69b05471dad0b5353594c65f6cf2d42429f05f6adfa68c4202bcd",
-      "validPasswordHashes": [
-        "a3a880b236f69b05471dad0b5353594c65f6cf2d42429f05f6adfa68c4202bcd"
-      ],
-      "remainingCounter": 5,
-      "failedAttempts": 0,
-      "certificates": [
-        {
-          "certId": 7431453,
-          "credentialID": "260605111351000vFApgtDI5vtCnmOWwF",
-          "keyContainer": "1C63319A-867D-779B-E329-3DDB4B0AB969",
-          "serialNumber": "16CAF8BD6E1B9DBE",
-          "thumbprint": "A50D6EDD34E9EE3C099B3A2A12BAE6136C516B94",
-          "subject": "Trần Thị Thúy Loan",
-          "subjectDN": "CN=Trần Thị Thúy Loan,OU=TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ,OU=ỦY BAN NHÂN DÂN XÃ ĐAK MAR,O=ỦY BAN NHÂN DÂN TỈNH QUẢNG NGÃI,E=tttloan-dakmar@quangngai.gov.vn,L=Quảng Ngãi,C=VN",
-          "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
-          "issuerDN": "C=VN,O=Ban Cơ yếu Chính phủ,CN=CA phục vụ các cơ quan Nhà nước G2",
-          "validFrom": "05/06/2026 11:03:00",
-          "validTo": "04/06/2031 11:03:00",
-          "status": "OPERATED",
-          "statusDesc": "HOẠT ĐỘNG",
-          "certificateStatus": "GOOD",
-          "profile": "rssp-119.432-v2.0",
-          "scal": "SCAL 2",
-          "sharedMode": "PRIVATE_MODE",
-          "keyAlgorithm": "ECC 384-bit (ECDSA nistP384 / secp384r1)",
-          "purpose": "Ký số từ xa (Remote Signing / Digital Signature)",
-          "keyUsage": "Digital Signature, Non-Repudiation, Key Encipherment, Data Encipherment",
-          "remainingSignatures": "Không giới hạn",
-          "crlUrl": "http://ca.gov.vn/pki/pub/crl/cpcag2.crl",
-          "ocspUrl": "http://ocsp.ca.gov.vn"
-        }
-      ]
+      "email": "gv062185001053@quangngai.gov.vn",
+      "status": "ACTIVE"
     },
     {
       "cccd": "042084002100",
@@ -54,85 +21,37 @@
       "department": "ỦY BAN NHÂN DÂN XÃ ĐĂK HÀ",
       "organization": "ỦY BAN NHÂN DÂN TỈNH QUẢNG NGÃI",
       "email": "hvty-dakha@quangngai.gov.vn",
-      "status": "ACTIVE",
-      "salt": "salt_gv_042084002100",
-      "passwordHash": "899f5eae6fabab8fcff6985c890a446107d7d58763232b23e233c217088cc115",
-      "validPasswordHashes": [
-        "899f5eae6fabab8fcff6985c890a446107d7d58763232b23e233c217088cc115"
-      ],
-      "remainingCounter": 5,
-      "failedAttempts": 0,
-      "certificates": [
-        {
-          "certId": 7406893,
-          "credentialID": "260529092544817FvR4veDh9KAY68hxfS",
-          "keyContainer": "6C4D8D31-01AC-6B07-9EB4-D83DD237FB6D",
-          "serialNumber": "7C4C44A8671300AE",
-          "thumbprint": "6398E3DC37E44EBBF976DFDE9F0143E1BDA5346D",
-          "subject": "Hà Văn Tý",
-          "subjectDN": "CN=Hà Văn Tý,O=ỦY BAN NHÂN DÂN TỈNH QUẢNG NGÃI,OU=ỦY BAN NHÂN DÂN XÃ ĐĂK HÀ,T=Giáo viên,E=hvty-dakha@quangngai.gov.vn,L=Quảng Ngãi,C=VN",
-          "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
-          "issuerDN": "C=VN,O=Ban Cơ yếu Chính phủ,CN=CA phục vụ các cơ quan Nhà nước G2",
-          "validFrom": "29/05/2026 09:15:16",
-          "validTo": "28/05/2031 09:15:16",
-          "status": "OPERATED",
-          "statusDesc": "HOẠT ĐỘNG",
-          "certificateStatus": "GOOD",
-          "profile": "rssp-119.432-v2.0",
-          "scal": "SCAL 2",
-          "sharedMode": "PRIVATE_MODE",
-          "keyAlgorithm": "ECC 384-bit (secp384r1)",
-          "purpose": "Ký số từ xa (Remote Signing / Digital Signature)",
-          "keyUsage": "Digital Signature, Non-Repudiation, Key Encipherment, Data Encipherment",
-          "remainingSignatures": "Không giới hạn",
-          "crlUrl": "http://ca.gov.vn/pki/pub/crl/cpcag2.crl",
-          "ocspUrl": "http://ocsp.ca.gov.vn"
-        }
-      ]
+      "status": "ACTIVE"
     },
     {
-      "cccd": "062185001053",
-      "fullName": "Giáo viên CCCD 062185001053",
+      "cccd": "062187000641",
+      "fullName": "Trần Thị Thúy Loan",
       "title": "Giáo viên",
-      "phone": "0819000105",
-      "department": "Tổ Ngữ Văn - Trường THCS Nguyễn Huệ",
+      "phone": "0819810007",
+      "department": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
       "organization": "ỦY BAN NHÂN DÂN XÃ ĐAK MAR - TỈNH QUẢNG NGÃI",
-      "email": "gv062185001053@quangngai.gov.vn",
-      "status": "ACTIVE",
-      "salt": "salt_gv_062185001053",
-      "passwordHash": "b5e610e6d369cde1e56122f5f36c5723618b11c695833311ee3c5233afd01852",
-      "validPasswordHashes": [
-        "b5e610e6d369cde1e56122f5f36c5723618b11c695833311ee3c5233afd01852"
-      ],
-      "remainingCounter": 5,
-      "failedAttempts": 0,
-      "certificates": [
-        {
-          "certId": 7412099,
-          "credentialID": "2D74420B-978E-880C-F43A-4EEB5C1BC070",
-          "keyContainer": "2D74420B-978E-880C-F43A-4EEB5C1BC070",
-          "serialNumber": "2A8BF7910DC841E2",
-          "thumbprint": "89BC77102DA451E0942CAFE8900138AC9100EF71",
-          "subject": "Giáo viên CCCD 062185001053",
-          "subjectDN": "CN=Giáo viên CCCD 062185001053,OU=Trường THCS Nguyễn Huệ,OU=ỦY BAN NHÂN DÂN XÃ ĐAK MAR,O=ỦY BAN NHÂN DÂN TỈNH QUẢNG NGÃI,E=gv062185001053@quangngai.gov.vn,L=Quảng Ngãi,C=VN",
-          "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ",
-          "issuerDN": "C=VN,O=Ban Cơ yếu Chính phủ,CN=CA phục vụ các cơ quan Nhà nước G2",
-          "validFrom": "01/01/2026 08:00:00",
-          "validTo": "01/01/2031 08:00:00",
-          "status": "OPERATED",
-          "statusDesc": "HOẠT ĐỘNG",
-          "certificateStatus": "GOOD",
-          "profile": "rssp-119.432-v2.0",
-          "scal": "SCAL 2",
-          "sharedMode": "PRIVATE_MODE",
-          "keyAlgorithm": "ECC 384-bit (ECDSA nistP384)",
-          "purpose": "Ký số từ xa (Remote Signing / Digital Signature)",
-          "keyUsage": "Digital Signature, Non-Repudiation, Key Encipherment, Data Encipherment",
-          "remainingSignatures": "Không giới hạn",
-          "crlUrl": "http://ca.gov.vn/pki/pub/crl/cpcag2.crl",
-          "ocspUrl": "http://ocsp.ca.gov.vn"
-        }
-      ]
+      "email": "tttloan-dakmar@quangngai.gov.vn",
+      "status": "ACTIVE"
+    },
+    {
+      "cccd": "062180000001",
+      "fullName": "Lê Văn Hùng",
+      "title": "Hiệu trưởng",
+      "phone": "0905123456",
+      "department": "Ban Giám hiệu",
+      "organization": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+      "email": "lvhung@quangngai.gov.vn",
+      "status": "ACTIVE"
+    },
+    {
+      "cccd": "062182000002",
+      "fullName": "Phạm Thị Lan",
+      "title": "Phó hiệu trưởng",
+      "phone": "0905654321",
+      "department": "Ban Giám hiệu",
+      "organization": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+      "email": "ptlan@quangngai.gov.vn",
+      "status": "ACTIVE"
     }
   ]
 }

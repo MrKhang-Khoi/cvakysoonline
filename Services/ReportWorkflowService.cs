@@ -394,6 +394,7 @@ namespace VGCASignToolPro.Services
                 Directory.CreateDirectory(tempDir);
                 string localFilePath = Path.Combine(tempDir, $"{reportId}_Review.pdf");
                 await File.WriteAllBytesAsync(localFilePath, pdfBytes).ConfigureAwait(false);
+                WordConverterService.SanitizeSyncfusionWatermark(localFilePath);
 
                 return (true, "Đã tải văn bản thành công.", localFilePath, report.BaseHash);
             }
@@ -573,6 +574,7 @@ namespace VGCASignToolPro.Services
                 if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
 
                 await File.WriteAllBytesAsync(destinationPath, bytes).ConfigureAwait(false);
+                WordConverterService.SanitizeSyncfusionWatermark(destinationPath);
                 return true;
             }
             catch (Exception ex)

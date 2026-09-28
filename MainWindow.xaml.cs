@@ -1435,6 +1435,9 @@ namespace VGCASignToolPro
                 return;
             }
 
+            // Tự động làm sạch hoàn toàn watermark bản quyền dùng thử nếu tệp chứa vết Syncfusion
+            WordConverterService.SanitizeSyncfusionWatermark(pdfPath);
+
             SetProcessingBusyState(true, $"Đang nạp tệp PDF: {Path.GetFileName(pdfPath)}...");
 
             _originalWordFilePath = null;
