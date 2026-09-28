@@ -1,0 +1,41 @@
+[36m%s[0m ═══════════════════════════════════════════════════════════════
+[36m%s[0m 🔍 CODEX UNIVERSAL AUDITOR: DEEP LINE-BY-LINE AUDIT (v4.0)
+[36m%s[0m 📍 Dự án: C:\Users\HPZBook\Desktop\VGCASignToolPro | Gateway: http://127.0.0.1:20128/v1
+[36m%s[0m 🛡️ NGUYÊN TẮC: ZERO-TRUST GIT (Mã đưa lên Git chưa chắc đã đúng)
+[36m%s[0m ═══════════════════════════════════════════════════════════════
+
+[34m%s[0m ⚡ [GATE 0]: Đang kiểm tra cú pháp vật lý Native (V8 node -c + Tag Balancer)...
+[34m%s[0m ⚡ [GATE 1]: Khởi động Quét Mã Nguồn Zero-Trust (Đối chiếu Sổ cái Ledger)...
+[32m%s[0m ✅ [GATE 0 PASS]: 100% file mã nguồn sạch cú pháp vật lý Native.
+
+[33m%s[0m ⚠️ [ZERO-TRUST PHÁT HIỆN]: Có 1 file mã nguồn CHƯA ĐƯỢC CODEX XÁC NHẬN (Kể cả đã commit lên Git):
+   • Services/PdfSigningService.cs [SHA-256: e88483923e...]
+[32m%s[0m ✅ [GATE 1 PASS]: Đã cô lập danh sách mã nguồn cần thẩm định chi tiết.
+
+[34m%s[0m 🧩 Thuật toán Cắt lát chi tiết đã chia 1 file thành 5 lát cắt dòng code (đánh số dòng thực tế):
+   1. Services/PdfSigningService.cs [Dòng 1 - 60 / Tổng 271 dòng]
+   2. Services/PdfSigningService.cs [Dòng 61 - 120 / Tổng 271 dòng]
+   3. Services/PdfSigningService.cs [Dòng 121 - 180 / Tổng 271 dòng]
+   4. Services/PdfSigningService.cs [Dòng 181 - 240 / Tổng 271 dòng]
+   5. Services/PdfSigningService.cs [Dòng 241 - 271 / Tổng 271 dòng]
+
+[34m%s[0m ⚡ [GATE 2]: Khởi chạy Bộ kiểm thử tự động thích ứng đa nền tảng...
+[33m%s[0m ⏳ [LÁT CẮT 1/5] Đang thẩm định: Services/PdfSigningService.cs [Dòng 1 - 60 / Tổng 271 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ Services/PdfSigningService.cs [Dòng 1 - 60 / Tổng 271 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 2/5] Đang thẩm định: Services/PdfSigningService.cs [Dòng 61 - 120 / Tổng 271 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ Services/PdfSigningService.cs [Dòng 61 - 120 / Tổng 271 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 3/5] Đang thẩm định: Services/PdfSigningService.cs [Dòng 121 - 180 / Tổng 271 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ Services/PdfSigningService.cs [Dòng 121 - 180 / Tổng 271 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 4/5] Đang thẩm định: Services/PdfSigningService.cs [Dòng 181 - 240 / Tổng 271 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ Services/PdfSigningService.cs [Dòng 181 - 240 / Tổng 271 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 5/5] Đang thẩm định: Services/PdfSigningService.cs [Dòng 241 - 271 / Tổng 271 dòng]...
+[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
+[32m%s[0m    ✅ Services/PdfSigningService.cs [Dòng 241 - 271 / Tổng 271 dòng]: [APPROVED]
+[32m%s[0m    💾 [IMMEDIATE LEDGER COMMIT]: File Services/PdfSigningService.cs đã PASS đủ 5/5 lát cắt -> ĐÃ GHI NHẬN VÀO SỔ CÁI!
+
+[32m%s[0m 🎉 XÁC NHẬN: 100% CÁC LÁT CẮT MÃ NGUỒN ĐÃ ĐƯỢC CODEX PHÊ DUYỆT!
+[32m%s[0m 💾 Đã ghi nhận phê duyệt vào Sổ cái Ledger: C:\Users\HPZBook\Desktop\VGCASignToolPro\.codex-audit-ledger.json

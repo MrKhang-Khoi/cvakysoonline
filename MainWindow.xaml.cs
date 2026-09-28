@@ -62,13 +62,33 @@ namespace VGCASignToolPro
         {
             try
             {
-                await PdfPreviewControl.EnsureCoreWebView2Async(null);
+                // Chuẩn Windows Desktop: Lưu trữ Cache WebView2 trong %LocalAppData% của người dùng
+                // Triệt tiêu 100% lỗi UnauthorizedAccessException khi phần mềm được cài đặt vào C:\Program Files
+                string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                string webView2CacheDir = Path.Combine(localAppData, "VGCASignToolPro", "WebView2Cache");
+                if (!Directory.Exists(webView2CacheDir))
+                {
+                    Directory.CreateDirectory(webView2CacheDir);
+                }
 
-                // Ánh xạ thư mục wwwroot vào Virtual Host Domain để thực thi PDF.js và Web Worker ngoại tuyến an toàn
+                var env = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, webView2CacheDir);
+                await PdfPreviewControl.EnsureCoreWebView2Async(env);
+
+                // Tìm thư mục wwwroot một cách linh hoạt (hỗ trợ cả Development, Publish, và Installed mode trên mọi máy)
                 string wwwroot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot");
                 if (!Directory.Exists(wwwroot))
                 {
-                    wwwroot = @"C:\Users\HPZBook\Desktop\VGCASignToolPro\wwwroot";
+                    string? currentDir = AppDomain.CurrentDomain.BaseDirectory;
+                    for (int i = 0; i < 4 && currentDir != null; i++)
+                    {
+                        string candidate = Path.Combine(currentDir, "wwwroot");
+                        if (Directory.Exists(candidate))
+                        {
+                            wwwroot = candidate;
+                            break;
+                        }
+                        currentDir = Path.GetDirectoryName(currentDir);
+                    }
                 }
 
                 if (Directory.Exists(wwwroot))
@@ -789,7 +809,18 @@ namespace VGCASignToolPro
                 }
             }
 
-            string dir = Path.GetDirectoryName(_currentWorkingPdfPath) ?? AppDomain.CurrentDomain.BaseDirectory;
+            string dir = Path.GetDirectoryName(_currentWorkingPdfPath) ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            try
+            {
+                string testFile = Path.Combine(dir, $".vgca_perm_test_{Guid.NewGuid():N}.tmp");
+                File.WriteAllText(testFile, "test");
+                File.Delete(testFile);
+            }
+            catch
+            {
+                dir = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            }
+
             string baseName = Path.GetFileNameWithoutExtension(_currentWorkingPdfPath);
             string outputPath = Path.Combine(dir, $"{baseName}_SIGNED.pdf");
 

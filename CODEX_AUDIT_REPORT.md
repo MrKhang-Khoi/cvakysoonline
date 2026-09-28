@@ -1,0 +1,43 @@
+# BÁO CÁO THẨM ĐỊNH MÃ NGUỒN CODEX (DEEP LINE-BY-LINE v4.0)
+
+- **Thời gian**: 08:09:24 28/9/2026
+- **Trạng thái**: ✅ **[APPROVED] - ĐÃ PHÊ DUYỆT HOÀN TOÀN**
+- **Số lượng vi phạm**: 0 lỗi
+- **Tóm tắt**: Toàn bộ 5 lát cắt của 1 file đã được phê duyệt 100%.
+
+---
+
+## 🎉 XÁC NHẬN:
+Toàn bộ các file mã nguồn và lát cắt dòng code đã được thẩm định chi tiết và phê duyệt 100%.
+
+---
+### 📄 NGUYÊN VĂN PHẢN HỒI TỪ CODEX AUDITOR:
+```text
+
+=== LÁT CẮT: Services/PdfSigningService.cs [Dòng 1 - 60 / Tổng 271 dòng] ===
+[APPROVED]
+
+CONTRACT: SignPdfAsync | SemaphoreSlim(1,1) serialize đúng, await/finally release không leak, Task.Run offload blocking I/O khỏi UI thread hợp lý cho WPF app.
+CONTRACT: SignPdf (dòng 36-60) | Validate null request, kiểm tra file tồn tại, kiểm tra certificate null-safe qua `?.`, chống ghi đè source=output bằng GetFullPath + OrdinalIgnoreCase, validate dimensions non-negative. Logic phòng thủ đầy đủ cho trust boundary.
+
+=== LÁT CẮT: Services/PdfSigningService.cs [Dòng 61 - 120 / Tổng 271 dòng] ===
+[APPROVED]
+
+CONTRACT: SignPdf (dòng 61-120) | Font loading fail-closed đúng: thử 4 font candidate, catch có filter OOM/SOF, throw nếu không tìm được font nào. Temp file dùng GUID chống collision. Append mode bảo toàn chữ ký cũ. PageNumber clamp về trang cuối khi out-of-range. Sig field name unique qua GUID. Output dir tạo tự động nếu chưa tồn tại. Tài nguyên reader/outputStream trong using block, try/signSucceeded pattern chuẩn bị cleanup ở lát cắt sau.
+
+=== LÁT CẮT: Services/PdfSigningService.cs [Dòng 121 - 180 / Tổng 271 dòng] ===
+[APPROVED]
+
+CONTRACT: SignPdf (dòng 121-180) | Appearance rendering block. signerName fallback chain xử lý null/whitespace đúng 3 cấp. sanitizedReason chống injection newline + truncate 200 ký tự. StampImagePath validate: chặn UNC path, whitelist extension (.png/.jpg/.jpeg/.bmp), resolve full path trước kiểm tra. displayMode logic phân nhánh 3 chế độ (0: text-only, 1: image-only, 2: image+text) rõ ràng, không fall-through. Dòng 149 null-forgiving `!` hợp lệ vì đã guard bởi `hasStampImage` (dòng 144) kiểm tra IsNullOrWhiteSpace + File.Exists.
+
+=== LÁT CẮT: Services/PdfSigningService.cs [Dòng 181 - 240 / Tổng 271 dòng] ===
+[APPROVED]
+
+CONTRACT: Certificate chain building & PAdES signing setup | Chuỗi chứng thư X.509 được build và validate fail-closed (dòng 196-199 throw nếu build thất bại). Fallback chainList rỗng xử lý đúng (dòng 208-211). X509Chain dùng `using` giải phóng tài nguyên. RevocationMode.NoCheck có ponytail comment ghi rõ ceiling và upgrade path — chấp nhận cho USB token offline signing. TSA catch block không nuốt lỗi — re-throw với context (dòng 231). TSAUrl đã validate `!string.IsNullOrWhiteSpace` trước sử dụng (dòng 221).
+
+=== LÁT CẮT: Services/PdfSigningService.cs [Dòng 241 - 271 / Tổng 271 dòng] ===
+[APPROVED]
+
+CONTRACT: SignPdf (finally block, dòng 254-268) | Cleanup temp file khi ký thất bại đúng chuẩn fail-closed. `signSucceeded` flag guard chính xác — chỉ xóa temp khi chưa thành công. Catch rỗng dòng 262-264 chấp nhận được: đây là cleanup trong finally, comment giải thích rõ lý do (tránh che khuất ngoại lệ chính), đúng pattern chuẩn. `File.Move` dòng 249 dùng `overwrite: true` — hợp lý vì output path đã được validate không trùng source ở lát cắt trước. `StatusChanged?.Invoke` dòng 251 dùng null-conditional đúng chuẩn.
+
+```
