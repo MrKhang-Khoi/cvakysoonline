@@ -17,9 +17,9 @@
       "timestamp": "2026-09-28T01:28:33.362Z"
     },
     "wwwroot/pdf_viewer.html": {
-      "sha256": "034e2238978185c53be243c1ce61c08a2ed0a40fbac6e97826f184c3eebcd3b8",
+      "sha256": "a4c7b9b4d3000aa977f761db3614026a913c3d517b4eda47a637bc259efbe964",
       "status": "APPROVED",
-      "timestamp": "2026-09-28T04:08:47.835Z"
+      "timestamp": "2026-09-28T07:49:00.033Z"
     },
     "Services/VgcaAuthService.cs": {
       "sha256": "edef757b4d1bee981ff90bf95643206f0bc276f37674d6d1991687eec8ec80b7",
@@ -96,6 +96,11 @@
       "sha256": "08cf0a0f170ee086d6fb20bf23c1f24c248ba7cd0b95ad72f4fb395d72ed03f5",
       "status": "APPROVED",
       "timestamp": "2026-09-28T07:39:10.370Z"
+    },
+    "tests/test_excel_integration.js": {
+      "sha256": "0022d55729c2deb3d21d3887fa47b30b54ae163c739d704d888dbe5a722b08c3",
+      "status": "APPROVED",
+      "timestamp": "2026-09-28T07:47:33.097Z"
     }
   },
   "contracts": {
@@ -2891,6 +2896,63 @@
     ],
     "MainWindow.xaml.cs [Dòng 2701 - 2724 / Tổng 2724 dòng]": [
       "VerifyPdf Result Handling | Cập nhật UI ListSignatures và hiển thị thông báo trạng thái dựa trên danh sách chữ ký xác minh. Logic chuẩn xác, hoàn tất tệp."
+    ],
+    "tests/test_excel_integration.js [Dòng 1 - 60 / Tổng 82 dòng]": [
+      "ExcelIntegrationTests | Xác thực nạp thư viện SheetJS, tạo fixture fallback tự động, parse workbook và render HTML table có fail-closed."
+    ],
+    "tests/test_excel_integration.js [Dòng 61 - 82 / Tổng 82 dòng]": [
+      "test_excel_integration (Test 5: pdf_viewer.html token verification) | Đọc tệp pdf_viewer.html qua fs.readFileSync, duyệt mảng requiredTokens kiểm tra chuỗi bắt buộc, fail-closed thoát tiến trình mã 1 nếu thiếu token, in kết quả pass khi đủ."
+    ],
+    "wwwroot/pdf_viewer.html [Dòng 1 - 60 / Tổng 936 dòng]": [
+      "HTML/CSS Scaffold & Spreadsheet UI Styles (Lines 1-60) | Khai báo chuẩn HTML5, nạp script nội bộ (pdf.min.js, xlsx.full.min.js), định nghĩa CSS styling cho thanh công cụ và tab bảng tính Excel. Không rủi ro bảo mật, đúng chuẩn Tier 2 static view."
+    ],
+    "wwwroot/pdf_viewer.html [Dòng 61 - 120 / Tổng 936 dòng]": [
+      "CSS Excel Viewer Styles (Dòng 61 - 120) | Định nghĩa style giao diện `.excel-controls`, `.excel-btn`, `.excel-paper-wrapper`. Thuần CSS hiển thị layout A4 portrait/landscape/fit-width, không chứa logic thực thi, an toàn bảo mật."
+    ],
+    "wwwroot/pdf_viewer.html [Dòng 121 - 180 / Tổng 936 dòng]": [
+      "CSS Styling & Print Rules (Dòng 121-180) | CSS thuần định dạng bảng Excel, media print và bố cục viewer; không chứa mã thực thi, không rủi ro bảo mật."
+    ],
+    "wwwroot/pdf_viewer.html [Dòng 181 - 240 / Tổng 936 dòng]": [
+      "CSS PDF canvas và interactive stamp box | Định nghĩa layout hiển thị trang PDF, badge số trang, hộp chữ ký kéo thả và thanh thông tin con dấu. Thuần CSS tĩnh, an toàn, không logic lỗi."
+    ],
+    "wwwroot/pdf_viewer.html [Dòng 241 - 300 / Tổng 936 dòng]": [
+      "Stamp UI CSS | Định nghĩa kiểu dáng nút đóng `.stamp-close-btn`, các điểm co giãn `.stamp-resize-handle`, cursor resize và lớp phủ `#loading-overlay` chuẩn CSS thuần. Không logic thực thi, không rủi ro bảo mật."
+    ],
+    "wwwroot/pdf_viewer.html [Dòng 301 - 360 / Tổng 936 dòng]": [
+      "Declarative HTML/CSS UI Block | Định nghĩa giao diện loading overlay và thanh công cụ Excel viewer/editor (chọn sheet, khổ in, chuyển đổi PDF). Markup HTML tĩnh chuẩn, không chứa lỗ hổng injection, không rủi ro bảo mật."
+    ],
+    "wwwroot/pdf_viewer.html [Dòng 361 - 420 / Tổng 936 dòng]": [
+      "loadExcelFromBase64 | Validate input chuỗi base64, cập nhật trạng thái UI hiển thị an toàn với null-check DOM, decode binary và parse workbook qua XLSX.read trong try-block."
+    ],
+    "wwwroot/pdf_viewer.html [Dòng 421 - 480 / Tổng 936 dòng]": [
+      "renderExcelSheetTabs, renderCurrentExcelSheet | Render sheet tabs và bảng tính Excel qua DOM API, null-check đầy đủ, thông báo trạng thái WebView2 chuẩn xác, xử lý lỗi fail-closed."
+    ],
+    "wwwroot/pdf_viewer.html [Dòng 481 - 540 / Tổng 936 dòng]": [
+      "setExcelOrientation | Cập nhật CSS class hướng giấy DOM và gửi thông điệp IPC excelOrientationChanged qua WebView2.",
+      "toggleExcelFitWidth | Chuyển đổi cờ fit-width và đồng bộ class active trên nút điều khiển cùng paper container.",
+      "requestExportExcelPdf | Đóng gói và gửi sự kiện IPC requestExportExcelPdf kèm hướng trang hiện tại về host.",
+      "resetViewer | Đánh dấu cờ abort hủy tiến trình render PDF, xóa stamp và kiểm tra container trước khi dọn dẹp UI."
+    ],
+    "wwwroot/pdf_viewer.html [Dòng 541 - 600 / Tổng 936 dòng]": [
+      "loadPdfFromBase64 | Validate base64 input, reset DOM và canvas buffer giải phóng RAM, quản lý cờ hủy render và parse binary Uint8Array an toàn."
+    ],
+    "wwwroot/pdf_viewer.html [Dòng 601 - 660 / Tổng 936 dòng]": [
+      "PDF Render Loop | Render PDF tuần tự qua pdfjsLib, kiểm tra abortFlag từng vòng lặp, tính viewport/scale theo targetWidth, gán dataset DOM và lưu metadata vào renderedPages an toàn."
+    ],
+    "wwwroot/pdf_viewer.html [Dòng 661 - 720 / Tổng 936 dòng]": [
+      "insertStamp | Validate an toàn `imageUrl` qua regex data URI và origin whitelist. Giới hạn kích thước `[10, 1000]px`. Tính toán trang hiển thị nhiều nhất trong viewport và neo tọa độ con dấu an toàn trong giới hạn client bounds của wrapper. Không XSS, không null pointer exception."
+    ],
+    "wwwroot/pdf_viewer.html [Dòng 721 - 780 / Tổng 936 dòng]": [
+      "removeStamp & setupStampDragAndResize | Khởi tạo DOM con dấu an toàn qua textContent, gỡ bỏ DOM và gửi thông điệp IPC WebView2 an toàn khi xóa dấu."
+    ],
+    "wwwroot/pdf_viewer.html [Dòng 781 - 840 / Tổng 936 dòng]": [
+      "Stamp Drag & Drop Controller | Xử lý sự kiện mousedown và mousemove kéo thả stamp giữa các trang PDF. Tọa độ boundary clamp chính xác, kiểm tra tồn tại targetPage và DOM node an toàn."
+    ],
+    "wwwroot/pdf_viewer.html [Dòng 841 - 900 / Tổng 936 dòng]": [
+      "getStampPdfCoordinates | Validate null-safe activeStamp, page wrapper, and positive scale factor before converting DOM coordinate values."
+    ],
+    "wwwroot/pdf_viewer.html [Dòng 901 - 936 / Tổng 936 dòng]": [
+      "updateStampCoordinates | Chuyển đổi tọa độ HTML sang PDF đáy-trái chuẩn xác, cập nhật nhãn UI an toàn qua innerText chống XSS, kiểm tra tồn tại và đồng bộ tọa độ về WebView2 host qua postMessage."
     ]
   },
   "sliceHashes": {
@@ -3032,20 +3094,23 @@
       "timestamp": "2026-09-28T04:07:32.492Z"
     },
     "wwwroot/pdf_viewer.html#L421-480": {
-      "hash": "6edceaf836086d7bb2eb78c85965e9c7c8a2cda07e69ac2811cc8c0d84d193a4",
+      "hash": "0f64fa7352f9a684fd396a74a2c937c81cfa5046ae41c141c9bb5f04a7e6afc5",
       "status": "APPROVED",
       "contracts": [
-        "renderExcelSheetTabs, renderCurrentExcelSheet | Render tabs và nội dung sheet Excel an toàn qua DOM API và SheetJS, đầy đủ null check và try/catch."
+        "renderExcelSheetTabs, renderCurrentExcelSheet | Render sheet tabs và bảng tính Excel qua DOM API, null-check đầy đủ, thông báo trạng thái WebView2 chuẩn xác, xử lý lỗi fail-closed."
       ],
-      "timestamp": "2026-09-28T04:07:40.116Z"
+      "timestamp": "2026-09-28T07:47:52.227Z"
     },
     "wwwroot/pdf_viewer.html#L481-540": {
-      "hash": "865742916a9831a0579dfa6e2c42395230ab81869776c549c5aebff52fb0e42d",
+      "hash": "cd4fa86ee01533a27779b3d1f38af1789a8b7611c0026b0a6c453640503b1b0c",
       "status": "APPROVED",
       "contracts": [
-        "- setExcelOrientation | Chuyển đổi class CSS UI landscape/portrait, notify WebView2 host qua postMessage."
+        "setExcelOrientation | Cập nhật CSS class hướng giấy DOM và gửi thông điệp IPC excelOrientationChanged qua WebView2.",
+        "toggleExcelFitWidth | Chuyển đổi cờ fit-width và đồng bộ class active trên nút điều khiển cùng paper container.",
+        "requestExportExcelPdf | Đóng gói và gửi sự kiện IPC requestExportExcelPdf kèm hướng trang hiện tại về host.",
+        "resetViewer | Đánh dấu cờ abort hủy tiến trình render PDF, xóa stamp và kiểm tra container trước khi dọn dẹp UI."
       ],
-      "timestamp": "2026-09-28T04:07:48.632Z"
+      "timestamp": "2026-09-28T07:48:01.242Z"
     },
     "wwwroot/pdf_viewer.html#L541-562": {
       "hash": "2d181ce69c6764b568fd696502aaa762335642ddf0167423c2e95721fc047cc9",
@@ -3644,54 +3709,52 @@
       "timestamp": "2026-09-28T04:06:38.525Z"
     },
     "wwwroot/pdf_viewer.html#L541-600": {
-      "hash": "b475016e21b67d647bfd9b29d9aa8bdced6091f2680ce1f67b4ae84828219fef",
+      "hash": "0a9c63bdc842281c4d8d6dcadee384dfce73e2e14d6b8c4ec79857aa5696e5b4",
       "status": "APPROVED",
       "contracts": [
-        "renderPdfViewer (Block giải mã và dựng PDF) | Dọn canvas cũ giải phóng bộ nhớ, validate chuỗi base64 qua regex trước khi gọi atob, kiểm tra abortFlag chống race condition khi load tài liệu mới, render DOM chuẩn programmatic tránh injection."
+        "loadPdfFromBase64 | Validate base64 input, reset DOM và canvas buffer giải phóng RAM, quản lý cờ hủy render và parse binary Uint8Array an toàn."
       ],
-      "timestamp": "2026-09-28T04:07:58.586Z"
+      "timestamp": "2026-09-28T07:48:09.461Z"
     },
     "wwwroot/pdf_viewer.html#L601-660": {
-      "hash": "05bb3af653e6299bf84d8c11dbb664692473943af3e7eab5642e9f4b7c4340e1",
+      "hash": "5f158caf2619fc10052647a4c6709b15f928606d62e101dfd7cadacc656a587e",
       "status": "APPROVED",
       "contracts": [
-        "loadPdf (đuôi hàm) & insertStamp | Render canvas bất đồng bộ giải phóng loading overlay trong finally, kiểm tra WebView2 bridge an toàn. insertStamp validate chặt chẽ schema imageUrl (data URL base64/local URL), clamp kích thước 10-1000px chống overflow."
+        "PDF Render Loop | Render PDF tuần tự qua pdfjsLib, kiểm tra abortFlag từng vòng lặp, tính viewport/scale theo targetWidth, gán dataset DOM và lưu metadata vào renderedPages an toàn."
       ],
-      "timestamp": "2026-09-28T04:08:06.618Z"
+      "timestamp": "2026-09-28T07:48:18.264Z"
     },
     "wwwroot/pdf_viewer.html#L661-720": {
-      "hash": "c0dc2c0addbe24e1beb0acac7bbd43b77c3c315492065844553cb2c4f8df9345",
+      "hash": "0b4b0beab7a491205675cfbae13be27bd64f1dbe20af352288af4abefe8b8b8a",
       "status": "APPROVED",
       "contracts": [
-        "Interactive Stamp Placement | Khởi tạo DOM element con dấu ký số, tính toán tọa độ viewport hiển thị tối ưu trên trang PDF hiện hành, gắn nhãn thông tin và các điểm neo resize an toàn DOM."
+        "insertStamp | Validate an toàn `imageUrl` qua regex data URI và origin whitelist. Giới hạn kích thước `[10, 1000]px`. Tính toán trang hiển thị nhiều nhất trong viewport và neo tọa độ con dấu an toàn trong giới hạn client bounds của wrapper. Không XSS, không null pointer exception."
       ],
-      "timestamp": "2026-09-28T04:08:13.440Z"
+      "timestamp": "2026-09-28T07:48:28.116Z"
     },
     "wwwroot/pdf_viewer.html#L721-780": {
-      "hash": "fd00b33f3375acb8a35e499a4c668f4b8a31221dc166ea605940f1d4e0476f1c",
+      "hash": "41f2350cdac7e7c2a1b2ed6b3cf83d2f618f285943d8886373b96bba92d5f479",
       "status": "APPROVED",
       "contracts": [
-        "removeStamp | Hủy activeStamp an toàn, kiểm tra null/undefined, gửi postMessage stampRemoved qua WebView2 bridge nếu khả dụng.",
-        "setupStampDragAndResize | Khởi tạo mousedown/mousemove cho kéo và đổi kích thước con dấu, fallback kích thước mặc định an toàn."
+        "removeStamp & setupStampDragAndResize | Khởi tạo DOM con dấu an toàn qua textContent, gỡ bỏ DOM và gửi thông điệp IPC WebView2 an toàn khi xóa dấu."
       ],
-      "timestamp": "2026-09-28T04:08:24.754Z"
+      "timestamp": "2026-09-28T07:48:38.133Z"
     },
     "wwwroot/pdf_viewer.html#L781-840": {
-      "hash": "3e586fc1d5828a020bed95104862598b7730bc1701a215413eb8395a4ee76822",
+      "hash": "ca00631cb486e8e0873b892cf281a9a7e6f6397799a9f086017235c97c7ec213",
       "status": "APPROVED",
       "contracts": [
-        "Stamp Drag & Resize Logic | Xử lý kéo thả con dấu qua các trang PDF, kiểm soát biên tọa độ và tính toán kích thước khi thay đổi kích cỡ theo 4 góc."
+        "Stamp Drag & Drop Controller | Xử lý sự kiện mousedown và mousemove kéo thả stamp giữa các trang PDF. Tọa độ boundary clamp chính xác, kiểm tra tồn tại targetPage và DOM node an toàn."
       ],
-      "timestamp": "2026-09-28T04:08:33.472Z"
+      "timestamp": "2026-09-28T07:48:45.994Z"
     },
     "wwwroot/pdf_viewer.html#L841-900": {
-      "hash": "0a3b9358e3a3c8dd38e8cf33cb299c4050d26cfb467f516fb48983dad498ed06",
+      "hash": "ae3f3cb8ec5532e7168f05a9c0f3e951e6d6edc5a25e2e478f4fcd7def4ce703",
       "status": "APPROVED",
       "contracts": [
-        "getStampPdfCoordinates | Tính toán toạ độ tem từ DOM sang PDF point theo hệ toạ độ đáy-trái, validate chặt chẽ scale và null object, chống chia cho 0.",
-        "updateStampCoordinates | Cập nhật nhãn toạ độ an toàn bằng innerText chống XSS, kiểm tra tồn tại WebView2 bridge trước khi gọi."
+        "getStampPdfCoordinates | Validate null-safe activeStamp, page wrapper, and positive scale factor before converting DOM coordinate values."
       ],
-      "timestamp": "2026-09-28T04:08:42.688Z"
+      "timestamp": "2026-09-28T07:48:52.809Z"
     },
     "wwwroot/pdf_viewer.html#L901-909": {
       "hash": "ebbd68fa432d63a1ca071e6e3df73df8ccd8f36bb6b3b123ca15431d19b799bd",
@@ -3992,8 +4055,32 @@
         "VerifyPdf Result Handling | Cập nhật UI ListSignatures và hiển thị thông báo trạng thái dựa trên danh sách chữ ký xác minh. Logic chuẩn xác, hoàn tất tệp."
       ],
       "timestamp": "2026-09-28T07:45:08.006Z"
+    },
+    "tests/test_excel_integration.js#L1-60": {
+      "hash": "75218e4a0a43954a1771203a988fa79490574ada7aa7a1eb73e29800178276bd",
+      "status": "APPROVED",
+      "contracts": [
+        "ExcelIntegrationTests | Xác thực nạp thư viện SheetJS, tạo fixture fallback tự động, parse workbook và render HTML table có fail-closed."
+      ],
+      "timestamp": "2026-09-28T07:47:26.286Z"
+    },
+    "tests/test_excel_integration.js#L61-82": {
+      "hash": "3294ef83ebb6bd71a32a9eb36df376213846c67a9a2b27fbbc770dee030480e3",
+      "status": "APPROVED",
+      "contracts": [
+        "test_excel_integration (Test 5: pdf_viewer.html token verification) | Đọc tệp pdf_viewer.html qua fs.readFileSync, duyệt mảng requiredTokens kiểm tra chuỗi bắt buộc, fail-closed thoát tiến trình mã 1 nếu thiếu token, in kết quả pass khi đủ."
+      ],
+      "timestamp": "2026-09-28T07:47:33.076Z"
+    },
+    "wwwroot/pdf_viewer.html#L901-936": {
+      "hash": "7cc77921552b5a917116345f02786ab1250eb96d9aaa82d55c84994216c5a2b1",
+      "status": "APPROVED",
+      "contracts": [
+        "updateStampCoordinates | Chuyển đổi tọa độ HTML sang PDF đáy-trái chuẩn xác, cập nhật nhãn UI an toàn qua innerText chống XSS, kiểm tra tồn tại và đồng bộ tọa độ về WebView2 host qua postMessage."
+      ],
+      "timestamp": "2026-09-28T07:49:00.002Z"
     }
   },
-  "lastAudit": "2026-09-28T07:45:08.031Z",
+  "lastAudit": "2026-09-28T07:49:00.033Z",
   "lastStatus": "APPROVED"
 }

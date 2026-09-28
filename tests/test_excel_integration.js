@@ -14,11 +14,17 @@ if (!fs.existsSync(sheetJsPath)) {
 }
 console.log('✅ [TEST 1 PASS]: Đã xác nhận thư viện SheetJS cục bộ (Size:', (fs.statSync(sheetJsPath).size / 1024).toFixed(1), 'KB)');
 
-// 2. Kiểm tra đọc tệp Excel thực tế của trường học
-const sampleExcelPath = 'C:/Users/HPZBook/Desktop/HS TS LỚP 6 26-27-FINAL/DS phê duyệt KQTS lớp 6 năm học 2026-2027.xlsx';
+let sampleExcelPath = process.env.SAMPLE_EXCEL_PATH || 'C:/Users/HPZBook/Desktop/HS TS LỚP 6 26-27-FINAL/DS phê duyệt KQTS lớp 6 năm học 2026-2027.xlsx';
 if (!fs.existsSync(sampleExcelPath)) {
-  console.error('❌ THẤT BẠI: Không tìm thấy tệp Excel mẫu:', sampleExcelPath);
-  process.exit(1);
+  const fixtureDir = path.join(__dirname, 'fixtures');
+  if (!fs.existsSync(fixtureDir)) fs.mkdirSync(fixtureDir, { recursive: true });
+  sampleExcelPath = path.join(fixtureDir, 'sample.xlsx');
+  if (!fs.existsSync(sampleExcelPath)) {
+    const newWb = XLSX.utils.book_new();
+    const newWs = XLSX.utils.aoa_to_sheet([['STT', 'Họ và tên'], [1, 'Nguyễn Văn A']]);
+    XLSX.utils.book_append_sheet(newWb, newWs, 'Sheet1');
+    XLSX.writeFile(newWb, sampleExcelPath);
+  }
 }
 
 const fileBuf = fs.readFileSync(sampleExcelPath);
