@@ -31,6 +31,14 @@ namespace VGCASignToolPro
         private string? _lastSignedPdfPath;
         private bool _isWebViewInitialized;
 
+        // VỊ TRÍ CHỮ KÝ DO NGƯỜI DÙNG KÉO THẢ TƯƠNG TÁC TRÊN BẢN XEM TRƯỚC
+        private bool _hasUserPlacedStamp = false;
+        private int _userStampPage = 1;
+        private float _userStampX = 380f;
+        private float _userStampY = 120f;
+        private float _userStampWidth = 140f;
+        private float _userStampHeight = 140f;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -55,12 +63,78 @@ namespace VGCASignToolPro
             try
             {
                 await PdfPreviewControl.EnsureCoreWebView2Async(null);
+
+                // Ánh xạ thư mục wwwroot vào Virtual Host Domain để thực thi PDF.js và Web Worker ngoại tuyến an toàn
+                string wwwroot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot");
+                if (!Directory.Exists(wwwroot))
+                {
+                    wwwroot = @"C:\Users\HPZBook\Desktop\VGCASignToolPro\wwwroot";
+                }
+
+                if (Directory.Exists(wwwroot))
+                {
+                    PdfPreviewControl.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                        "vgcaviewer.local",
+                        wwwroot,
+                        Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow);
+                }
+
+                PdfPreviewControl.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
                 _isWebViewInitialized = true;
-                UpdateStatus("Engine hiển thị WebView2 đã sẵn sàng.");
+                UpdateStatus("Engine hiển thị WebView2 và PDF.js tương tác đã sẵn sàng.");
             }
             catch (Exception ex)
             {
                 UpdateStatus($"Lỗi khởi tạo WebView2: {ex.Message}");
+            }
+        }
+
+        private void CoreWebView2_WebMessageReceived(object? sender, Microsoft.Web.WebView2.Core.CoreWebView2WebMessageReceivedEventArgs e)
+        {
+            try
+            {
+                string jsonString = e.WebMessageAsJson;
+                using var doc = System.Text.Json.JsonDocument.Parse(jsonString);
+                var root = doc.RootElement;
+                if (root.TryGetProperty("type", out var typeProp))
+                {
+                    string? msgType = typeProp.GetString();
+                    if (msgType == "stampCoordinatesChanged")
+                    {
+                        if (root.TryGetProperty("coords", out var coords))
+                        {
+                            _hasUserPlacedStamp = true;
+                            _userStampPage = coords.GetProperty("pageNumber").GetInt32();
+                            _userStampX = (float)coords.GetProperty("x").GetDouble();
+                            _userStampY = (float)coords.GetProperty("y").GetDouble();
+                            _userStampWidth = (float)coords.GetProperty("width").GetDouble();
+                            _userStampHeight = (float)coords.GetProperty("height").GetDouble();
+
+                            // Đồng bộ ngược lại các ô nhập liệu ở Tab 1 để người dùng quan sát
+                            TxtPageNumber.Text = _userStampPage.ToString();
+                            TxtCoordX.Text = Math.Round(_userStampX).ToString();
+                            TxtCoordY.Text = Math.Round(_userStampY).ToString();
+                            TxtDimensions.Text = $"{Math.Round(_userStampWidth)}x{Math.Round(_userStampHeight)}";
+
+                            UpdateStatus($"Đã định vị chữ ký tại Trang {_userStampPage} (X: {Math.Round(_userStampX)}, Y: {Math.Round(_userStampY)}, {_userStampWidth:F0}x{_userStampHeight:F0} pt).");
+                        }
+                    }
+                    else if (msgType == "stampRemoved")
+                    {
+                        _hasUserPlacedStamp = false;
+                        UpdateStatus("Đã hủy bỏ vị trí chèn chữ ký tương tác.");
+                    }
+                    else if (msgType == "pdfLoaded")
+                    {
+                        int totalPages = root.GetProperty("totalPages").GetInt32();
+                        UpdateStatus($"Đã nạp xong tài liệu PDF tương tác ({totalPages} trang).");
+                        BtnInsertSignatureStamp.IsEnabled = true;
+                    }
+                }
+            }
+            catch
+            {
+                // Bỏ qua lỗi parsing không mong muốn
             }
         }
 
@@ -407,6 +481,7 @@ namespace VGCASignToolPro
                 TxtCurrentFileStatus.Text = $"Đang tải cấu trúc tài liệu ({new FileInfo(wordPath).Length / 1024:N0} KB)...";
                 PnlEditingToolbar.Visibility = Visibility.Visible;
                 BtnConvertToPdfAndReadySign.IsEnabled = false;
+                BtnInsertSignatureStamp.IsEnabled = false;
                 BtnSignCurrentDocument.IsEnabled = false;
 
                 try
@@ -431,7 +506,7 @@ namespace VGCASignToolPro
             }
         }
 
-        private void BtnSelectPdf_Click(object sender, RoutedEventArgs e)
+        private async void BtnSelectPdf_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new OpenFileDialog
             {
@@ -451,11 +526,7 @@ namespace VGCASignToolPro
                 BtnConvertToPdfAndReadySign.IsEnabled = false;
                 BtnSignCurrentDocument.IsEnabled = true;
 
-                if (_isWebViewInitialized)
-                {
-                    PnlPreviewPlaceholder.Visibility = Visibility.Collapsed;
-                    PdfPreviewControl.CoreWebView2.Navigate(new Uri(pdfPath).AbsoluteUri);
-                }
+                await DisplayPdfInInteractiveViewerAsync(pdfPath);
 
                 UpdateStatus($"Đã nạp tệp PDF trực tiếp: {Path.GetFileName(pdfPath)}");
             }
@@ -479,11 +550,8 @@ namespace VGCASignToolPro
                 string pdfPath = await _wordConverter.ConvertWordToPdfAsync(_originalWordFilePath);
                 _currentWorkingPdfPath = pdfPath;
 
-                // Nạp file PDF chuẩn vào WebView2
-                if (_isWebViewInitialized)
-                {
-                    PdfPreviewControl.CoreWebView2.Navigate(new Uri(pdfPath).AbsoluteUri);
-                }
+                // Nạp file PDF chuẩn vào WebView2 bằng Engine tương tác
+                await DisplayPdfInInteractiveViewerAsync(pdfPath);
 
                 TxtCurrentFileName.Text = Path.GetFileName(pdfPath);
                 TxtCurrentFileStatus.Text = "Tài liệu PDF chuẩn đã được tạo và nạp sẵn sàng ký số.";
@@ -491,7 +559,7 @@ namespace VGCASignToolPro
                 UpdateStatus($"Đã xuất tệp PDF hoàn chỉnh: {Path.GetFileName(pdfPath)}");
 
                 MessageBox.Show(
-                    $"Chuyển đổi sang PDF thành công!\n\nTệp tin đã lưu tại:\n{pdfPath}\n\nNội dung văn bản chuẩn đã được hiển thị trên màn hình. Hãy bấm nút 'TIẾN HÀNH KÝ SỐ' để hoàn tất.",
+                    $"Chuyển đổi sang PDF thành công!\n\nTệp tin đã lưu tại:\n{pdfPath}\n\nNội dung văn bản chuẩn đã được hiển thị trên màn hình. Bạn có thể bấm '📍 Chèn Chữ Ký' để kéo thả con dấu đến đúng vị trí cần ký, sau đó bấm '✍ TIẾN HÀNH KÝ SỐ'.",
                     "Chuyển Đổi Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -503,6 +571,131 @@ namespace VGCASignToolPro
             {
                 PrgConvertLoading.Visibility = Visibility.Collapsed;
             }
+        }
+
+        private async Task DisplayPdfInInteractiveViewerAsync(string pdfPath)
+        {
+            if (!_isWebViewInitialized || !File.Exists(pdfPath)) return;
+
+            PnlPreviewPlaceholder.Visibility = Visibility.Collapsed;
+            _hasUserPlacedStamp = false;
+            BtnInsertSignatureStamp.IsEnabled = true;
+
+            // Đọc byte của PDF và chuyển sang Base64
+            byte[] pdfBytes = await File.ReadAllBytesAsync(pdfPath);
+            string base64Pdf = Convert.ToBase64String(pdfBytes);
+
+            string currentSource = PdfPreviewControl.Source?.ToString() ?? "";
+            bool isViewerAlreadyLoaded = currentSource.Contains("pdf_viewer.html", StringComparison.OrdinalIgnoreCase);
+
+            if (!isViewerAlreadyLoaded)
+            {
+                var tcs = new TaskCompletionSource<bool>();
+                EventHandler<Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs>? navHandler = null;
+                navHandler = (s, e) =>
+                {
+                    PdfPreviewControl.NavigationCompleted -= navHandler;
+                    tcs.TrySetResult(e.IsSuccess);
+                };
+                PdfPreviewControl.NavigationCompleted += navHandler;
+                PdfPreviewControl.CoreWebView2.Navigate("https://vgcaviewer.local/pdf_viewer.html");
+                await tcs.Task;
+            }
+
+            // Đảm bảo DOM và script loadPdfFromBase64 đã sẵn sàng
+            for (int i = 0; i < 30; i++)
+            {
+                string checkScript = await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync("typeof loadPdfFromBase64 === 'function'");
+                if (checkScript == "true") break;
+                await Task.Delay(100);
+            }
+
+            await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync($"loadPdfFromBase64('{base64Pdf}');");
+        }
+
+        private async void BtnInsertSignatureStamp_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(_currentWorkingPdfPath) || !File.Exists(_currentWorkingPdfPath))
+            {
+                if (!string.IsNullOrWhiteSpace(_originalWordFilePath))
+                {
+                    MessageBox.Show("Bạn đang xem văn bản ở dạng Word. Vui lòng bấm nút '⚡ Chuyển Qua PDF Để Ký' trước khi thực hiện chèn chữ ký.",
+                        "Cần Chuyển Sang PDF", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Vui lòng tải tệp Word hoặc PDF lên trước khi chèn chữ ký.",
+                        "Chưa Có Tài Liệu", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+                return;
+            }
+
+            // Xác định hình ảnh con dấu / chữ ký
+            string? stampPath = TxtStampImagePath.Text.Trim();
+            if (string.IsNullOrWhiteSpace(stampPath) || stampPath.StartsWith("Ảnh con dấu") || !File.Exists(stampPath))
+            {
+                if (CmbProfiles.SelectedItem is SignatureProfile p && !string.IsNullOrWhiteSpace(p.ImagePath) && File.Exists(p.ImagePath))
+                {
+                    stampPath = p.ImagePath;
+                }
+                else
+                {
+                    string defaultDesktopStamp = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "quyen.png");
+                    if (File.Exists(defaultDesktopStamp))
+                    {
+                        stampPath = defaultDesktopStamp;
+                    }
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(stampPath) || !File.Exists(stampPath))
+            {
+                var ofd = new OpenFileDialog
+                {
+                    Title = "Chọn hình ảnh con dấu hoặc chữ ký tay để chèn",
+                    Filter = "Hình ảnh (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg|Tất cả tệp (*.*)|*.*",
+                    InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+                };
+                if (ofd.ShowDialog() == true)
+                {
+                    stampPath = ofd.FileName;
+                    SetAndPersistStampImage(stampPath);
+                }
+                else
+                {
+                    MessageBox.Show("Vui lòng chọn ảnh con dấu hoặc chữ ký để chèn lên tài liệu.", "Chưa Chọn Ảnh", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+            }
+
+            // Đọc ảnh và chuyển sang Data URL (Base64) để inject trực tiếp vào viewer
+            byte[] imgBytes = await File.ReadAllBytesAsync(stampPath);
+            string ext = Path.GetExtension(stampPath).TrimStart('.').ToLower();
+            string mimeType = ext switch
+            {
+                "jpg" or "jpeg" => "image/jpeg",
+                "png" => "image/png",
+                "gif" => "image/gif",
+                _ => "image/png"
+            };
+            string dataUrl = $"data:{mimeType};base64,{Convert.ToBase64String(imgBytes)}";
+
+            // Kích thước mặc định
+            int widthPx = 140;
+            int heightPx = 140;
+            var dimParts = TxtDimensions.Text.Split('x', 'X');
+            if (dimParts.Length == 2 && int.TryParse(dimParts[0].Trim(), out int w) && int.TryParse(dimParts[1].Trim(), out int h))
+            {
+                widthPx = Math.Max(60, w);
+                heightPx = Math.Max(40, h);
+            }
+
+            // Gọi hàm JavaScript insertStamp
+            string script = $"insertStamp('{dataUrl}', {widthPx}, {heightPx});";
+            await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync(script);
+
+            _hasUserPlacedStamp = true;
+            UpdateStatus("Đã chèn khung chữ ký tương tác trên trang văn bản. Hãy dùng chuột kéo thả hoặc co giãn đến vị trí mong muốn.");
         }
 
         private async void BtnSignDocument_Click(object sender, RoutedEventArgs e)
@@ -527,23 +720,32 @@ namespace VGCASignToolPro
                 return;
             }
 
-            // Đọc cấu hình mẫu ký từ Tab 1
+            // Đọc cấu hình mẫu ký: Ưu tiên tọa độ kéo thả tương tác của người dùng
             int pageNumber = -1;
-            int.TryParse(TxtPageNumber.Text.Trim(), out pageNumber);
-
             float coordX = 380;
-            float.TryParse(TxtCoordX.Text.Trim(), out coordX);
-
             float coordY = 120;
-            float.TryParse(TxtCoordY.Text.Trim(), out coordY);
-
             float width = 120;
             float height = 120;
-            var dimParts = TxtDimensions.Text.Split('x', 'X');
-            if (dimParts.Length == 2)
+
+            if (_hasUserPlacedStamp)
             {
-                float.TryParse(dimParts[0].Trim(), out width);
-                float.TryParse(dimParts[1].Trim(), out height);
+                pageNumber = _userStampPage;
+                coordX = _userStampX;
+                coordY = _userStampY;
+                width = _userStampWidth;
+                height = _userStampHeight;
+            }
+            else
+            {
+                int.TryParse(TxtPageNumber.Text.Trim(), out pageNumber);
+                float.TryParse(TxtCoordX.Text.Trim(), out coordX);
+                float.TryParse(TxtCoordY.Text.Trim(), out coordY);
+                var dimParts = TxtDimensions.Text.Split('x', 'X');
+                if (dimParts.Length == 2)
+                {
+                    float.TryParse(dimParts[0].Trim(), out width);
+                    float.TryParse(dimParts[1].Trim(), out height);
+                }
             }
 
             // Xác định tệp hình ảnh con dấu (từ ô nhập, từ Profile đã lưu, hoặc từ Desktop quyen.png)
@@ -617,11 +819,8 @@ namespace VGCASignToolPro
                 string signedPath = await _pdfSigner.SignPdfAsync(request);
                 _lastSignedPdfPath = signedPath;
 
-                // Nạp file đã ký vào WebView2
-                if (_isWebViewInitialized)
-                {
-                    PdfPreviewControl.CoreWebView2.Navigate(new Uri(signedPath).AbsoluteUri);
-                }
+                // Nạp file đã ký vào Interactive Viewer để người dùng thẩm định kết quả trực quan
+                await DisplayPdfInInteractiveViewerAsync(signedPath);
 
                 TxtCurrentFileName.Text = Path.GetFileName(signedPath);
                 TxtCurrentFileStatus.Text = "✅ VĂN BẢN ĐÃ ĐƯỢC KÝ SỐ THÀNH CÔNG VỚI CHỨNG THƯ BAN CƠ YẾU CHÍNH PHỦ.";
@@ -631,7 +830,7 @@ namespace VGCASignToolPro
                 TxtUploadDocTitle.Text = Path.GetFileNameWithoutExtension(signedPath);
 
                 var choice = MessageBox.Show(
-                    $"Ký số văn bản thành công!\n\nTệp tin đã lưu tại:\n{signedPath}\n\nChữ ký số đã được nhúng an toàn với dấu thời gian TSA Ban Cơ yếu.\nBạn có muốn chuyển sang Tab 3 để tải tệp lên Cổng Web ngay không?",
+                    $"Ký số văn bản thành công!\n\nTệp tin đã lưu tại:\n{signedPath}\n\nChữ ký số đã được nhúng chính xác tại vị trí bạn chọn với dấu thời gian TSA Ban Cơ yếu.\nBạn có muốn chuyển sang Tab 3 để tải tệp lên Cổng Web ngay không?",
                     "Ký Số Thành Công", MessageBoxButton.YesNo, MessageBoxImage.Information);
 
                 if (choice == MessageBoxResult.Yes)

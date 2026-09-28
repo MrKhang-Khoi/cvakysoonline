@@ -394,6 +394,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
 
                                 <!-- NÚT 1: TẢI FILE WORD -->
@@ -419,8 +420,16 @@
                                         IsEnabled="False" Margin="0,0,8,0" 
                                         Click="BtnExecuteConvertWord_Click" />
 
-                                <!-- NÚT 4: TIẾN HÀNH KÝ SỐ TÀI LIỆU -->
-                                <Button Grid.Column="4" x:Name="BtnSignCurrentDocument" 
+                                <!-- NÚT 4: CHÈN CHỮ KÝ (KÉO THẢ TRỰC TIẾP TRÊN TRANG VĂN BẢN) -->
+                                <Button Grid.Column="4" x:Name="BtnInsertSignatureStamp" 
+                                        Content="📍 Chèn Chữ Ký" 
+                                        Style="{StaticResource SecondaryButton}" 
+                                        Background="#FEF3C7" BorderBrush="#F59E0B" Foreground="#92400E" FontWeight="Bold" 
+                                        IsEnabled="False" Margin="0,0,8,0" 
+                                        Click="BtnInsertSignatureStamp_Click" />
+
+                                <!-- NÚT 5: TIẾN HÀNH KÝ SỐ TÀI LIỆU -->
+                                <Button Grid.Column="5" x:Name="BtnSignCurrentDocument" 
                                         Content="✍ TIẾN HÀNH KÝ SỐ" 
                                         Style="{StaticResource SignButton}" 
                                         IsEnabled="False" 

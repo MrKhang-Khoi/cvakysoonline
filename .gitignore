@@ -6,3 +6,6 @@ obj/
 .idea/
 test_preview_files/
 test_utf8_files/
+*.WebView2/
+.codegraph/
+test_run.log
