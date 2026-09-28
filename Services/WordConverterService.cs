@@ -393,18 +393,33 @@ namespace VGCASignToolPro.Services
                 string pageWidth = isLandscape ? "297mm" : "210mm";
                 string pageHeight = isLandscape ? "210mm" : "297mm";
 
-                // Chèn CSS định dạng trang giấy chuẩn, bảo toàn vị trí nét kẻ (relative anchors) và kích hoạt chế độ chỉnh sửa trực tiếp
+                // ═══════════════════════════════════════════════════════════════════════════════
+                // Trích xuất margin gốc từ @page WordSection1 của Word để bảo toàn bố cục chính xác
+                // Ví dụ: @page WordSection1 { size:21.0cm 842.0pt; margin:2.0cm 2.0cm 2.0cm 2.0cm; }
+                // Nếu không tìm thấy → dùng mặc định Word: 2cm mỗi bên (Nghị định 30/2020/NĐ-CP)
+                // ═══════════════════════════════════════════════════════════════════════════════
+                string marginTop = "2.0cm", marginRight = "2.0cm", marginBottom = "2.0cm", marginLeft = "2.0cm";
+                var marginMatch = System.Text.RegularExpressions.Regex.Match(
+                    content,
+                    @"@page\s+WordSection1[^}]*margin\s*:\s*([^\s;]+)\s+([^\s;]+)\s+([^\s;]+)\s+([^\s;]+)",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                if (marginMatch.Success)
+                {
+                    marginTop = marginMatch.Groups[1].Value;
+                    marginRight = marginMatch.Groups[2].Value;
+                    marginBottom = marginMatch.Groups[3].Value;
+                    marginLeft = marginMatch.Groups[4].Value;
+                }
+
+                // Chèn CSS trang giấy A4: BẢO TOÀN NGUYÊN BẢN margin và bố cục Word
+                // Quy tắc vàng: KHÔNG dùng !important đè width/margin lên nội dung Word inline styles
                 string customStyles = $@"
 <meta http-equiv=""Content-Type"" content=""text/html; charset=utf-8"">
 <style id=""vgca-editor-style"">
-    * {{
-        font-family: 'Times New Roman', 'Segoe UI', Arial, Tahoma, sans-serif !important;
-    }}
     html, body {{
         background-color: #f1f5f9 !important;
         margin: 0;
         padding: 24px 0;
-        font-family: 'Times New Roman', 'Segoe UI', Arial, Tahoma, sans-serif !important;
     }}
     body {{
         display: flex !important;
@@ -414,20 +429,22 @@ namespace VGCASignToolPro.Services
     div.WordSection1, div.WordSection2, div[class^=""WordSection""] {{
         background: #ffffff !important;
         width: {pageWidth} !important;
-        min-height: {pageHeight} !important;
+        min-height: {pageHeight};
+        /* BẢO TOÀN CHÍNH XÁC margin gốc Word: nội dung = width - padding */
+        /* Ví dụ: 210mm - 2cm*2 = 170mm vùng content → table/line giữ đúng vị trí */
+        padding: {marginTop} {marginRight} {marginBottom} {marginLeft} !important;
+        box-sizing: border-box !important;
         box-shadow: 0 4px 15px rgba(0,0,0,0.18) !important;
         border: 1px solid #cbd5e1 !important;
         border-radius: 4px;
-        box-sizing: border-box !important;
         outline: none !important;
         margin-bottom: 24px !important;
+        overflow: hidden;
     }}
-    h1, h2, h3, h4, h5, h6, .MsoTitle, .MsoSubtitle {{
-        font-family: 'Times New Roman', 'Segoe UI', Arial, Tahoma, sans-serif !important;
-        color: #0f172a !important;
-    }}
-    p.MsoNormal, p {{
-        position: relative !important;
+    /* Cho phép table rộng 100% vùng content mà KHÔNG tràn ra ngoài padding */
+    div[class^=""WordSection""] table {{
+        max-width: 100% !important;
+        table-layout: fixed;
     }}
 </style>
 <script id=""vgca-editor-script"">
