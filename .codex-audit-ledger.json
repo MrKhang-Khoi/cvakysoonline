@@ -22,14 +22,14 @@
       "timestamp": "2026-09-28T01:37:29.664Z"
     },
     "Services/VgcaAuthService.cs": {
-      "sha256": "de04a35b530e5bffbc942c3685ae14105dcee24ac0e2d53e4a3fe9d13150f9ba",
+      "sha256": "edef757b4d1bee981ff90bf95643206f0bc276f37674d6d1991687eec8ec80b7",
       "status": "APPROVED",
-      "timestamp": "2026-09-28T02:13:54.949Z"
+      "timestamp": "2026-09-28T03:29:49.769Z"
     },
     "MainWindow.xaml.cs": {
-      "sha256": "afbfc61b6c1f8a243d6cf78d6eeab9fd79298a8ec6b7a66055d6a1d2716080d8",
+      "sha256": "fc22084a6b6fa6f1125a5f446db3b0cd6d38cff4318053a5e218cd7d52d386c3",
       "status": "APPROVED",
-      "timestamp": "2026-09-28T02:46:55.416Z"
+      "timestamp": "2026-09-28T03:39:30.002Z"
     },
     "publish/wwwroot/pdf_viewer.html": {
       "sha256": "76a73e2ebf19c192e6d825c7263b78798291e2d18131b5e096b7818fece0f4e7",
@@ -1395,6 +1395,305 @@
     ],
     "Services/WordConverterService.cs [Dòng 301 - 318 / Tổng 318 dòng]": [
       "CleanupWordComObjects | Đóng và giải phóng COM Word Document/Application an toàn qua Marshal.ReleaseComObject, ghi log TraceWarning khi lỗi cleanup, ép GC dọn RCW tránh treo tiến trình WINWORD.EXE."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 1 - 60 / Tổng 742 dòng]": [
+      "RecordFailedAttempt | Đồng bộ thread-safe qua _stateLock, tăng _failedAttempts, cập nhật RemainingCounter, khóa Status=\"LOCKED\" khi chạm ngưỡng MaxAttempts."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 61 - 120 / Tổng 742 dòng]": [
+      "ResetFailedAttempts, Dispose, VgcaAuthService constructor | Thread-safe reset trạng thái, dọn dẹp bộ nhớ credentials theo quy chuẩn Desktop Signer, khởi tạo CSPRNG HMAC key và đường dẫn roster hợp lệ."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 121 - 180 / Tổng 742 dòng]": [
+      "GetOrCreateHmacKey & LoadRoster | DPAPI bảo vệ khóa HMAC cục bộ, ZeroMemory dọn sạch khóa thô trong khối finally, ghi đè file tạm nguyên tử qua File.Move, xử lý fail-safe khi thiếu file roster."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 181 - 240 / Tổng 742 dòng]": [
+      "Roster HMAC Integrity Verification & JSON Parsing | Xác thực HMAC-SHA256 tệp danh sách giáo viên, chống timing attack bằng `FixedTimeEquals`, ghi seal nguyên tử chống race condition, thu hồi khóa mật mã qua `ZeroMemory`, giới hạn `MaxDepth = 10` chống DoS JSON payload."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 241 - 300 / Tổng 742 dòng]": [
+      "LoadRoster / VgcaTeacherModel Deserialization | Nạp an toàn metadata giáo viên từ JSON, kiểm tra trùng lặp khóa CCCD, xử lý ngoại lệ fail-closed với cờ _rosterLoadFailed, cô lập mock data qua tiền xử lý #if DEBUG."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 301 - 360 / Tổng 742 dòng]": [
+      "GetTeacherList & AuthenticatePassword (Phần 1) | GetTeacherList sắp xếp danh sách an toàn. AuthenticatePassword khóa _authLock, chặn fail-closed khi _rosterLoadFailed, chuẩn hóa chuỗi cccd/password chống null, kiểm tra định dạng CCCD 12 số qua regex, tra cứu roster an toàn."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 361 - 420 / Tổng 742 dòng]": [
+      "VgcaAuthService.PasswordVerification | Xác thực mật khẩu kép (PBKDF2-SHA256 chuẩn hóa và SHA-256 legacy fallback) chống timing attack qua CryptographicOperations.FixedTimeEquals, xử lý fail-closed an toàn khi lỗi parse hoặc thiếu salt, kiểm tra trạng thái khóa tài khoản trước khi băm."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 421 - 480 / Tổng 742 dòng]": [
+      "VgcaAuthService.Login (State mutation & Session token generation) | Xử lý fail-closed khi lỗi hash, sinh token bằng RandomNumberGenerator CSPRNG, quản lý đếm số lần thử đăng nhập và đồng bộ trạng thái qua _authLock."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 481 - 540 / Tổng 742 dòng]": [
+      "GenerateQrCode | Tạo mã QR phiên ngẫu nhiên qua RandomNumberGenerator, ký toàn vẹn HMAC-SHA256 chống làm giả payload, giải phóng bộ nhớ đồ họa và đóng băng BitmapSource an toàn UI thread dưới _authLock.",
+      "ApproveQrLogin | Validate chuỗi CCCD đầu vào, kiểm tra trạng thái phiên CurrentQrSessionId atomic dưới _authLock chống tranh chấp dữ liệu."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 541 - 600 / Tổng 742 dòng]": [
+      "ApproveQrLogin & LoginWithHardwareCertificate | Sinh token qua CSPRNG, kiểm tra tính hợp lệ trước khi kích hoạt event ngoài lock, validate chứng thư VGCA fail-closed đúng chuẩn."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 1 - 60 / Tổng 748 dòng]": [
+      "RecordFailedAttempt | Đồng bộ thread-safe qua _stateLock, tăng _failedAttempts, cập nhật RemainingCounter, khóa Status=\"LOCKED\" khi chạm ngưỡng MaxAttempts."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 61 - 120 / Tổng 748 dòng]": [
+      "ResetFailedAttempts, Dispose, VgcaAuthService constructor | Thread-safe reset trạng thái, dọn dẹp bộ nhớ credentials theo quy chuẩn Desktop Signer, khởi tạo CSPRNG HMAC key và đường dẫn roster hợp lệ."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 121 - 180 / Tổng 748 dòng]": [
+      "GetOrCreateHmacKey & LoadRoster | DPAPI bảo vệ khóa HMAC cục bộ, ZeroMemory dọn sạch khóa thô trong khối finally, ghi đè file tạm nguyên tử qua File.Move, xử lý fail-safe khi thiếu file roster."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 181 - 240 / Tổng 748 dòng]": [
+      "Roster HMAC Integrity Verification & JSON Parsing | Xác thực HMAC-SHA256 tệp danh sách giáo viên, chống timing attack bằng `FixedTimeEquals`, ghi seal nguyên tử chống race condition, thu hồi khóa mật mã qua `ZeroMemory`, giới hạn `MaxDepth = 10` chống DoS JSON payload."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 241 - 300 / Tổng 748 dòng]": [
+      "LoadRoster / VgcaTeacherModel Deserialization | Nạp an toàn metadata giáo viên từ JSON, kiểm tra trùng lặp khóa CCCD, xử lý ngoại lệ fail-closed với cờ _rosterLoadFailed, cô lập mock data qua tiền xử lý #if DEBUG."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 301 - 360 / Tổng 748 dòng]": [
+      "GetTeacherList & AuthenticatePassword (Phần 1) | GetTeacherList sắp xếp danh sách an toàn. AuthenticatePassword khóa _authLock, chặn fail-closed khi _rosterLoadFailed, chuẩn hóa chuỗi cccd/password chống null, kiểm tra định dạng CCCD 12 số qua regex, tra cứu roster an toàn."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 361 - 420 / Tổng 748 dòng]": [
+      "VgcaAuthService.PasswordVerification | Xác thực mật khẩu kép (PBKDF2-SHA256 chuẩn hóa và SHA-256 legacy fallback) chống timing attack qua CryptographicOperations.FixedTimeEquals, xử lý fail-closed an toàn khi lỗi parse hoặc thiếu salt, kiểm tra trạng thái khóa tài khoản trước khi băm."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 421 - 480 / Tổng 748 dòng]": [
+      "VgcaAuthService.Login (State mutation & Session token generation) | Xử lý fail-closed khi lỗi hash, sinh token bằng RandomNumberGenerator CSPRNG, quản lý đếm số lần thử đăng nhập và đồng bộ trạng thái qua _authLock."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 481 - 540 / Tổng 748 dòng]": [
+      "GenerateQrCode | Tạo mã QR phiên ngẫu nhiên qua RandomNumberGenerator, ký toàn vẹn HMAC-SHA256 chống làm giả payload, giải phóng bộ nhớ đồ họa và đóng băng BitmapSource an toàn UI thread dưới _authLock.",
+      "ApproveQrLogin | Validate chuỗi CCCD đầu vào, kiểm tra trạng thái phiên CurrentQrSessionId atomic dưới _authLock chống tranh chấp dữ liệu."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 541 - 600 / Tổng 748 dòng]": [
+      "ApproveQrLogin & LoginWithHardwareCertificate | Sinh token qua CSPRNG, kiểm tra tính hợp lệ trước khi kích hoạt event ngoài lock, validate chứng thư VGCA fail-closed đúng chuẩn."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 1 - 60 / Tổng 743 dòng]": [
+      "RecordFailedAttempt | Đồng bộ thread-safe qua _stateLock, tăng _failedAttempts, cập nhật RemainingCounter, khóa Status=\"LOCKED\" khi chạm ngưỡng MaxAttempts."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 61 - 120 / Tổng 743 dòng]": [
+      "ResetFailedAttempts, Dispose, VgcaAuthService constructor | Thread-safe reset trạng thái, dọn dẹp bộ nhớ credentials theo quy chuẩn Desktop Signer, khởi tạo CSPRNG HMAC key và đường dẫn roster hợp lệ."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 121 - 180 / Tổng 743 dòng]": [
+      "GetOrCreateHmacKey & LoadRoster | DPAPI bảo vệ khóa HMAC cục bộ, ZeroMemory dọn sạch khóa thô trong khối finally, ghi đè file tạm nguyên tử qua File.Move, xử lý fail-safe khi thiếu file roster."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 181 - 240 / Tổng 743 dòng]": [
+      "Roster HMAC Integrity Verification & JSON Parsing | Xác thực HMAC-SHA256 tệp danh sách giáo viên, chống timing attack bằng `FixedTimeEquals`, ghi seal nguyên tử chống race condition, thu hồi khóa mật mã qua `ZeroMemory`, giới hạn `MaxDepth = 10` chống DoS JSON payload."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 241 - 300 / Tổng 743 dòng]": [
+      "LoadRoster / VgcaTeacherModel Deserialization | Nạp an toàn metadata giáo viên từ JSON, kiểm tra trùng lặp khóa CCCD, xử lý ngoại lệ fail-closed với cờ _rosterLoadFailed, cô lập mock data qua tiền xử lý #if DEBUG."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 301 - 360 / Tổng 743 dòng]": [
+      "GetTeacherList & AuthenticatePassword (Phần 1) | GetTeacherList sắp xếp danh sách an toàn. AuthenticatePassword khóa _authLock, chặn fail-closed khi _rosterLoadFailed, chuẩn hóa chuỗi cccd/password chống null, kiểm tra định dạng CCCD 12 số qua regex, tra cứu roster an toàn."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 361 - 420 / Tổng 743 dòng]": [
+      "VgcaAuthService.PasswordVerification | Xác thực mật khẩu kép (PBKDF2-SHA256 chuẩn hóa và SHA-256 legacy fallback) chống timing attack qua CryptographicOperations.FixedTimeEquals, xử lý fail-closed an toàn khi lỗi parse hoặc thiếu salt, kiểm tra trạng thái khóa tài khoản trước khi băm."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 421 - 480 / Tổng 743 dòng]": [
+      "VgcaAuthService.Login (State mutation & Session token generation) | Xử lý fail-closed khi lỗi hash, sinh token bằng RandomNumberGenerator CSPRNG, quản lý đếm số lần thử đăng nhập và đồng bộ trạng thái qua _authLock."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 481 - 540 / Tổng 743 dòng]": [
+      "GenerateQrCode | Tạo mã QR phiên ngẫu nhiên qua RandomNumberGenerator, ký toàn vẹn HMAC-SHA256 chống làm giả payload, giải phóng bộ nhớ đồ họa và đóng băng BitmapSource an toàn UI thread dưới _authLock.",
+      "ApproveQrLogin | Validate chuỗi CCCD đầu vào, kiểm tra trạng thái phiên CurrentQrSessionId atomic dưới _authLock chống tranh chấp dữ liệu."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 541 - 600 / Tổng 743 dòng]": [
+      "ApproveQrLogin & LoginWithHardwareCertificate | Sinh token qua CSPRNG, kiểm tra tính hợp lệ trước khi kích hoạt event ngoài lock, validate chứng thư VGCA fail-closed đúng chuẩn."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 601 - 660 / Tổng 743 dòng]": [
+      "VgcaLogin / Certificate Identity Resolution | Khóa đồng bộ lock (_authLock) bảo vệ tra cứu danh bạ, kiểm tra PrivateKey fail-closed, ánh xạ an toàn theo SerialNumber và Email, tự động tạo hồ sơ danh bạ cách ly khi thiếu thông tin."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 661 - 720 / Tổng 743 dòng]": [
+      "Login Completion & UnlockAccount | Tạo token ngẫu nhiên qua RandomNumberGenerator 32 byte an toàn, invoke event ngoài lock tránh deadlock, UnlockAccount đồng bộ qua _authLock với validation rỗng nghiêm ngặt."
+    ],
+    "Services/VgcaAuthService.cs [Dòng 721 - 743 / Tổng 743 dòng]": [
+      "Logout | Reset state thread-safe qua `lock (_authLock)`. Dọn sạch `CurrentAccessToken`, `CurrentQrSessionId`, `CurrentTeacher`, `LoginTimestamp`. Bắn event `LoginStateChanged` ngoài lock chống deadlock. Null-safe via `?.`."
+    ],
+    "MainWindow.xaml.cs [Dòng 1 - 60 / Tổng 1651 dòng]": [
+      "MainWindow, MainWindow_Loaded (Dòng 1-60) | Khởi tạo instance service nội bộ, đăng ký event handler UI vòng đời ứng dụng và mở khối try khởi tạo async an toàn."
+    ],
+    "MainWindow.xaml.cs [Dòng 61 - 120 / Tổng 1651 dòng]": [
+      "InitializePreviewEngineAsync | Khởi tạo WebView2 cache tại LocalAppData, validate null control, resolve wwwroot đa tầng, map virtual host an toàn."
+    ],
+    "MainWindow.xaml.cs [Dòng 121 - 180 / Tổng 1651 dòng]": [
+      "CoreWebView2_WebMessageReceived | Parse JSON message từ WebView2 an toàn qua TryGetProperty, cập nhật state và UI coordinates không crash null, dispose JsonDocument chuẩn xác."
+    ],
+    "MainWindow.xaml.cs [Dòng 181 - 240 / Tổng 1651 dòng]": [
+      "UpdateStatus | Đảm bảo thread-safe cập nhật TxtStatusBar qua Dispatcher.Invoke kèm timestamp.",
+      "InitializeVgcaAuthRoster | Kiểm tra null/rỗng danh sách giáo viên VGCA, binding UI ComboBox an toàn và bao bọc try-catch.",
+      "GenerateAndDisplayVgcaQr | Kiểm tra null kết quả QR bitmap từ _vgcaAuth trước khi gán ImageSource."
+    ],
+    "MainWindow.xaml.cs [Dòng 241 - 300 / Tổng 1651 dòng]": [
+      "OnVgcaLoginStateChanged | Đồng bộ trạng thái đăng nhập VGCA lên UI qua Dispatcher, bind thông tin giáo viên, đối soát chứng thư số tương ứng từ store và mask PII CCCD."
+    ],
+    "MainWindow.xaml.cs [Dòng 301 - 360 / Tổng 1651 dòng]": [
+      "CmbRosterQuickSelect_SelectionChanged | Type pattern matching an toàn với VgcaTeacherModel. Gán CCCD, ẩn UI báo lỗi. Không rủi ro null.",
+      "BtnVgcaLogin_Click | Validate chuỗi CCCD và password fail-closed. Fallback chứng thư phần cứng an toàn khi xác thực mật khẩu thất bại. Kiểm tra null-check đầy đủ trước truy cập đối tượng Teacher."
+    ],
+    "MainWindow.xaml.cs [Dòng 361 - 420 / Tổng 1651 dòng]": [
+      "BtnRefreshQr_Click | Trigger tạo lại mã QR VGCA, cập nhật trạng thái UI an toàn.",
+      "BtnApproveQr_Click | Validate rỗng CCCD, kiểm tra null service `_vgcaAuth`, phê duyệt QR đồng bộ cục bộ (ponytail ghi nhận), null-coalescing hiển thị thông tin cán bộ, xử lý lỗi fail-closed hiển thị UI."
+    ],
+    "MainWindow.xaml.cs [Dòng 421 - 480 / Tổng 1651 dòng]": [
+      "MainWindow.xaml.cs [Dòng 421 - 480] | Đăng xuất VGCA, điều hướng UI tab và tự động quét/xác thực chứng thư số phần cứng Ban Cơ yếu vào UI an toàn null, xử lý state đồng bộ đúng chuẩn."
+    ],
+    "MainWindow.xaml.cs [Dòng 481 - 540 / Tổng 1651 dòng]": [
+      "LoadCertificatesAndVerifyVGCALogin (phần kết) | Null-check an toàn cho `_vgcaAuth.CurrentTeacher` và `vgcaCert`. Bắt ngoại lệ, log `TraceError`, cập nhật UI không nuốt lỗi.",
+      "MainWindow_Activated | Kích hoạt cửa sổ chỉ quét lại khi chưa đăng nhập. Bọc `try-catch` và log `TraceWarning` bảo vệ UI thread.",
+      "BtnSyncVgcaCertificate_Click | Đồng bộ chứng thư thủ công. Kiểm tra null `_currentActiveCert` trước khi đọc thuộc tính và ẩn lỗi UI."
+    ],
+    "MainWindow.xaml.cs [Dòng 1 - 60 / Tổng 1653 dòng]": [
+      "MainWindow, MainWindow_Loaded (Dòng 1-60) | Khởi tạo instance service nội bộ, đăng ký event handler UI vòng đời ứng dụng và mở khối try khởi tạo async an toàn."
+    ],
+    "MainWindow.xaml.cs [Dòng 61 - 120 / Tổng 1653 dòng]": [
+      "InitializePreviewEngineAsync | Khởi tạo WebView2 cache tại LocalAppData, validate null control, resolve wwwroot đa tầng, map virtual host an toàn."
+    ],
+    "MainWindow.xaml.cs [Dòng 121 - 180 / Tổng 1653 dòng]": [
+      "CoreWebView2_WebMessageReceived | Parse JSON message từ WebView2 an toàn qua TryGetProperty, cập nhật state và UI coordinates không crash null, dispose JsonDocument chuẩn xác."
+    ],
+    "MainWindow.xaml.cs [Dòng 181 - 240 / Tổng 1653 dòng]": [
+      "UpdateStatus | Đảm bảo thread-safe cập nhật TxtStatusBar qua Dispatcher.Invoke kèm timestamp.",
+      "InitializeVgcaAuthRoster | Kiểm tra null/rỗng danh sách giáo viên VGCA, binding UI ComboBox an toàn và bao bọc try-catch.",
+      "GenerateAndDisplayVgcaQr | Kiểm tra null kết quả QR bitmap từ _vgcaAuth trước khi gán ImageSource."
+    ],
+    "MainWindow.xaml.cs [Dòng 241 - 300 / Tổng 1653 dòng]": [
+      "OnVgcaLoginStateChanged | Đồng bộ trạng thái đăng nhập VGCA lên UI qua Dispatcher, bind thông tin giáo viên, đối soát chứng thư số tương ứng từ store và mask PII CCCD."
+    ],
+    "MainWindow.xaml.cs [Dòng 301 - 360 / Tổng 1653 dòng]": [
+      "CmbRosterQuickSelect_SelectionChanged | Type pattern matching an toàn với VgcaTeacherModel. Gán CCCD, ẩn UI báo lỗi. Không rủi ro null.",
+      "BtnVgcaLogin_Click | Validate chuỗi CCCD và password fail-closed. Fallback chứng thư phần cứng an toàn khi xác thực mật khẩu thất bại. Kiểm tra null-check đầy đủ trước truy cập đối tượng Teacher."
+    ],
+    "MainWindow.xaml.cs [Dòng 361 - 420 / Tổng 1653 dòng]": [
+      "BtnRefreshQr_Click | Trigger tạo lại mã QR VGCA, cập nhật trạng thái UI an toàn.",
+      "BtnApproveQr_Click | Validate rỗng CCCD, kiểm tra null service `_vgcaAuth`, phê duyệt QR đồng bộ cục bộ (ponytail ghi nhận), null-coalescing hiển thị thông tin cán bộ, xử lý lỗi fail-closed hiển thị UI."
+    ],
+    "MainWindow.xaml.cs [Dòng 421 - 480 / Tổng 1653 dòng]": [
+      "MainWindow.xaml.cs [Dòng 421 - 480] | Đăng xuất VGCA, điều hướng UI tab và tự động quét/xác thực chứng thư số phần cứng Ban Cơ yếu vào UI an toàn null, xử lý state đồng bộ đúng chuẩn."
+    ],
+    "MainWindow.xaml.cs [Dòng 481 - 540 / Tổng 1653 dòng]": [
+      "LoadCertificatesAndVerifyVGCALogin (phần kết) | Null-check an toàn cho `_vgcaAuth.CurrentTeacher` và `vgcaCert`. Bắt ngoại lệ, log `TraceError`, cập nhật UI không nuốt lỗi.",
+      "MainWindow_Activated | Kích hoạt cửa sổ chỉ quét lại khi chưa đăng nhập. Bọc `try-catch` và log `TraceWarning` bảo vệ UI thread.",
+      "BtnSyncVgcaCertificate_Click | Đồng bộ chứng thư thủ công. Kiểm tra null `_currentActiveCert` trước khi đọc thuộc tính và ẩn lỗi UI."
+    ],
+    "MainWindow.xaml.cs [Dòng 541 - 600 / Tổng 1653 dòng]": [
+      "BtnUnlockAccount_Click, BtnRefreshCertificates_Click, BtnLaunchVgcaManager_Click | Xử lý sự kiện UI an toàn, validate chuỗi CCCD tránh null/rỗng trước khi gọi service, kiểm soát nhánh kết quả mở khóa tài khoản và tiến trình VGCA kèm phản hồi UI tương ứng."
+    ],
+    "MainWindow.xaml.cs [Dòng 601 - 660 / Tổng 1653 dòng]": [
+      "CmbCertificates_SelectionChanged | Pattern match ép kiểu `CertificateModel` an toàn null, map đầy đủ thông tin chứng thư lên UI controls.",
+      "LoadProfiles | Try-catch bao bọc nạp profile, reset `ItemsSource` sạch, chọn mặc định index 0 khi danh sách có phần tử, ghi log lỗi không nuốt exception.",
+      "CmbProfiles_SelectionChanged | Pattern match `SignatureProfile` an toàn, map kích thước và chuyển đổi enum mode sang UI index chuẩn qua switch expression."
+    ],
+    "MainWindow.xaml.cs [Dòng 661 - 720 / Tổng 1653 dòng]": [
+      "SetAndPersistStampImage | Validate đường dẫn tồn tại trước khi đọc, load BitmapImage với BitmapCacheOption.OnLoad tránh khóa file, Freeze tối ưu tài nguyên, bắt ngoại lệ fail-closed dọn state qua ClearStampImage."
+    ],
+    "MainWindow.xaml.cs [Dòng 721 - 780 / Tổng 1653 dòng]": [
+      "ClearStampImage & LoadStamp | Cập nhật UI con dấu, đồng bộ `SignatureProfile`, lưu qua `_profileManager`, bắt lỗi log `Trace.TraceError` và `UpdateStatus` an toàn, không nuốt ngoại lệ."
+    ],
+    "MainWindow.xaml.cs [Dòng 781 - 840 / Tổng 1653 dòng]": [
+      "BtnSelectStampImage_Click, BtnTab2ChangeStamp_Click, BtnClearStampImage_Click, BtnSaveProfile_Click | Cập nhật cấu hình con dấu và lưu SignatureProfile an toàn, validate kích thước > 0, kiểm tra tệp tồn tại trước khi gán đường dẫn."
+    ],
+    "MainWindow.xaml.cs [Dòng 841 - 900 / Tổng 1653 dòng]": [
+      "CmbDisplayMode_SelectionChanged, BtnGoToSignWorkspace_Click, BtnSelectWord_Click | UI event handler an toàn null-check, switch mapping Mode chuẩn xác, mở file Word và khởi tạo trạng thái UI đúng quy trình."
+    ],
+    "MainWindow.xaml.cs [Dòng 901 - 960 / Tổng 1653 dòng]": [
+      "BtnSelectPdf_Click | Mở tệp PDF qua OpenFileDialog, kiểm tra File.Exists, cập nhật state UI và nạp viewer bất đồng bộ an toàn.",
+      "ConvertWordToEditableHtml/Display (901-924) | Chuyển đổi Word sang HTML async, kiểm tra WebView2 null-safe trước navigate, catch lỗi và phục hồi state sạch sẽ."
+    ],
+    "MainWindow.xaml.cs [Dòng 961 - 1020 / Tổng 1653 dòng]": [
+      "BtnExecuteConvertWord_Click | Kiểm tra tệp nguồn, khóa UI, bất đồng bộ chuyển Word sang PDF, nạp kết quả vào viewer, khôi phục UI trong finally."
+    ],
+    "MainWindow.xaml.cs [Dòng 1021 - 1080 / Tổng 1653 dòng]": [
+      "LoadPdfPreview | Validate file <=30MB, đọc async chuyển Base64, check null/disposed sau await, bắt event NavigationCompleted điều hướng an toàn, unbind sạch."
+    ],
+    "MainWindow.xaml.cs [Dòng 1081 - 1140 / Tổng 1653 dòng]": [
+      "PdfPreviewNavigationAndLoad | Quản lý timeout 10s nạp WebView2, polling 3s chờ script engine, serialize JSON base64 chống injection, rollback UI fail-closed khi lỗi hoặc disposed."
+    ],
+    "MainWindow.xaml.cs [Dòng 1141 - 1200 / Tổng 1653 dòng]": [
+      "RollbackViewerUiState, BtnInsertSignatureStamp_Click | Rollback UI state an toàn, validate working PDF tồn tại, resolve stamp path fail-closed qua profile/desktop fallback/OpenFileDialog trước khi chèn dấu."
+    ],
+    "MainWindow.xaml.cs [Dòng 1 - 60 / Tổng 1659 dòng]": [
+      "MainWindow, MainWindow_Loaded (Dòng 1-60) | Khởi tạo instance service nội bộ, đăng ký event handler UI vòng đời ứng dụng và mở khối try khởi tạo async an toàn."
+    ],
+    "MainWindow.xaml.cs [Dòng 61 - 120 / Tổng 1659 dòng]": [
+      "InitializePreviewEngineAsync | Khởi tạo WebView2 cache tại LocalAppData, validate null control, resolve wwwroot đa tầng, map virtual host an toàn."
+    ],
+    "MainWindow.xaml.cs [Dòng 121 - 180 / Tổng 1659 dòng]": [
+      "CoreWebView2_WebMessageReceived | Parse JSON message từ WebView2 an toàn qua TryGetProperty, cập nhật state và UI coordinates không crash null, dispose JsonDocument chuẩn xác."
+    ],
+    "MainWindow.xaml.cs [Dòng 181 - 240 / Tổng 1659 dòng]": [
+      "UpdateStatus | Đảm bảo thread-safe cập nhật TxtStatusBar qua Dispatcher.Invoke kèm timestamp.",
+      "InitializeVgcaAuthRoster | Kiểm tra null/rỗng danh sách giáo viên VGCA, binding UI ComboBox an toàn và bao bọc try-catch.",
+      "GenerateAndDisplayVgcaQr | Kiểm tra null kết quả QR bitmap từ _vgcaAuth trước khi gán ImageSource."
+    ],
+    "MainWindow.xaml.cs [Dòng 241 - 300 / Tổng 1659 dòng]": [
+      "OnVgcaLoginStateChanged | Đồng bộ trạng thái đăng nhập VGCA lên UI qua Dispatcher, bind thông tin giáo viên, đối soát chứng thư số tương ứng từ store và mask PII CCCD."
+    ],
+    "MainWindow.xaml.cs [Dòng 301 - 360 / Tổng 1659 dòng]": [
+      "CmbRosterQuickSelect_SelectionChanged | Type pattern matching an toàn với VgcaTeacherModel. Gán CCCD, ẩn UI báo lỗi. Không rủi ro null.",
+      "BtnVgcaLogin_Click | Validate chuỗi CCCD và password fail-closed. Fallback chứng thư phần cứng an toàn khi xác thực mật khẩu thất bại. Kiểm tra null-check đầy đủ trước truy cập đối tượng Teacher."
+    ],
+    "MainWindow.xaml.cs [Dòng 361 - 420 / Tổng 1659 dòng]": [
+      "BtnRefreshQr_Click | Trigger tạo lại mã QR VGCA, cập nhật trạng thái UI an toàn.",
+      "BtnApproveQr_Click | Validate rỗng CCCD, kiểm tra null service `_vgcaAuth`, phê duyệt QR đồng bộ cục bộ (ponytail ghi nhận), null-coalescing hiển thị thông tin cán bộ, xử lý lỗi fail-closed hiển thị UI."
+    ],
+    "MainWindow.xaml.cs [Dòng 421 - 480 / Tổng 1659 dòng]": [
+      "MainWindow.xaml.cs [Dòng 421 - 480] | Đăng xuất VGCA, điều hướng UI tab và tự động quét/xác thực chứng thư số phần cứng Ban Cơ yếu vào UI an toàn null, xử lý state đồng bộ đúng chuẩn."
+    ],
+    "MainWindow.xaml.cs [Dòng 481 - 540 / Tổng 1659 dòng]": [
+      "LoadCertificatesAndVerifyVGCALogin (phần kết) | Null-check an toàn cho `_vgcaAuth.CurrentTeacher` và `vgcaCert`. Bắt ngoại lệ, log `TraceError`, cập nhật UI không nuốt lỗi.",
+      "MainWindow_Activated | Kích hoạt cửa sổ chỉ quét lại khi chưa đăng nhập. Bọc `try-catch` và log `TraceWarning` bảo vệ UI thread.",
+      "BtnSyncVgcaCertificate_Click | Đồng bộ chứng thư thủ công. Kiểm tra null `_currentActiveCert` trước khi đọc thuộc tính và ẩn lỗi UI."
+    ],
+    "MainWindow.xaml.cs [Dòng 541 - 600 / Tổng 1659 dòng]": [
+      "BtnUnlockAccount_Click, BtnRefreshCertificates_Click, BtnLaunchVgcaManager_Click | Xử lý sự kiện UI an toàn, validate chuỗi CCCD tránh null/rỗng trước khi gọi service, kiểm soát nhánh kết quả mở khóa tài khoản và tiến trình VGCA kèm phản hồi UI tương ứng."
+    ],
+    "MainWindow.xaml.cs [Dòng 601 - 660 / Tổng 1659 dòng]": [
+      "CmbCertificates_SelectionChanged | Pattern match ép kiểu `CertificateModel` an toàn null, map đầy đủ thông tin chứng thư lên UI controls.",
+      "LoadProfiles | Try-catch bao bọc nạp profile, reset `ItemsSource` sạch, chọn mặc định index 0 khi danh sách có phần tử, ghi log lỗi không nuốt exception.",
+      "CmbProfiles_SelectionChanged | Pattern match `SignatureProfile` an toàn, map kích thước và chuyển đổi enum mode sang UI index chuẩn qua switch expression."
+    ],
+    "MainWindow.xaml.cs [Dòng 661 - 720 / Tổng 1659 dòng]": [
+      "SetAndPersistStampImage | Validate đường dẫn tồn tại trước khi đọc, load BitmapImage với BitmapCacheOption.OnLoad tránh khóa file, Freeze tối ưu tài nguyên, bắt ngoại lệ fail-closed dọn state qua ClearStampImage."
+    ],
+    "MainWindow.xaml.cs [Dòng 721 - 780 / Tổng 1659 dòng]": [
+      "ClearStampImage & LoadStamp | Cập nhật UI con dấu, đồng bộ `SignatureProfile`, lưu qua `_profileManager`, bắt lỗi log `Trace.TraceError` và `UpdateStatus` an toàn, không nuốt ngoại lệ."
+    ],
+    "MainWindow.xaml.cs [Dòng 781 - 840 / Tổng 1659 dòng]": [
+      "BtnSelectStampImage_Click, BtnTab2ChangeStamp_Click, BtnClearStampImage_Click, BtnSaveProfile_Click | Cập nhật cấu hình con dấu và lưu SignatureProfile an toàn, validate kích thước > 0, kiểm tra tệp tồn tại trước khi gán đường dẫn."
+    ],
+    "MainWindow.xaml.cs [Dòng 841 - 900 / Tổng 1659 dòng]": [
+      "CmbDisplayMode_SelectionChanged, BtnGoToSignWorkspace_Click, BtnSelectWord_Click | UI event handler an toàn null-check, switch mapping Mode chuẩn xác, mở file Word và khởi tạo trạng thái UI đúng quy trình."
+    ],
+    "MainWindow.xaml.cs [Dòng 901 - 960 / Tổng 1659 dòng]": [
+      "BtnSelectPdf_Click | Mở tệp PDF qua OpenFileDialog, kiểm tra File.Exists, cập nhật state UI và nạp viewer bất đồng bộ an toàn.",
+      "ConvertWordToEditableHtml/Display (901-924) | Chuyển đổi Word sang HTML async, kiểm tra WebView2 null-safe trước navigate, catch lỗi và phục hồi state sạch sẽ."
+    ],
+    "MainWindow.xaml.cs [Dòng 961 - 1020 / Tổng 1659 dòng]": [
+      "BtnExecuteConvertWord_Click | Kiểm tra tệp nguồn, khóa UI, bất đồng bộ chuyển Word sang PDF, nạp kết quả vào viewer, khôi phục UI trong finally."
+    ],
+    "MainWindow.xaml.cs [Dòng 1021 - 1080 / Tổng 1659 dòng]": [
+      "LoadPdfPreview | Validate file <=30MB, đọc async chuyển Base64, check null/disposed sau await, bắt event NavigationCompleted điều hướng an toàn, unbind sạch."
+    ],
+    "MainWindow.xaml.cs [Dòng 1081 - 1140 / Tổng 1659 dòng]": [
+      "PdfPreviewNavigationAndLoad | Quản lý timeout 10s nạp WebView2, polling 3s chờ script engine, serialize JSON base64 chống injection, rollback UI fail-closed khi lỗi hoặc disposed."
+    ],
+    "MainWindow.xaml.cs [Dòng 1141 - 1200 / Tổng 1659 dòng]": [
+      "RollbackViewerUiState, BtnInsertSignatureStamp_Click | Rollback UI state an toàn, validate working PDF tồn tại, resolve stamp path fail-closed qua profile/desktop fallback/OpenFileDialog trước khi chèn dấu."
+    ],
+    "MainWindow.xaml.cs [Dòng 1201 - 1260 / Tổng 1659 dòng]": [
+      "BtnInsertStamp / BtnSignDocument_Click | Validate file ảnh con dấu, parse kích thước an toàn, kiểm tra WebView2 null trước khi inject script; validate tồn tại file PDF và chứng thư số trước khi kích hoạt quy trình ký."
+    ],
+    "MainWindow.xaml.cs [Dòng 1261 - 1320 / Tổng 1659 dòng]": [
+      "StampCoordinateAndPathResolution | Đọc tọa độ ký, phân giải đường dẫn ảnh con dấu đa tầng an toàn qua File.Exists, cập nhật ImagePath cho SignatureProfile."
+    ],
+    "MainWindow.xaml.cs [Dòng 1321 - 1380 / Tổng 1659 dòng]": [
+      "DisplayPdfInInteractiveViewerAsync | Khởi tạo SigningRequest, kiểm tra quyền ghi thư mục đầu ra kèm fallback Desktop, gọi SignPdfAsync bất đồng bộ và cập nhật UI sau khi ký thành công."
+    ],
+    "MainWindow.xaml.cs [Dòng 1381 - 1440 / Tổng 1659 dòng]": [
+      "BtnSaveSignedCopy_Click | Validate file nguồn tồn tại, sao chép file qua SaveFileDialog an toàn, xử lý try-catch I/O và khôi phục trạng thái UI trong finally."
+    ],
+    "MainWindow.xaml.cs [Dòng 1441 - 1500 / Tổng 1659 dòng]": [
+      "BtnOpenSignedPdfExternal_Click, BtnOpenSignedFolder_Click | Validate file tồn tại trước khi gọi Process.Start. Quản lý ngoại lệ mở file và thư mục đầy đủ.",
+      "BtnGoToUploadWeb_Click | Chuyển Tab UI trực tiếp, không logic thừa.",
+      "BtnFormatBold_Click, BtnFormatItalic_Click | Sử dụng null-conditional CoreWebView2? tránh crash khi WebView2 chưa sẵn sàng."
+    ],
+    "MainWindow.xaml.cs [Dòng 1501 - 1560 / Tổng 1659 dòng]": [
+      "Formatting Commands & Upload UI Handlers | CoreWebView2 gọi script qua null-conditional an toàn; OpenFileDialog chọn tệp hợp lệ; validate filePath tồn tại trước khi thực thi upload."
+    ],
+    "MainWindow.xaml.cs [Dòng 1561 - 1620 / Tổng 1659 dòng]": [
+      "UploadSignedPdfAsync UI handler | Validate URL http/https, đóng gói UploadRequest, disable UI button chống double-submit, await upload bất đồng bộ, render kết quả HTTP và luôn khôi phục trạng thái nút bấm trong finally."
+    ],
+    "MainWindow.xaml.cs [Dòng 1621 - 1659 / Tổng 1659 dòng]": [
+      "BtnVerifyPdf_Click | Mở OpenFileDialog chọn tệp PDF, gọi _pdfVerifier.VerifyPdf phân tích danh sách chữ ký số, bind dữ liệu lên ListSignatures và thông báo trạng thái UI."
     ]
   },
   "sliceHashes": {
@@ -1564,93 +1863,85 @@
       "timestamp": "2026-09-28T01:37:29.656Z"
     },
     "Services/VgcaAuthService.cs#L1-60": {
-      "hash": "83a7a3b941fec78911913aff1db3d9e4ef062d0a6c595a7a44136a5a743f89bb",
+      "hash": "d98679001faa71b27a086dc077499326f8704728a3c679ac7a8a90332d271dc8",
       "status": "APPROVED",
       "contracts": [
-        "RecordFailedAttempt | Thread-safe qua `lock(_stateLock)`, tăng `_failedAttempts` nguyên tử, clamp `RemainingCounter` về 0 đúng, chuyển LOCKED khi đạt MaxAttempts. Fail-closed đúng chuẩn — vượt ngưỡng luôn khóa, không có đường bypass.",
-        "ResetFailedAttempts | Chưa thấy thân hàm (cắt tại dòng 60), defer sang lát cắt tiếp.",
-        "VgcaTeacherModel | IDisposable khai báo đúng cho model chứa KeyContainer/credential. Properties mặc định `string.Empty` — không null. `Status`/`RemainingCounter`/`FailedAttempts`/`Salt`/`PasswordHash` đều `internal set` — chống mutation từ ngoài assembly. `ValidPasswordHashes` dùng `IReadOnlyList<string>` — immutable contract đúng. `_stateLock` là `readonly` — không thể reassign lock object. Integer overflow trên `_failedAttempts` cần ~2 tỷ lần gọi liên tục — không khả thi trong thực tế desktop signer, chấp nhận."
+        "RecordFailedAttempt | Đồng bộ thread-safe qua _stateLock, tăng _failedAttempts, cập nhật RemainingCounter, khóa Status=\"LOCKED\" khi chạm ngưỡng MaxAttempts."
       ],
-      "timestamp": "2026-09-28T01:59:49.728Z"
+      "timestamp": "2026-09-28T03:23:52.093Z"
     },
     "Services/VgcaAuthService.cs#L61-120": {
-      "hash": "0670b99c8a85e7656b898ecb3d940bf2bd0247dd776b98852ba981d0a7cc1709",
+      "hash": "42673ec72b3e9132023ff32ac2082558328eae1143c3cb2057078224d4fb8354",
       "status": "APPROVED",
       "contracts": [
-        "Dispose | Xóa trắng string credentials (PasswordHash, Salt, KeyContainer, ValidPasswordHashes) rồi SuppressFinalize. ponytail comment ghi nhận threat model chấp nhận rủi ro string interning — đúng cho desktop scope, upgrade path rõ ràng.",
-        "VgcaLoginResult | DTO thuần, default an toàn (string.Empty, RemainingCounter = MaxAttempts). Không logic, không rủi ro.",
-        "VgcaAuthService constructor | CccdRegex compiled `^[0-9]{12}$` — input validation CCCD chặt, đúng 12 chữ số. ConcurrentDictionary với StringComparer.Ordinal — so sánh chính xác, không locale-dependent. `_qrHmacKey` sinh bằng `RandomNumberGenerator.GetBytes(32)` — CSPRNG 256-bit, đúng chuẩn. Constructor resolve path từ BaseDirectory rồi LoadRoster — deterministic, không race vì chạy trong constructor.",
-        "GetRosterHmacKey (mở đầu) | ponytail ghi nhận DPAPI LocalMachine scope, upgrade path per-user + ACL khi multi-tenant. Hàm chưa đóng — tiếp lát cắt sau."
+        "ResetFailedAttempts, Dispose, VgcaAuthService constructor | Thread-safe reset trạng thái, dọn dẹp bộ nhớ credentials theo quy chuẩn Desktop Signer, khởi tạo CSPRNG HMAC key và đường dẫn roster hợp lệ."
       ],
-      "timestamp": "2026-09-28T02:06:40.706Z"
+      "timestamp": "2026-09-28T03:24:00.288Z"
     },
     "Services/VgcaAuthService.cs#L121-180": {
-      "hash": "3a7713ffd1536b816a4fdbda650e17902c1275a785e189d525c52eb4a97c11fd",
+      "hash": "b5c3d3bdd306c6dda8998590df783fcf8fa076f5229a28fe42352fc791b65004",
       "status": "APPROVED",
       "contracts": [
-        "LoadRoster (partial, dòng 164-180) | Đọc file roster với UTF-8, bắt FileNotFoundException riêng → fallback empty string thay vì crash, guard `IsNullOrWhiteSpace` trước deserialize. Fail-closed đúng: file không tồn tại không gây exception lan truyền, chỉ log debug. Logic tiếp tục ở lát cắt sau.",
-        "GetHmacKey (partial, dòng 121-162, phần đóng) | Entropy hardcoded nhưng chỉ là additional entropy cho DPAPI — chấp nhận được vì DPAPI LocalMachine đã bind vào machine key. SHA-256 KDF tách raw key khỏi HMAC usage đúng. `CryptographicOperations.ZeroMemory` xóa `decrypted` và `rawKey` trong finally — không rò rỉ khóa. Ghi file atomic qua temp+Move(overwrite:true) — chống corrupt khi crash giữa chừng. CryptographicException wrap lại với inner exception — không nuốt lỗi. Tất cả đường dẫn đều giải phóng bộ nhớ mật mã."
+        "GetOrCreateHmacKey & LoadRoster | DPAPI bảo vệ khóa HMAC cục bộ, ZeroMemory dọn sạch khóa thô trong khối finally, ghi đè file tạm nguyên tử qua File.Move, xử lý fail-safe khi thiếu file roster."
       ],
-      "timestamp": "2026-09-28T02:06:50.592Z"
+      "timestamp": "2026-09-28T03:24:10.753Z"
     },
     "Services/VgcaAuthService.cs#L181-240": {
-      "hash": "202ad17722318d6d48b1caec75e5b063ada9ea809ea3bac18258c156aeecf931",
+      "hash": "1d283754fba2cb52acdcf084ab12110697c652834d19b89de989811e9f8ebccd",
       "status": "APPROVED",
       "contracts": [
-        "HMAC Roster Integrity Guard (dòng 181-224) | HMAC-SHA256 toàn vẹn roster, FixedTimeEquals chống timing attack, ZeroMemory xóa khóa trong finally, atomic write qua temp+Move(overwrite:false) xử lý race condition đúng, fail-closed khi HMAC mismatch.",
-        "Roster JSON Parsing (dòng 226-240) | MaxDepth=10 chống JSON bomb, null-safe truy xuất trường, skip bản ghi thiếu CCCD — defensive parsing đúng chuẩn."
+        "Roster HMAC Integrity Verification & JSON Parsing | Xác thực HMAC-SHA256 tệp danh sách giáo viên, chống timing attack bằng `FixedTimeEquals`, ghi seal nguyên tử chống race condition, thu hồi khóa mật mã qua `ZeroMemory`, giới hạn `MaxDepth = 10` chống DoS JSON payload."
       ],
-      "timestamp": "2026-09-28T02:07:09.028Z"
+      "timestamp": "2026-09-28T03:24:18.689Z"
     },
     "Services/VgcaAuthService.cs#L241-300": {
-      "hash": "9ff5aad004f5828821c28a8616214c1b84f3a5242751e48751a718b493dc7565",
+      "hash": "162b831a5e6286f19c4ad1c90f03c1d233a002ea4abd5009f862258362c2e81c",
       "status": "APPROVED",
       "contracts": [
-        "Roster deserialization (dòng 241-300) | Parse JSON teacher records vào `_roster` dictionary với defensive null-coalescing trên mọi field, kiểm tra trùng CCCD trước insert (dòng 264-268), set `_rosterLoadFailed = true` khi exception (fail-closed, dòng 277), debug seed data cách ly đúng `#if DEBUG` preprocessor guard."
+        "LoadRoster / VgcaTeacherModel Deserialization | Nạp an toàn metadata giáo viên từ JSON, kiểm tra trùng lặp khóa CCCD, xử lý ngoại lệ fail-closed với cờ _rosterLoadFailed, cô lập mock data qua tiền xử lý #if DEBUG."
       ],
-      "timestamp": "2026-09-28T02:07:21.894Z"
+      "timestamp": "2026-09-28T03:24:27.121Z"
     },
     "Services/VgcaAuthService.cs#L301-360": {
-      "hash": "2f70c2fa80eb95b120a613a2d98f049e302a579650d569b1302b68264dfa12f9",
+      "hash": "5d9adc4335dc2a6896de0f02d762927587e1b30a70a13c388f232fe86f730c58",
       "status": "APPROVED",
       "contracts": [
-        "GetTeacherList | Trả danh sách giáo viên sắp theo tên, read-only snapshot qua `.ToList()`. Không mutation, không rủi ro.",
-        "AuthenticatePassword (dòng 308-360, chưa đóng) | Fail-closed đúng chuẩn: kiểm tra `_rosterLoadFailed` trước mọi logic → chặn xác thực khi dữ liệu mất toàn vẹn. Null-coalesce + Trim cho CCCD, null-coalesce cho password. Validate trống trước, regex format sau — thứ tự đúng. `lock(_authLock)` serialize toàn bộ luồng xác thực, loại race condition trên `_roster` và `_rosterLoadFailed`. Lookup bằng `TryGetValue` — không leak thông tin qua exception. Error code phân biệt rõ ràng (5001 hệ thống, 4002 input CCCD, 4004 input password). Dòng 326 không trim password — đúng, tránh cắt mật khẩu hợp lệ có khoảng trắng."
+        "GetTeacherList & AuthenticatePassword (Phần 1) | GetTeacherList sắp xếp danh sách an toàn. AuthenticatePassword khóa _authLock, chặn fail-closed khi _rosterLoadFailed, chuẩn hóa chuỗi cccd/password chống null, kiểm tra định dạng CCCD 12 số qua regex, tra cứu roster an toàn."
       ],
-      "timestamp": "2026-09-28T02:11:33.037Z"
+      "timestamp": "2026-09-28T03:24:39.314Z"
     },
     "Services/VgcaAuthService.cs#L361-420": {
-      "hash": "645bf3ff9a6bf5ead154d4e95e77939192501efb2ad8d2819c2bb6c25e9c1891",
+      "hash": "cfd6fec5edb3b5f1548870d84ec43d5bb88962117b264c6587e546f389b45baf",
       "status": "APPROVED",
       "contracts": [
-        "Password verification block (dòng 379-420) | PBKDF2 path: parse format `pbkdf2$iterations$salt$hash`, derive key via `Rfc2898DeriveBytes.Pbkdf2` với SHA-256, so sánh constant-time qua `CryptographicOperations.FixedTimeEquals`. SHA-256 legacy path: kiểm tra Salt tồn tại trước khi hash, fail-closed khi thiếu Salt (dòng 405-408), so sánh constant-time. Exception handling fail-closed cả hai nhánh — hash lỗi format → `isPasswordCorrect = false`. Không rò rỉ timing side-channel."
+        "VgcaAuthService.PasswordVerification | Xác thực mật khẩu kép (PBKDF2-SHA256 chuẩn hóa và SHA-256 legacy fallback) chống timing attack qua CryptographicOperations.FixedTimeEquals, xử lý fail-closed an toàn khi lỗi parse hoặc thiếu salt, kiểm tra trạng thái khóa tài khoản trước khi băm."
       ],
-      "timestamp": "2026-09-28T02:11:48.107Z"
+      "timestamp": "2026-09-28T03:24:46.685Z"
     },
     "Services/VgcaAuthService.cs#L421-480": {
-      "hash": "bf8e7510df982f4670a036fa0771a52083fb0ba7a8f162b07da5988497726390",
+      "hash": "9f0684c273a1a7baeac24a1756150cd398d8f96b108a8414f24a5000fa03bb21",
       "status": "APPROVED",
       "contracts": [
-        "Login success/failure branching (dòng 421-480) | Fail-closed đúng chuẩn khi PasswordHash chưa thiết lập (dòng 431). Token sinh bằng `RandomNumberGenerator.GetHexString(32)` — CSPRNG đúng. `ResetFailedAttempts` gọi khi thành công, `RecordFailedAttempt` khi thất bại — logic brute-force counter đúng chiều. Double-check sau login (dòng 470-475) dùng `lock(_authLock)` + `ReferenceEquals` chống race condition giữa hai luồng login đồng thời — đúng mẫu TOCTOU guard. Event `LoginStateChanged` chỉ fire khi `stillValid` — không leak state. Error code phân biệt khóa tài khoản (3002) vs sai mật khẩu (3000) — đúng fail-closed semantics."
+        "VgcaAuthService.Login (State mutation & Session token generation) | Xử lý fail-closed khi lỗi hash, sinh token bằng RandomNumberGenerator CSPRNG, quản lý đếm số lần thử đăng nhập và đồng bộ trạng thái qua _authLock."
       ],
-      "timestamp": "2026-09-28T02:13:27.647Z"
+      "timestamp": "2026-09-28T03:24:54.924Z"
     },
     "Services/VgcaAuthService.cs#L481-540": {
-      "hash": "4b2bb01ea0e87f80249bcc1d57e3d154b4cb9a1831e523a1efdf9e7733dea7b8",
+      "hash": "071515c1a961ca748f9cefc03ab6d629a8de41b667e5e82117135b0e2c89b897",
       "status": "APPROVED",
       "contracts": [
-        "GenerateQrCode | Session ID sinh bằng `RandomNumberGenerator.GetHexString(24)` — CSPRNG đúng chuẩn. Payload QR chứa timestamp Unix + scope, ký HMAC-SHA256 với `_qrHmacKey` chống giả mạo. Tài nguyên QRCodeGenerator/QRCodeData/PngByteQRCode đều `using` — giải phóng đúng. BitmapImage load OnLoad rồi `Freeze()` — thread-safe cho WPF. Toàn bộ trong `lock(_authLock)` — atomic gán `CurrentQrSessionId`. Chống replay qua timestamp trong payload + HMAC integrity.",
-        "ApproveQrLogin | Validate `targetCccd` null/whitespace fail-closed (ErrorCode 3005). Kiểm tra `CurrentQrSessionId` rỗng trong lock — chống race condition session chưa tạo/đã dùng (ErrorCode 3004). Lock `_authLock` đồng bộ với GenerateQrCode — không TOCTOU giữa tạo QR và approve."
+        "GenerateQrCode | Tạo mã QR phiên ngẫu nhiên qua RandomNumberGenerator, ký toàn vẹn HMAC-SHA256 chống làm giả payload, giải phóng bộ nhớ đồ họa và đóng băng BitmapSource an toàn UI thread dưới _authLock.",
+        "ApproveQrLogin | Validate chuỗi CCCD đầu vào, kiểm tra trạng thái phiên CurrentQrSessionId atomic dưới _authLock chống tranh chấp dữ liệu."
       ],
-      "timestamp": "2026-09-28T02:13:36.927Z"
+      "timestamp": "2026-09-28T03:25:03.550Z"
     },
     "Services/VgcaAuthService.cs#L541-600": {
-      "hash": "1b01c447c6888f46050e68bf088c7732c86a61d92317f31a9a6a65f43b155d83",
+      "hash": "415152516a4bb37319d2ba4d519940c49ee4c9109abd450e686ef9906bf8ec5a",
       "status": "APPROVED",
       "contracts": [
-        "Logout | Clear toàn bộ session state (IsLoggedIn, CurrentTeacher, CurrentAccessToken, CurrentQrSessionId, LoginTimestamp) dưới `lock (_authLock)` — atomic reset đúng chuẩn. `shouldNotify` capture trạng thái trước reset để fire event ngoài lock (pattern đúng, tránh deadlock). Đoạn QR login (541-588): double-check lock sau critical section — verify `ReferenceEquals(CurrentTeacher, approvedTeacher)` chống race giữa hai luồng login đồng thời, event invoke ngoài lock."
+        "ApproveQrLogin & LoginWithHardwareCertificate | Sinh token qua CSPRNG, kiểm tra tính hợp lệ trước khi kích hoạt event ngoài lock, validate chứng thư VGCA fail-closed đúng chuẩn."
       ],
-      "timestamp": "2026-09-28T02:13:49.858Z"
+      "timestamp": "2026-09-28T03:25:11.678Z"
     },
     "Services/VgcaAuthService.cs#L601-609": {
       "hash": "cad97c2ea39f672773110883d94d5ed9baa3fb7645369b1f161701ddc5d64320",
@@ -1661,229 +1952,199 @@
       "timestamp": "2026-09-28T02:13:54.939Z"
     },
     "MainWindow.xaml.cs#L1-60": {
-      "hash": "ac84333af2da5a1304a250432b4acae4adc9067edf0df1310b7e07a2d7d451d4",
+      "hash": "082b106fec4249a36a0b20be10d65b92d66ac64300356037c10a063eb65fa61f",
       "status": "APPROVED",
       "contracts": [
-        "MainWindow (constructor) | Khởi tạo 7 service readonly, đăng ký 4 event handler. Không logic nghiệp vụ, không rủi ro null (tất cả field khởi tạo inline với `new()`). Event subscription trước Loaded — đúng thứ tự.",
-        "MainWindow_Loaded | async void chấp nhận được cho WPF event handler (đúng pattern). try block mở — chờ lát cắt sau xác nhận catch/finally xử lý lỗi đúng chuẩn.",
-        "Field declarations (dòng 18-42) | State fields cho UI code-behind WPF — phù hợp Tier 2. Nullable annotation đúng cho `_currentActiveCert`, `_originalWordFilePath`, `_currentWorkingPdfPath`, `_lastSignedPdfPath`. Default stamp coords có ponytail comment ghi rõ clamp tại sign-time — chấp nhận."
+        "MainWindow, MainWindow_Loaded (Dòng 1-60) | Khởi tạo instance service nội bộ, đăng ký event handler UI vòng đời ứng dụng và mở khối try khởi tạo async an toàn."
       ],
-      "timestamp": "2026-09-28T02:15:22.815Z"
+      "timestamp": "2026-09-28T03:30:02.218Z"
     },
     "MainWindow.xaml.cs#L61-120": {
-      "hash": "447a710db5ab7c826338b3b8a621e98f8d20fe8cdb85c63fda2514509f15a68d",
+      "hash": "afbf10aa76afbdc0e27edf10d133112344495b4b24b742df1071526e76f97af3",
       "status": "APPROVED",
       "contracts": [
-        "InitializePreviewEngineAsync | WebView2 cache dir đặt đúng %LocalAppData% tránh UAC write fail. Null-check PdfPreviewControl trước dùng. wwwroot traversal giới hạn 4 cấp, fail-closed bằng DirectoryNotFoundException nếu không tìm thấy. Virtual host mapping dùng DenyCors đúng chuẩn bảo mật cho local resource. async/await chain đúng, không fire-and-forget. Catch block ở dòng 66-71 thuộc lát cắt trước — không đánh giá lại."
+        "InitializePreviewEngineAsync | Khởi tạo WebView2 cache tại LocalAppData, validate null control, resolve wwwroot đa tầng, map virtual host an toàn."
       ],
-      "timestamp": "2026-09-28T02:16:43.345Z"
+      "timestamp": "2026-09-28T03:30:09.961Z"
     },
     "MainWindow.xaml.cs#L121-180": {
-      "hash": "3bcd47da07445f71bb3da83fe1a092dccb5f03a21d012a095160a9c912f0346a",
+      "hash": "0da0b5f060ce62ad4f208e2349f6145f971146601ee66a91853310a04b61699c",
       "status": "APPROVED",
       "contracts": [
-        "CoreWebView2_WebMessageReceived | Nhận message JSON từ WebView2, parse an toàn bằng `TryGetProperty`/`TryGetInt32`/`TryGetDouble` — không throw khi thiếu field. `using var doc` đảm bảo dispose `JsonDocument`. Xử lý 3 loại message: `stampCoordinatesChanged` (cập nhật tọa độ stamp vào field nội bộ + UI), `stampRemoved` (reset flag), `pdfLoaded` (hiển thị tổng trang). Không nuốt lỗi — try/catch mở ở dòng 137, phần catch nằm ở lát cắt sau. Ép `double→float` dòng 156-159 chấp nhận được cho tọa độ PDF (precision loss không đáng kể ở domain pt coordinates)."
+        "CoreWebView2_WebMessageReceived | Parse JSON message từ WebView2 an toàn qua TryGetProperty, cập nhật state và UI coordinates không crash null, dispose JsonDocument chuẩn xác."
       ],
-      "timestamp": "2026-09-28T02:20:59.036Z"
+      "timestamp": "2026-09-28T03:30:17.932Z"
     },
     "MainWindow.xaml.cs#L181-240": {
-      "hash": "c5cfe142a423b41586d6f3d8d06ec5de2c2d3d67bfd00e3bbe275b536a3b71b4",
+      "hash": "9e6ad9c3e1d235dadc238405083034d8443aba842a89c6aa5866ba598dd96eae",
       "status": "APPROVED",
       "contracts": [
-        "UpdateStatus | Thread-safe UI update qua Dispatcher.Invoke, format timestamp HH:mm:ss. Không nuốt lỗi, không leak tài nguyên.",
-        "InitializeVgcaAuthRoster | Null-check + empty-check teachers trước bind UI. Catch log lỗi qua UpdateStatus. Auto-select index 0 rồi gọi GenerateAndDisplayVgcaQr.",
-        "GenerateAndDisplayVgcaQr | Null-check qrBitmap trước gán Source. Catch mở ở dòng 239-240, đóng ở lát cắt sau — chấp nhận theo slicing invariant."
+        "UpdateStatus | Đảm bảo thread-safe cập nhật TxtStatusBar qua Dispatcher.Invoke kèm timestamp.",
+        "InitializeVgcaAuthRoster | Kiểm tra null/rỗng danh sách giáo viên VGCA, binding UI ComboBox an toàn và bao bọc try-catch.",
+        "GenerateAndDisplayVgcaQr | Kiểm tra null kết quả QR bitmap từ _vgcaAuth trước khi gán ImageSource."
       ],
-      "timestamp": "2026-09-28T02:22:02.021Z"
+      "timestamp": "2026-09-28T03:30:25.509Z"
     },
     "MainWindow.xaml.cs#L241-300": {
-      "hash": "cda5f37c0d73b3c456d9f0b60527df89fd69cd9d25c220b2ecb44eea1095b50f",
+      "hash": "00daddf200f2b5e1d719dfb66f0521a9ac99ec500d57bbfaa5eeab06d99547d8",
       "status": "APPROVED",
       "contracts": [
-        "OnVgcaLoginStateChanged | Event handler cập nhật UI theo trạng thái đăng nhập VGCA. Dispatcher.Invoke đảm bảo thread-safe WPF. Null-safety đầy đủ: teacher null-check dòng 249, teacher.Email/Department/Organization dùng IsNullOrWhiteSpace + null-coalescing dòng 260-263, teacher.Cccd null-conditional + length check dòng 294-296, _certificates null + count check dòng 274, matchedCert null check dòng 282, teacher.SerialNumber IsNullOrEmpty check dòng 279. CCCD masking dòng 294-296 đúng chuẩn PII — chỉ lộ 4 số cuối. Certificate matching dùng StringComparison.OrdinalIgnoreCase — chính xác cho so sánh serial/CN. Không nuốt lỗi, không async cần quản lý, không rủi ro injection (dữ liệu gán vào WPF TextBlock.Text, không render HTML)."
+        "OnVgcaLoginStateChanged | Đồng bộ trạng thái đăng nhập VGCA lên UI qua Dispatcher, bind thông tin giáo viên, đối soát chứng thư số tương ứng từ store và mask PII CCCD."
       ],
-      "timestamp": "2026-09-28T02:23:12.839Z"
+      "timestamp": "2026-09-28T03:30:37.214Z"
     },
     "MainWindow.xaml.cs#L301-360": {
-      "hash": "01a364a4f2e7b152fc85eb3cdd295c8fc1e1a1f642a1d56361496aa25b901d1a",
+      "hash": "6a0cb275dee95bc8aaa929f1ad15c9b873a6784a4d172c58eeeef85220e26e7a",
       "status": "APPROVED",
       "contracts": [
-        "CmbRosterQuickSelect_SelectionChanged | Pattern match `is VgcaTeacherModel` an toàn null, chỉ gán khi cast thành công. Không side-effect nguy hiểm.",
-        "BtnVgcaLogin_Click | Validate empty CCCD/password trước khi gọi auth. Kiểm tra `result.Success && result.Teacher != null` trước truy cập thuộc tính — an toàn null. Sync call có ponytail comment ghi rõ ceiling và upgrade path (async + disable button khi tích hợp API thật). `result.ErrorDescription` hiển thị cho user — chấp nhận được cho local-only auth; khi chuyển API thật cần sanitize error message tránh leak internal detail.",
-        "BtnRefreshQr_Click | Delegate đơn thuần tới `GenerateAndDisplayVgcaQr()`, không logic cần audit tại lát cắt này."
+        "CmbRosterQuickSelect_SelectionChanged | Type pattern matching an toàn với VgcaTeacherModel. Gán CCCD, ẩn UI báo lỗi. Không rủi ro null.",
+        "BtnVgcaLogin_Click | Validate chuỗi CCCD và password fail-closed. Fallback chứng thư phần cứng an toàn khi xác thực mật khẩu thất bại. Kiểm tra null-check đầy đủ trước truy cập đối tượng Teacher."
       ],
-      "timestamp": "2026-09-28T02:24:18.609Z"
+      "timestamp": "2026-09-28T03:30:45.946Z"
     },
     "MainWindow.xaml.cs#L361-420": {
-      "hash": "e685ccee3cb68895ba3186d7627b4502e20f4d14390132a0e811645da2215394",
+      "hash": "5bf9dd52a466262a7661b557dd3fa48317c9e4b08b1d47aa99390ca0f68c8a6a",
       "status": "APPROVED",
       "contracts": [
-        "BtnApproveQr_Click | Validate CCCD not empty, null-check `_vgcaAuth`, null-coalesce trên `result.Teacher` fields và `result.ErrorDescription` — fail-closed đúng chuẩn. Sync call có ponytail comment ghi rõ upgrade path async khi tích hợp API thật.",
-        "BtnVgcaLogout_Click | Confirm dialog trước logout, null-check `_vgcaAuth` trước gọi Logout(), regenerate QR sau logout — luồng hợp lý, không leak state.",
-        "BtnGoToLoginTab_Click | Mở đầu hàm, thân nằm ở lát cắt sau — không đánh giá."
+        "BtnRefreshQr_Click | Trigger tạo lại mã QR VGCA, cập nhật trạng thái UI an toàn.",
+        "BtnApproveQr_Click | Validate rỗng CCCD, kiểm tra null service `_vgcaAuth`, phê duyệt QR đồng bộ cục bộ (ponytail ghi nhận), null-coalescing hiển thị thông tin cán bộ, xử lý lỗi fail-closed hiển thị UI."
       ],
-      "timestamp": "2026-09-28T02:26:21.765Z"
+      "timestamp": "2026-09-28T03:30:52.291Z"
     },
     "MainWindow.xaml.cs#L421-480": {
-      "hash": "9bb92636ecaf18042f8c5b7cf485db26b1fa20a4262d0413a701af9dbc68e683",
+      "hash": "3336edf6b49d1f05cc893bdc3a0490825c9ff9b6e6febe9cadcc950d8ae99b52",
       "status": "APPROVED",
       "contracts": [
-        "LoadCertificatesAndVerifyVGCALogin | Load cert từ store (chỉ có private key), bind UI, tự động chọn cert VGCA nếu có, cập nhật trạng thái login qua callback. Null-check đầy đủ trên `_certificates`, `vgcaCert`, và mọi property hiển thị (dùng `?? \"\"`). Nhánh else khi không có VGCA cert vẫn kiểm tra login state đúng. Catch block mở ở dòng 479-480, xử lý tiếp ở lát cắt sau — không đánh giá."
+        "MainWindow.xaml.cs [Dòng 421 - 480] | Đăng xuất VGCA, điều hướng UI tab và tự động quét/xác thực chứng thư số phần cứng Ban Cơ yếu vào UI an toàn null, xử lý state đồng bộ đúng chuẩn."
       ],
-      "timestamp": "2026-09-28T02:27:47.779Z"
+      "timestamp": "2026-09-28T03:31:00.799Z"
     },
     "MainWindow.xaml.cs#L481-540": {
-      "hash": "79aaf712062a14407cc585f70c816ef3421f3a10bb06f26922f2e4d735e54b94",
+      "hash": "74318e87eade994ec36f38e917b2e100963236b529c213882bd3c1c55b1f5562",
       "status": "APPROVED",
       "contracts": [
-        "BtnRefreshCertificates_Click | Delegate đơn giản, gọi LoadCertificatesAndVerifyVGCALogin. Không logic rủi ro.",
-        "BtnLaunchVgcaManager_Click | Gọi _certService.LaunchVGCALoginApp(), xử lý cả hai nhánh true/false với MessageBox thông báo rõ ràng. Không nuốt lỗi.",
-        "CmbCertificates_SelectionChanged | Pattern-match `is CertificateModel cert` an toàn null (không match thì skip). Kiểm tra `string.IsNullOrWhiteSpace` cho Email/OrgUnit trước hiển thị. Không truy cập thuộc tính trên null.",
-        "LoadProfiles | Try block mở, đặt ItemsSource = null trước gán lại (đúng pattern WPF refresh binding). Kiểm tra Count > 0 trước set SelectedIndex. Catch block nằm ở lát cắt sau — không phán xét."
+        "LoadCertificatesAndVerifyVGCALogin (phần kết) | Null-check an toàn cho `_vgcaAuth.CurrentTeacher` và `vgcaCert`. Bắt ngoại lệ, log `TraceError`, cập nhật UI không nuốt lỗi.",
+        "MainWindow_Activated | Kích hoạt cửa sổ chỉ quét lại khi chưa đăng nhập. Bọc `try-catch` và log `TraceWarning` bảo vệ UI thread.",
+        "BtnSyncVgcaCertificate_Click | Đồng bộ chứng thư thủ công. Kiểm tra null `_currentActiveCert` trước khi đọc thuộc tính và ẩn lỗi UI."
       ],
-      "timestamp": "2026-09-28T02:27:57.031Z"
-    },
-    "MainWindow.xaml.cs#L541-600": {
-      "hash": "d5f47c22f32ab61cd1fb6f03937ad5b6675ed0d1734c05b64c3d075c1aedec63",
-      "status": "APPROVED",
-      "contracts": [
-        "CmbProfiles_SelectionChanged | Null-safe qua pattern match `is SignatureProfile`, null-check `CmbDisplayMode`, validate `ImagePath` trước dùng, fallback desktop stamp có kiểm `File.Exists`, clear khi không tìm thấy. Switch expression có default branch `_ => 0`. Hardcode filename \"quyen.png\" — chấp nhận cho internal tool, ponytail đã ghi nhận ở dòng 543.",
-        "SetAndPersistStampImage | Guard clause validate `filePath` null/whitespace + `File.Exists` trước xử lý, fail-safe gọi `ClearStampImage`. Hàm cắt ở dòng 600 — tiếp lát sau.",
-        "catch block (541-546) | Log trace + hiển thị `ex.Message` cho user. ponytail comment ghi rõ cần thay generic msg khi phân phối — chấp nhận cho internal tool."
-      ],
-      "timestamp": "2026-09-28T02:32:58.604Z"
+      "timestamp": "2026-09-28T03:31:08.145Z"
     },
     "MainWindow.xaml.cs#L601-660": {
-      "hash": "bc1486e258f60e2450993bd552664a33b120ea2cc818c6a8a8a1c3e17286ea71",
+      "hash": "30fb85cb4f3d381548a31a9c2b2d0a5cf21a7f8efe9dae28e9d196e1cae055ec",
       "status": "APPROVED",
       "contracts": [
-        "ClearStampImage | Reset UI stamp về trạng thái rỗng, null source, hiện placeholder. Hàm chưa đóng — tiếp lát cắt sau."
+        "CmbCertificates_SelectionChanged | Pattern match ép kiểu `CertificateModel` an toàn null, map đầy đủ thông tin chứng thư lên UI controls.",
+        "LoadProfiles | Try-catch bao bọc nạp profile, reset `ItemsSource` sạch, chọn mặc định index 0 khi danh sách có phần tử, ghi log lỗi không nuốt exception.",
+        "CmbProfiles_SelectionChanged | Pattern match `SignatureProfile` an toàn, map kích thước và chuyển đổi enum mode sang UI index chuẩn qua switch expression."
       ],
-      "timestamp": "2026-09-28T02:33:10.312Z"
+      "timestamp": "2026-09-28T03:35:20.294Z"
     },
     "MainWindow.xaml.cs#L661-720": {
-      "hash": "70200847f5fe90f72050cfb390c25cb592b73f10210814cb7a2e37c081760783",
+      "hash": "66bed0d1a19874b2e9f5bdf18b7a0867fd1c79162d3e44913a1c8d8f738b20e6",
       "status": "APPROVED",
       "contracts": [
-        "BtnSelectStampImage_Click | Mở OpenFileDialog lọc ảnh PNG/JPG, delegate sang SetAndPersistStampImage. Không rủi ro — dialog trả null nếu cancel, guard `== true` đúng chuẩn WPF.",
-        "BtnTab2ChangeStamp_Click | Proxy thuần sang BtnSelectStampImage_Click. Không logic riêng.",
-        "BtnClearStampImage_Click | Proxy thuần sang ClearStampImage. Không logic riêng.",
-        "ClearStampImage (tail, dòng 661-684) | Reset UI stamp về trạng thái chưa chọn, xóa profile.ImagePath, persist qua _profileManager.SaveProfiles. Catch log + hiển thị lỗi, không nuốt rỗng — đạt.",
-        "BtnSaveProfile_Click (head, dòng 711-720) | Parse dimension text dạng \"WxH\", null-safe qua `TxtDimensions?.Text` + IsNullOrWhiteSpace guard. Split 'x'/'X' + kiểm tra Length==2 trước khi dùng — logic mở tiếp lát sau, không lỗi tại ranh giới cắt."
+        "SetAndPersistStampImage | Validate đường dẫn tồn tại trước khi đọc, load BitmapImage với BitmapCacheOption.OnLoad tránh khóa file, Freeze tối ưu tài nguyên, bắt ngoại lệ fail-closed dọn state qua ClearStampImage."
       ],
-      "timestamp": "2026-09-28T02:34:44.697Z"
+      "timestamp": "2026-09-28T03:35:30.140Z"
     },
     "MainWindow.xaml.cs#L721-780": {
-      "hash": "049e32d16dd754cf63e311a972cf94fc8e26107325fe585e1fc1e7b6e93d25f6",
+      "hash": "62a5c3632483ba2ed1edd79d172c46913319a461084bd4b1a97c58290e87c869",
       "status": "APPROVED",
       "contracts": [
-        "CmbDisplayMode_SelectionChanged | Guard null CmbDisplayMode + kiểm tra SelectedItem is SignatureProfile trước khi gán Mode. Logic mapping SelectedIndex→Mode nhất quán với block save ở dòng 728-734. Không side-effect ngoài gán property.",
-        "BtnGoToSignWorkspace_Click | Chuyển tab đơn giản, không logic nghiệp vụ, không rủi ro.",
-        "BtnSelectWord_Click (mở đầu) | async void chấp nhận được cho WPF event handler — đúng pattern. Thân hàm tiếp ở lát cắt sau.",
-        "Block save profile (721-753) | TryParse + guard `w > 0` / `h > 0` chống giá trị âm/zero. File.Exists kiểm tra stamp path trước gán. Catch log lỗi qua Trace + UpdateStatus, không nuốt rỗng. Duplicate logic mapping Mode (728-734 vs 760-765) là code smell nhẹ nhưng không gây lỗi — chấp nhận cho WPF code-behind."
+        "ClearStampImage & LoadStamp | Cập nhật UI con dấu, đồng bộ `SignatureProfile`, lưu qua `_profileManager`, bắt lỗi log `Trace.TraceError` và `UpdateStatus` an toàn, không nuốt ngoại lệ."
       ],
-      "timestamp": "2026-09-28T02:34:54.605Z"
+      "timestamp": "2026-09-28T03:35:38.132Z"
     },
     "MainWindow.xaml.cs#L781-840": {
-      "hash": "bad6c103e08e8cf85bf43cd850096adf8909cf2aeb29bfb440377dc2d0c6a995",
+      "hash": "183a43d5db8562246bc0b56bc7a0bd26c6b8a6fd3f5c1fd59654dff52c4de434",
       "status": "APPROVED",
       "contracts": [
-        "BtnSelectPdf_Click | Mở OpenFileDialog chọn PDF, validate null/empty + File.Exists trước xử lý (dòng 840). Hàm Word loader (781-827) catch Exception không nuốt rỗng — reset `_originalWordFilePath = null` khi lỗi, log qua Trace, hiển thị MessageBox cho user. Kiểm tra `_isWebViewInitialized && CoreWebView2 != null` trước Navigate (dòng 809) chống NullRef. `async void` chấp nhận — WPF event handler pattern chuẩn."
+        "BtnSelectStampImage_Click, BtnTab2ChangeStamp_Click, BtnClearStampImage_Click, BtnSaveProfile_Click | Cập nhật cấu hình con dấu và lưu SignatureProfile an toàn, validate kích thước > 0, kiểm tra tệp tồn tại trước khi gán đường dẫn."
       ],
-      "timestamp": "2026-09-28T02:38:34.261Z"
+      "timestamp": "2026-09-28T03:35:47.313Z"
     },
     "MainWindow.xaml.cs#L841-900": {
-      "hash": "fde55e2bdaacc113493970b2aab92ca3aa7221d3b2fd15ef70601b61f816401c",
+      "hash": "0e4410364bcb5d71ff55209dd3b87532fa0cfd3a544e7327e4860b6e608a4928",
       "status": "APPROVED",
       "contracts": [
-        "DisplayPdfInInteractiveViewerAsync (tail) | Catch block reset `_currentWorkingPdfPath = null` đúng fail-closed, log trace + hiển thị lỗi cho user, không nuốt exception rỗng.",
-        "BtnExecuteConvertWord_Click (partial) | Validate null `_wordConverter` trước dùng, validate `_originalWordFilePath` null/whitespace + File.Exists trước convert. Disable button + show loading trước async call — chống double-click. `await` đúng chuẩn async void event handler WPF."
+        "CmbDisplayMode_SelectionChanged, BtnGoToSignWorkspace_Click, BtnSelectWord_Click | UI event handler an toàn null-check, switch mapping Mode chuẩn xác, mở file Word và khởi tạo trạng thái UI đúng quy trình."
       ],
-      "timestamp": "2026-09-28T02:38:45.246Z"
+      "timestamp": "2026-09-28T03:35:54.292Z"
     },
     "MainWindow.xaml.cs#L901-960": {
-      "hash": "2120ea5796398d5dc8bc7b1d385d3413625cb4de5c0e5a0fef82fda791264ea4",
+      "hash": "e369471451823161cbcf03eec60588e996effa331636221def2f44961ee627e6",
       "status": "APPROVED",
       "contracts": [
-        "DisplayPdfInInteractiveViewerAsync | Guard đầu vào kiểm tra `_isWebViewInitialized`, `File.Exists`, `CoreWebView2 != null` trước khi xử lý. Giới hạn file 30MB chống OOM khi Base64 encode. Null-set `pdfBytes` sau encode để giảm áp lực GC (không đảm bảo deterministic nhưng chấp nhận cho WPF desktop). Re-check `CoreWebView2` sau await để chống race condition dispose giữa async gap. Catch `ObjectDisposedException` trên `Source` access — defensive đúng mức cho WebView2 lifecycle. Không nuốt lỗi rỗng. Async/await chuẩn xác."
+        "BtnSelectPdf_Click | Mở tệp PDF qua OpenFileDialog, kiểm tra File.Exists, cập nhật state UI và nạp viewer bất đồng bộ an toàn.",
+        "ConvertWordToEditableHtml/Display (901-924) | Chuyển đổi Word sang HTML async, kiểm tra WebView2 null-safe trước navigate, catch lỗi và phục hồi state sạch sẽ."
       ],
-      "timestamp": "2026-09-28T02:43:53.929Z"
+      "timestamp": "2026-09-28T03:36:02.679Z"
     },
     "MainWindow.xaml.cs#L961-1020": {
-      "hash": "39f0d79e06330b2f9252299fcd266b4356c9dd95ac8698ae792b852ba377da9a",
+      "hash": "dab8d435e4f9a0732896828d5b5dee5a7f42b5410fa733352c4702a3b7f895f3",
       "status": "APPROVED",
       "contracts": [
-        "WebView2 PDF Viewer Navigation & Script Polling | Điều hướng an toàn tới pdf_viewer.html kèm timeout 10s, giải phóng event handler, rollback UI khi lỗi/timeout, poll kiểm tra script DOM ready trước khi nạp dữ liệu."
+        "BtnExecuteConvertWord_Click | Kiểm tra tệp nguồn, khóa UI, bất đồng bộ chuyển Word sang PDF, nạp kết quả vào viewer, khôi phục UI trong finally."
       ],
-      "timestamp": "2026-09-28T02:45:28.125Z"
+      "timestamp": "2026-09-28T03:36:09.903Z"
     },
     "MainWindow.xaml.cs#L1021-1080": {
-      "hash": "a80b687acc05709369a8663986b1e27bc44a33a3a07addd7f85a581b274782ab",
+      "hash": "8db3184a04b9c7d5011c77fbac51d3eaa51e5cdc396b2aeec937ca3fe3ad4a77",
       "status": "APPROVED",
       "contracts": [
-        "RollbackViewerUiState | Reset UI preview state and display error on failure.",
-        "BtnInsertSignatureStamp_Click | Validate working PDF path, prompt Word conversion if needed, resolve stamp image path safely."
+        "LoadPdfPreview | Validate file <=30MB, đọc async chuyển Base64, check null/disposed sau await, bắt event NavigationCompleted điều hướng an toàn, unbind sạch."
       ],
-      "timestamp": "2026-09-28T02:45:36.833Z"
+      "timestamp": "2026-09-28T03:36:19.153Z"
     },
     "MainWindow.xaml.cs#L1081-1140": {
-      "hash": "ba4acbf00c8ffea8a5a576aa3c21fac01d607acfeb8a93acc2d176a9cb315887",
+      "hash": "1a5ecb75861cd30332a05a5eeef1756e041b9d004c10bd62cf80121e3f1b9474",
       "status": "APPROVED",
       "contracts": [
-        "InsertStamp / BtnSignDocument_Click | Fallback chọn file tem an toàn, parse kích thước chống lỗi định dạng, chuyển ảnh sang Base64 Data URL chuẩn và inject script WebView2 an toàn."
+        "PdfPreviewNavigationAndLoad | Quản lý timeout 10s nạp WebView2, polling 3s chờ script engine, serialize JSON base64 chống injection, rollback UI fail-closed khi lỗi hoặc disposed."
       ],
-      "timestamp": "2026-09-28T02:45:48.294Z"
+      "timestamp": "2026-09-28T03:36:30.328Z"
     },
     "MainWindow.xaml.cs#L1141-1200": {
-      "hash": "5a91b4f014f0074d92e08dd95466c38218357782540fbd0c7f5dae9258a57aa6",
+      "hash": "d02f7919b7f7a7c78da2099aeffb1696239a51761161dd7bf2de4c0d77bcbd4f",
       "status": "APPROVED",
       "contracts": [
-        "PreparePdfSigningParameters | Kiểm tra PDF và chứng thư số hợp lệ, ưu tiên tọa độ kéo thả stamp, phân giải fallback đường dẫn con dấu an toàn."
+        "RollbackViewerUiState, BtnInsertSignatureStamp_Click | Rollback UI state an toàn, validate working PDF tồn tại, resolve stamp path fail-closed qua profile/desktop fallback/OpenFileDialog trước khi chèn dấu."
       ],
-      "timestamp": "2026-09-28T02:45:59.174Z"
-    },
-    "MainWindow.xaml.cs#L1201-1260": {
-      "hash": "71a4e788dac5fd1cdfbd1825e8492a3d418efb1e0e8df8ec442da526815e04fc",
-      "status": "APPROVED",
-      "contracts": [
-        "MainWindow.SigningPreparation | Kiểm tra quyền ghi thư mục đầu ra kèm fallback Desktop an toàn, ánh xạ thuộc tính hiển thị chữ ký và khởi tạo SigningRequest đầy đủ tham số."
-      ],
-      "timestamp": "2026-09-28T02:46:11.836Z"
+      "timestamp": "2026-09-28T03:36:40.289Z"
     },
     "MainWindow.xaml.cs#L1261-1320": {
-      "hash": "bdd8f3c415ed646a0507715e740e4c9a771af8b6261f172530667acb0b6cf7f6",
+      "hash": "da9602ecef09d030663c3a72426dfef8f640e5dce4379c6eb5c4a5d3d14e1592",
       "status": "APPROVED",
       "contracts": [
-        "SignDocumentAsync & BtnSaveSignedCopy_Click | Xử lý async UI an toàn, reset trạng thái nút bấm qua finally, validate null và file tồn tại trước khi lưu bản sao."
+        "StampCoordinateAndPathResolution | Đọc tọa độ ký, phân giải đường dẫn ảnh con dấu đa tầng an toàn qua File.Exists, cập nhật ImagePath cho SignatureProfile."
       ],
-      "timestamp": "2026-09-28T02:46:23.471Z"
+      "timestamp": "2026-09-28T03:38:41.661Z"
     },
     "MainWindow.xaml.cs#L1321-1380": {
-      "hash": "bb0b6974095ea7f18716eae805ea2f58ee483de8cbb4d3bf282661a45168ff67",
+      "hash": "dd932e82cadd34d2abd0f50195e1e80a0c25e86b3d171dbd763bfa53a4e248c2",
       "status": "APPROVED",
       "contracts": [
-        "BtnOpenSignedPdfExternal_Click | Kiểm tra file tồn tại, mở ứng dụng PDF ngoài bằng ProcessStartInfo ShellExecute an toàn, bắt exception đầy đủ.",
-        "BtnOpenSignedFolder_Click | Kiểm tra file tồn tại, mở Explorer chọn file qua tham số /select có bọc nháy kép, bắt exception đầy đủ."
+        "DisplayPdfInInteractiveViewerAsync | Khởi tạo SigningRequest, kiểm tra quyền ghi thư mục đầu ra kèm fallback Desktop, gọi SignPdfAsync bất đồng bộ và cập nhật UI sau khi ký thành công."
       ],
-      "timestamp": "2026-09-28T02:46:31.090Z"
+      "timestamp": "2026-09-28T03:38:49.867Z"
     },
     "MainWindow.xaml.cs#L1381-1440": {
-      "hash": "3066ddc84801ec0a949a6ff14ab432164d81ef9cac5a6475263c401b3280cc43",
+      "hash": "6303f9a2f997b29066d4083dc102d68972e456fb791843eb08d555d51f1fb964",
       "status": "APPROVED",
       "contracts": [
-        "BtnGoToUploadWeb_Click | Chuyển TabControl sang index 2 an toàn.",
-        "BtnFormatBold_Click, BtnFormatItalic_Click, BtnFormatUnderline_Click, BtnAlignLeft_Click, BtnAlignCenter_Click, BtnAlignRight_Click, BtnAlignJustify_Click | Dùng null-conditional `?.` gọi `ExecuteScriptAsync` với script tĩnh an toàn, không rủi ro injection hay crash khi WebView2 chưa sẵn sàng.",
-        "BtnSelectSignedPdfForUpload_Click | Khởi tạo `OpenFileDialog` với filter PDF đúng chuẩn."
+        "BtnSaveSignedCopy_Click | Validate file nguồn tồn tại, sao chép file qua SaveFileDialog an toàn, xử lý try-catch I/O và khôi phục trạng thái UI trong finally."
       ],
-      "timestamp": "2026-09-28T02:46:37.940Z"
+      "timestamp": "2026-09-28T03:38:56.527Z"
     },
     "MainWindow.xaml.cs#L1441-1500": {
-      "hash": "60ebc16f49ab66646cc5c229322259bae32980a5948eab6f485176f23f159e2f",
+      "hash": "f20ee42dc25742b7c6d5531295729be28f9f2429a1df12491516565217e4d6ae",
       "status": "APPROVED",
       "contracts": [
-        "BtnExecuteUpload_Click | Validate input filePath/uploadUrl, disable button chống spam request, await upload bất đồng bộ, render kết quả HTTP status lên UI."
+        "BtnOpenSignedPdfExternal_Click, BtnOpenSignedFolder_Click | Validate file tồn tại trước khi gọi Process.Start. Quản lý ngoại lệ mở file và thư mục đầy đủ.",
+        "BtnGoToUploadWeb_Click | Chuyển Tab UI trực tiếp, không logic thừa.",
+        "BtnFormatBold_Click, BtnFormatItalic_Click | Sử dụng null-conditional CoreWebView2? tránh crash khi WebView2 chưa sẵn sàng."
       ],
-      "timestamp": "2026-09-28T02:46:44.759Z"
+      "timestamp": "2026-09-28T03:39:03.700Z"
     },
     "MainWindow.xaml.cs#L1501-1556": {
       "hash": "177ce3a17502e36ef31e73cf8c9986908a8b79c7191456d60fd688819216fdac",
@@ -2090,8 +2351,72 @@
         "CleanupWordComObjects | Đóng và giải phóng COM Word Document/Application an toàn qua Marshal.ReleaseComObject, ghi log TraceWarning khi lỗi cleanup, ép GC dọn RCW tránh treo tiến trình WINWORD.EXE."
       ],
       "timestamp": "2026-09-28T03:08:09.047Z"
+    },
+    "Services/VgcaAuthService.cs#L601-660": {
+      "hash": "05c6a555ae0f82fad2fa232de56ccf5c986808c94f08016e391335339c5ca5da",
+      "status": "APPROVED",
+      "contracts": [
+        "VgcaLogin / Certificate Identity Resolution | Khóa đồng bộ lock (_authLock) bảo vệ tra cứu danh bạ, kiểm tra PrivateKey fail-closed, ánh xạ an toàn theo SerialNumber và Email, tự động tạo hồ sơ danh bạ cách ly khi thiếu thông tin."
+      ],
+      "timestamp": "2026-09-28T03:29:33.525Z"
+    },
+    "Services/VgcaAuthService.cs#L661-720": {
+      "hash": "42dc77d8ef36b4b0e29a3d0881c76827286622a00ff705fcd4bd8aed9e1490d6",
+      "status": "APPROVED",
+      "contracts": [
+        "Login Completion & UnlockAccount | Tạo token ngẫu nhiên qua RandomNumberGenerator 32 byte an toàn, invoke event ngoài lock tránh deadlock, UnlockAccount đồng bộ qua _authLock với validation rỗng nghiêm ngặt."
+      ],
+      "timestamp": "2026-09-28T03:29:41.210Z"
+    },
+    "Services/VgcaAuthService.cs#L721-743": {
+      "hash": "5d4509f940236f77acf937086572d52d34ac8a04d6187b3ccf216fa6b6e1c58b",
+      "status": "APPROVED",
+      "contracts": [
+        "Logout | Reset state thread-safe qua `lock (_authLock)`. Dọn sạch `CurrentAccessToken`, `CurrentQrSessionId`, `CurrentTeacher`, `LoginTimestamp`. Bắn event `LoginStateChanged` ngoài lock chống deadlock. Null-safe via `?.`."
+      ],
+      "timestamp": "2026-09-28T03:29:49.763Z"
+    },
+    "MainWindow.xaml.cs#L541-600": {
+      "hash": "6615810f1ce2fe8a8ff638a975734d3138b02d00e78e495b4e0ff9fb33ee7954",
+      "status": "APPROVED",
+      "contracts": [
+        "BtnUnlockAccount_Click, BtnRefreshCertificates_Click, BtnLaunchVgcaManager_Click | Xử lý sự kiện UI an toàn, validate chuỗi CCCD tránh null/rỗng trước khi gọi service, kiểm soát nhánh kết quả mở khóa tài khoản và tiến trình VGCA kèm phản hồi UI tương ứng."
+      ],
+      "timestamp": "2026-09-28T03:35:13.869Z"
+    },
+    "MainWindow.xaml.cs#L1201-1260": {
+      "hash": "ccadfcde70cf80a6a953f49bfed5e85665d211eee7ab974c090cca68c11f2b61",
+      "status": "APPROVED",
+      "contracts": [
+        "BtnInsertStamp / BtnSignDocument_Click | Validate file ảnh con dấu, parse kích thước an toàn, kiểm tra WebView2 null trước khi inject script; validate tồn tại file PDF và chứng thư số trước khi kích hoạt quy trình ký."
+      ],
+      "timestamp": "2026-09-28T03:38:32.803Z"
+    },
+    "MainWindow.xaml.cs#L1501-1560": {
+      "hash": "22326e16705085df3979f99f216162dc30103a46a8a7f20e001cc20c2e75cb4e",
+      "status": "APPROVED",
+      "contracts": [
+        "Formatting Commands & Upload UI Handlers | CoreWebView2 gọi script qua null-conditional an toàn; OpenFileDialog chọn tệp hợp lệ; validate filePath tồn tại trước khi thực thi upload."
+      ],
+      "timestamp": "2026-09-28T03:39:10.510Z"
+    },
+    "MainWindow.xaml.cs#L1561-1620": {
+      "hash": "e7c10a8de5a0e565f35c98ea39d8a4e40a22f1ea3ef5be1099e5415ccab17639",
+      "status": "APPROVED",
+      "contracts": [
+        "UploadSignedPdfAsync UI handler | Validate URL http/https, đóng gói UploadRequest, disable UI button chống double-submit, await upload bất đồng bộ, render kết quả HTTP và luôn khôi phục trạng thái nút bấm trong finally."
+      ],
+      "timestamp": "2026-09-28T03:39:20.224Z"
+    },
+    "MainWindow.xaml.cs#L1621-1659": {
+      "hash": "a01a5c0af1cf75af405855891dea0245f2beeb9af64f40a3f8c6a88373646afb",
+      "status": "APPROVED",
+      "contracts": [
+        "BtnVerifyPdf_Click | Mở OpenFileDialog chọn tệp PDF, gọi _pdfVerifier.VerifyPdf phân tích danh sách chữ ký số, bind dữ liệu lên ListSignatures và thông báo trạng thái UI."
+      ],
+      "timestamp": "2026-09-28T03:39:29.997Z"
     }
   },
-  "lastAudit": "2026-09-28T03:08:09.050Z",
+  "lastAudit": "2026-09-28T03:39:30.002Z",
   "lastStatus": "APPROVED"
 }

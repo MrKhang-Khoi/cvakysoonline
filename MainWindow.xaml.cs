@@ -50,6 +50,7 @@ namespace VGCASignToolPro
             _pdfSigner.StatusChanged += UpdateStatus;
             _webUploader.StatusChanged += UpdateStatus;
             _vgcaAuth.LoginStateChanged += OnVgcaLoginStateChanged;
+            Activated += MainWindow_Activated;
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -349,6 +350,26 @@ namespace VGCASignToolPro
             }
             else
             {
+                // Kiểm tra xem trên máy tính đã có Chứng thư số Ban Cơ yếu Chính phủ đang hoạt động hay không
+                var activeCert = _certService.GetActiveVGCACertificate();
+                if (activeCert != null && activeCert.HasPrivateKey)
+                {
+                    _vgcaAuth.UnlockAccount(cccd);
+                    var hwResult = _vgcaAuth.LoginWithHardwareCertificate(activeCert);
+                    if (hwResult.Success && hwResult.Teacher != null)
+                    {
+                        BorderVgcaAuthError.Visibility = Visibility.Collapsed;
+                        MessageBox.Show(
+                            $"Hệ thống đã tự động nhận diện và xác thực thành công qua Chứng thư số Ban Cơ yếu Chính phủ trên máy tính!\n\n" +
+                            $"• Cán bộ: {hwResult.Teacher.FullName}\n" +
+                            $"• Đơn vị: {hwResult.Teacher.Department}\n" +
+                            $"• Số CCCD: {hwResult.Teacher.Cccd}\n\n" +
+                            "Tài khoản đã được mở khóa an toàn và Phân hệ Soạn thảo & Ký số (Tab 2) đã sẵn sàng hoạt động.",
+                            "Tự Động Mở Khóa & Đăng Nhập", MessageBoxButton.OK, MessageBoxImage.Information);
+                        return;
+                    }
+                }
+
                 BorderVgcaAuthError.Visibility = Visibility.Visible;
                 TxtVgcaAuthError.Text = result.ErrorDescription;
                 UpdateStatus($"Đăng nhập thất bại: {result.ErrorDescription}");
@@ -431,7 +452,7 @@ namespace VGCASignToolPro
 
                 if (_certificates == null || _certificates.Count == 0)
                 {
-                    UpdateStatus("Không tìm thấy chứng thư số nào có khóa riêng.");
+                    UpdateStatus("Không tìm thấy chứng thư số nào có khóa riêng trong hệ thống.");
                     OnVgcaLoginStateChanged(false, null);
                     return;
                 }
@@ -450,16 +471,26 @@ namespace VGCASignToolPro
                     TxtDetailAlgorithm.Text = vgcaCert.KeyAlgorithm ?? "";
                     TxtDetailThumbprint.Text = vgcaCert.Thumbprint ?? "";
 
-                    if (_vgcaAuth.IsLoggedIn && _vgcaAuth.CurrentTeacher != null)
+                    // TỰ ĐỘNG XÁC THỰC KHI ĐÃ CÓ CHỨNG THƯ BAN CƠ YẾU CHÍNH PHỦ TRÊN MÁY TÍNH
+                    var autoLoginResult = _vgcaAuth.LoginWithHardwareCertificate(vgcaCert);
+                    if (autoLoginResult.Success && autoLoginResult.Teacher != null)
                     {
-                        OnVgcaLoginStateChanged(true, _vgcaAuth.CurrentTeacher);
+                        BorderVgcaAuthError.Visibility = Visibility.Collapsed;
+                        OnVgcaLoginStateChanged(true, autoLoginResult.Teacher);
+                        UpdateStatus($"Đã tự động kết nối chứng thư số Ban Cơ yếu: {vgcaCert.CommonName}. Khu vực Soạn thảo - Ký số đã sẵn sàng!");
                     }
                     else
                     {
-                        OnVgcaLoginStateChanged(false, null);
+                        if (_vgcaAuth.IsLoggedIn && _vgcaAuth.CurrentTeacher != null)
+                        {
+                            OnVgcaLoginStateChanged(true, _vgcaAuth.CurrentTeacher);
+                        }
+                        else
+                        {
+                            OnVgcaLoginStateChanged(false, null);
+                        }
+                        UpdateStatus($"Đã phát hiện chứng thư Ban Cơ yếu: {vgcaCert.CommonName ?? "VGCA"} (Serial: {vgcaCert.SerialNumber ?? "N/A"}).");
                     }
-
-                    UpdateStatus($"Đã phát hiện chứng thư Ban Cơ yếu: {vgcaCert.CommonName ?? "VGCA"} (Serial: {vgcaCert.SerialNumber ?? "N/A"}). Vui lòng đăng nhập Tab 1.");
                 }
                 else
                 {
@@ -473,13 +504,79 @@ namespace VGCASignToolPro
                         OnVgcaLoginStateChanged(false, null);
                     }
 
-                    UpdateStatus("Cảnh báo: Chưa phát hiện tài khoản chữ ký số Ban Cơ yếu Chính phủ.");
+                    UpdateStatus("Cảnh báo: Chưa phát hiện tài khoản chữ ký số Ban Cơ yếu Chính phủ. Vui lòng mở ứng dụng VGCA Virtual CSP để đăng nhập.");
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Trace.TraceError($"Lỗi kiểm tra chứng thư số: {ex}");
                 UpdateStatus($"Lỗi kiểm tra chứng thư số: {ex.Message}");
+            }
+        }
+
+        private void MainWindow_Activated(object? sender, EventArgs e)
+        {
+            try
+            {
+                // Tự động quét lại và nhận diện nếu hiện tại chưa có phiên đăng nhập
+                if (!_vgcaAuth.IsLoggedIn)
+                {
+                    LoadCertificatesAndVerifyVGCALogin();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceWarning($"Lỗi kiểm tra chứng thư khi kích hoạt cửa sổ: {ex.Message}");
+            }
+        }
+
+        private void BtnSyncVgcaCertificate_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateStatus("Đang đồng bộ và nhận diện chữ ký số từ hệ thống VGCA Virtual CSP...");
+            LoadCertificatesAndVerifyVGCALogin();
+
+            if (_currentActiveCert != null && _currentActiveCert.IsVGCACertificate)
+            {
+                BorderVgcaAuthError.Visibility = Visibility.Collapsed;
+                MessageBox.Show(
+                    $"Đã nhận diện thành công Chứng thư số Ban Cơ yếu Chính phủ!\n\n" +
+                    $"• Chủ sở hữu: {_currentActiveCert.CommonName}\n" +
+                    $"• Đơn vị: {_currentActiveCert.OrganizationUnit}\n" +
+                    $"• Cơ quan cấp: {_currentActiveCert.IssuerCommonName}\n" +
+                    $"• Thời hạn: {_currentActiveCert.NotAfter:dd/MM/yyyy} ({(_currentActiveCert.IsValidNow ? "Còn hiệu lực" : "Đã hết hạn")})\n\n" +
+                    "Hệ thống đã tự động kích hoạt phiên làm việc và mở khóa toàn bộ Phân hệ Soạn thảo & Ký số (Tab 2).",
+                    "Đồng Bộ Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            else
+            {
+                BorderVgcaAuthError.Visibility = Visibility.Visible;
+                TxtVgcaAuthError.Text = "Chưa phát hiện chứng thư Ban Cơ yếu Chính phủ có khóa riêng trong hệ thống. Vui lòng mở ứng dụng VGCA Virtual CSP trên máy để đăng nhập trước, sau đó bấm nút này lần nữa.";
+                UpdateStatus("Chưa tìm thấy chứng thư Ban Cơ yếu hợp lệ trong kho Windows.");
+            }
+        }
+
+        private void BtnUnlockAccount_Click(object sender, RoutedEventArgs e)
+        {
+            string cccd = TxtVgcaCccd.Text.Trim();
+            if (string.IsNullOrWhiteSpace(cccd))
+            {
+                MessageBox.Show("Vui lòng nhập số CCCD của tài khoản cần mở khóa vào ô 'Số CCCD / Mã Định Danh'.", "Yêu Cầu Nhập CCCD", MessageBoxButton.OK, MessageBoxImage.Warning);
+                TxtVgcaCccd.Focus();
+                return;
+            }
+
+            bool unlocked = _vgcaAuth.UnlockAccount(cccd);
+            if (unlocked)
+            {
+                BorderVgcaAuthError.Visibility = Visibility.Collapsed;
+                MessageBox.Show(
+                    $"Tài khoản CCCD {cccd} đã được mở khóa an toàn thành công!\n\nBạn có thể:\n1. Bấm '🔄 ĐỒNG BỘ & NHẬN DIỆN CHỨNG THƯ' để đăng nhập tự động qua chứng thư Ban Cơ yếu trên máy.\n2. Hoặc nhập mật khẩu để đăng nhập tài khoản.",
+                    "Đã Mở Khóa Tài Khoản", MessageBoxButton.OK, MessageBoxImage.Information);
+                UpdateStatus($"Đã mở khóa an toàn cho tài khoản {cccd}.");
+            }
+            else
+            {
+                MessageBox.Show("Không tìm thấy tài khoản cần mở khóa trong danh bạ.", "Thông Báo", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
 
@@ -1122,11 +1219,17 @@ namespace VGCASignToolPro
             // Kích thước mặc định
             int widthPx = 140;
             int heightPx = 140;
-            var dimParts = TxtDimensions.Text.Split('x', 'X');
+            string[] dimParts = TxtDimensions.Text.Split('x', 'X');
             if (dimParts.Length == 2 && int.TryParse(dimParts[0].Trim(), out int w) && int.TryParse(dimParts[1].Trim(), out int h))
             {
                 widthPx = Math.Max(60, w);
                 heightPx = Math.Max(40, h);
+            }
+
+            if (PdfPreviewControl.CoreWebView2 == null)
+            {
+                MessageBox.Show("Trình xem văn bản PDF chưa hoàn tất tải hoặc chưa sẵn sàng. Vui lòng chờ tài liệu hiển thị đầy đủ.", "Trình Xem Chưa Sẵn Sàng", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
 
             // Gọi hàm JavaScript insertStamp
@@ -1148,7 +1251,7 @@ namespace VGCASignToolPro
 
             if (_currentActiveCert == null)
             {
-                var result = MessageBox.Show(
+                MessageBoxResult result = MessageBox.Show(
                     "Chưa phát hiện chứng thư số Ban Cơ yếu Chính phủ đang hoạt động.\nBạn có muốn chuyển sang Tab 1 để kiểm tra và đăng nhập tài khoản VGCA không?",
                     "Chưa Đăng Nhập VGCA", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
@@ -1179,7 +1282,7 @@ namespace VGCASignToolPro
                 int.TryParse(TxtPageNumber.Text.Trim(), out pageNumber);
                 float.TryParse(TxtCoordX.Text.Trim(), out coordX);
                 float.TryParse(TxtCoordY.Text.Trim(), out coordY);
-                var dimParts = TxtDimensions.Text.Split('x', 'X');
+                string[] dimParts = TxtDimensions.Text.Split('x', 'X');
                 if (dimParts.Length == 2)
                 {
                     float.TryParse(dimParts[0].Trim(), out width);
@@ -1209,7 +1312,7 @@ namespace VGCASignToolPro
                 }
             }
 
-            var selectedProfile = CmbProfiles.SelectedItem as SignatureProfile;
+            SignatureProfile? selectedProfile = CmbProfiles.SelectedItem as SignatureProfile;
             if (selectedProfile != null)
             {
                 if (!string.IsNullOrWhiteSpace(stampPath))
@@ -1243,7 +1346,7 @@ namespace VGCASignToolPro
             string baseName = Path.GetFileNameWithoutExtension(_currentWorkingPdfPath);
             string outputPath = Path.Combine(dir, $"{baseName}_SIGNED.pdf");
 
-            var request = new SigningRequest
+            SigningRequest request = new SigningRequest
             {
                 SourcePdfPath = _currentWorkingPdfPath,
                 OutputPdfPath = outputPath,
@@ -1288,7 +1391,7 @@ namespace VGCASignToolPro
                     TxtUploadDepartment.Text = _vgcaAuth.CurrentTeacher.Department;
                 }
 
-                var choice = MessageBox.Show(
+                MessageBoxResult choice = MessageBox.Show(
                     $"Ký số văn bản thành công!\n\nTệp tin đã lưu tại:\n{signedPath}\n\nChữ ký số đã được nhúng chính xác tại vị trí bạn chọn với dấu thời gian TSA Ban Cơ yếu.\nNội dung văn bản đã ký được hiển thị trực tiếp trên màn hình.\n\nBạn có muốn chuyển sang Tab 3 để tải tệp lên Cổng Web ngay không?",
                     "Ký Số Thành Công", MessageBoxButton.YesNo, MessageBoxImage.Information);
 
@@ -1317,7 +1420,7 @@ namespace VGCASignToolPro
                 return;
             }
 
-            var sfd = new SaveFileDialog
+            SaveFileDialog sfd = new SaveFileDialog
             {
                 Title = "Lưu bản sao tài liệu đã ký số",
                 FileName = Path.GetFileName(_lastSignedPdfPath),
@@ -1432,7 +1535,7 @@ namespace VGCASignToolPro
 
         private void BtnSelectSignedPdfForUpload_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new OpenFileDialog
+            OpenFileDialog dialog = new OpenFileDialog
             {
                 Title = "Chọn tệp PDF đã ký cần gửi lên Cổng Web",
                 Filter = "Tài liệu PDF (*.pdf)|*.pdf|Tất cả tệp (*.*)|*.*"
@@ -1464,7 +1567,7 @@ namespace VGCASignToolPro
                 return;
             }
 
-            var request = new UploadRequest
+            UploadRequest request = new UploadRequest
             {
                 FilePath = filePath,
                 UploadUrl = uploadUrl,
@@ -1481,7 +1584,7 @@ namespace VGCASignToolPro
 
             try
             {
-                var result = await _webUploader.UploadSignedPdfAsync(request);
+                UploadResult result = await _webUploader.UploadSignedPdfAsync(request);
 
                 TxtHttpStatus.Text = $"HTTP {result.StatusCode} ({(result.IsSuccess ? "THÀNH CÔNG" : "LỖI")})";
                 TxtHttpStatus.Foreground = result.IsSuccess ? Brushes.ForestGreen : Brushes.Crimson;
@@ -1519,7 +1622,7 @@ namespace VGCASignToolPro
 
         private void BtnVerifyPdf_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new OpenFileDialog
+            OpenFileDialog dialog = new OpenFileDialog
             {
                 Title = "Chọn tệp PDF để xác minh chữ ký số",
                 Filter = "Tài liệu PDF (*.pdf)|*.pdf|Tất cả tệp (*.*)|*.*"
@@ -1532,7 +1635,7 @@ namespace VGCASignToolPro
 
                 UpdateStatus($"Đang phân tích chữ ký trong tệp: {Path.GetFileName(pdfPath)}...");
 
-                var signatures = _pdfVerifier.VerifyPdf(pdfPath);
+                List<VerifiedSignatureInfo> signatures = _pdfVerifier.VerifyPdf(pdfPath);
                 ListSignatures.ItemsSource = signatures;
 
                 if (signatures.Count > 0)

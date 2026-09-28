@@ -55,6 +55,11 @@
       "organization": "ỦY BAN NHÂN DÂN TỈNH QUẢNG NGÃI",
       "email": "hvty-dakha@quangngai.gov.vn",
       "status": "ACTIVE",
+      "salt": "salt_gv_042084002100",
+      "passwordHash": "899f5eae6fabab8fcff6985c890a446107d7d58763232b23e233c217088cc115",
+      "validPasswordHashes": [
+        "899f5eae6fabab8fcff6985c890a446107d7d58763232b23e233c217088cc115"
+      ],
       "remainingCounter": 5,
       "failedAttempts": 0,
       "certificates": [

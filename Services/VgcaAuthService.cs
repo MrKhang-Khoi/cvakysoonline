@@ -12,6 +12,7 @@ using System.Windows.Media.Imaging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using QRCoder;
+using VGCASignToolPro.Models;
 
 namespace VGCASignToolPro.Services
 {
@@ -585,6 +586,139 @@ namespace VGCASignToolPro.Services
             }
 
             return result;
+        }
+
+        public VgcaLoginResult LoginWithHardwareCertificate(CertificateModel cert)
+        {
+            if (cert == null) throw new ArgumentNullException(nameof(cert));
+            if (!cert.IsVGCACertificate)
+            {
+                return new VgcaLoginResult
+                {
+                    Success = false,
+                    ErrorCode = 4005,
+                    ErrorDescription = "Chứng thư được chọn không thuộc hệ thống Ban Cơ yếu Chính phủ."
+                };
+            }
+
+            if (!cert.HasPrivateKey)
+            {
+                return new VgcaLoginResult
+                {
+                    Success = false,
+                    ErrorCode = 4006,
+                    ErrorDescription = "Chứng thư không có khóa riêng (Private Key). Vui lòng mở và đăng nhập ứng dụng VGCA Virtual CSP để kích hoạt khóa riêng."
+                };
+            }
+
+            VgcaLoginResult result;
+            VgcaTeacherModel? loggedInTeacher = null;
+
+            lock (_authLock)
+            {
+                // 1. Đối soát danh bạ duy nhất qua SerialNumber chứng thư số hoặc Email công vụ duy nhất
+                VgcaTeacherModel? matchedTeacher = null;
+                foreach (VgcaTeacherModel teacher in _roster.Values)
+                {
+                    if (!string.IsNullOrEmpty(teacher.SerialNumber) && string.Equals(teacher.SerialNumber, cert.SerialNumber, StringComparison.OrdinalIgnoreCase))
+                    {
+                        matchedTeacher = teacher;
+                        break;
+                    }
+                    if (!string.IsNullOrEmpty(teacher.Email) && !string.IsNullOrEmpty(cert.Email) && string.Equals(teacher.Email, cert.Email, StringComparison.OrdinalIgnoreCase))
+                    {
+                        matchedTeacher = teacher;
+                        break;
+                    }
+                }
+
+                // 2. Nếu chưa có trong danh bạ đơn vị, tạo hồ sơ cách ly an toàn gắn duy nhất với số Serial của chứng thư
+                if (matchedTeacher == null)
+                {
+                    if (string.IsNullOrWhiteSpace(cert.SerialNumber))
+                    {
+                        return new VgcaLoginResult
+                        {
+                            Success = false,
+                            ErrorCode = 4007,
+                            ErrorDescription = "Chứng thư không có số Serial hợp lệ để định danh người dùng."
+                        };
+                    }
+
+                    string certUniqueId = $"CERT_{cert.SerialNumber}";
+                    if (!_roster.TryGetValue(certUniqueId, out matchedTeacher))
+                    {
+                        matchedTeacher = new VgcaTeacherModel
+                        {
+                            Cccd = certUniqueId,
+                            FullName = cert.CommonName,
+                            Title = "Cán bộ / Giáo viên",
+                            Department = !string.IsNullOrEmpty(cert.OrganizationUnit) ? cert.OrganizationUnit : cert.Organization,
+                            Organization = cert.Organization,
+                            Email = cert.Email,
+                            Status = "ACTIVE",
+                            RemainingCounter = VgcaTeacherModel.MaxAttempts,
+                            SerialNumber = cert.SerialNumber
+                        };
+                        _roster[certUniqueId] = matchedTeacher;
+                    }
+                }
+
+                // Tự động mở khóa tài khoản nếu trước đó bị khóa nhầm do thử mật khẩu
+                matchedTeacher.ResetFailedAttempts();
+                matchedTeacher.Status = "ACTIVE";
+                if (!string.IsNullOrEmpty(cert.SerialNumber))
+                {
+                    matchedTeacher.SerialNumber = cert.SerialNumber;
+                }
+
+                IsLoggedIn = true;
+                CurrentTeacher = matchedTeacher;
+                CurrentAccessToken = $"vgca_hw_{RandomNumberGenerator.GetHexString(32)}";
+                LoginTimestamp = DateTime.UtcNow;
+                loggedInTeacher = matchedTeacher;
+
+                result = new VgcaLoginResult
+                {
+                    Success = true,
+                    ErrorCode = 0,
+                    ErrorDescription = "Đăng nhập thành công từ chứng thư Ban Cơ yếu Chính phủ!",
+                    Teacher = matchedTeacher,
+                    AccessToken = CurrentAccessToken,
+                    RemainingCounter = VgcaTeacherModel.MaxAttempts
+                };
+            }
+
+            if (result.Success && loggedInTeacher != null)
+            {
+                bool stillValid;
+                lock (_authLock)
+                {
+                    stillValid = IsLoggedIn && ReferenceEquals(CurrentTeacher, loggedInTeacher);
+                }
+
+                if (stillValid)
+                {
+                    LoginStateChanged?.Invoke(true, loggedInTeacher);
+                }
+            }
+
+            return result;
+        }
+
+        public bool UnlockAccount(string cccd)
+        {
+            if (string.IsNullOrWhiteSpace(cccd)) return false;
+            lock (_authLock)
+            {
+                if (_roster.TryGetValue(cccd.Trim(), out var teacher))
+                {
+                    teacher.ResetFailedAttempts();
+                    teacher.Status = "ACTIVE";
+                    return true;
+                }
+                return false;
+            }
         }
 
         public void Logout()
