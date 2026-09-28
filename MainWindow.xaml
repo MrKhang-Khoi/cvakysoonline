@@ -150,6 +150,16 @@
                                FontSize="12" Foreground="#93C5FD" Margin="0,2,0,0" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <!-- NÚT KIỂM TRA CẬP NHẬT PHIÊN BẢN MỚI TỪ FIREBASE -->
+                    <Button x:Name="BtnCheckUpdate" Click="BtnCheckUpdate_Click" 
+                            Background="#1E293B" BorderBrush="#334155" BorderThickness="1"
+                            Padding="10,6" Margin="0,0,10,0" Cursor="Hand" ToolTip="Kiểm tra phiên bản cập nhật mới từ hệ thống nhà trường (Firebase &amp; GitHub)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🔄" FontSize="12" Margin="0,0,6,0" Foreground="#38BDF8" VerticalAlignment="Center" />
+                            <TextBlock x:Name="TxtUpdateStatusHeader" Text="Kiểm Tra Cập Nhật" FontSize="11" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
                     <!-- BADGE TRẠNG THÁI VGCA TOÀN CỤC -->
                     <Border x:Name="BadgeVgcaGlobalStatus" Background="#B91C1C" CornerRadius="6" Padding="12,6" Margin="0,0,10,0">
                         <StackPanel Orientation="Horizontal">

@@ -207,6 +207,7 @@
       <button class="btn btn-primary" onclick="openAddModal()">➕ Thêm Giáo Viên</button>
       <button class="btn btn-success" onclick="syncToFirebase()">☁️ Đồng Bộ Lên Firebase</button>
       <button class="btn btn-indigo" onclick="loadFromFirebase()">🔄 Tải Từ Firebase</button>
+      <button class="btn btn-outline" style="border-color:#D97706; color:#D97706; font-weight:700;" onclick="openReleaseModal()">🚀 Quản Trị Cập Nhật App</button>
       <button class="btn btn-outline" onclick="exportJsonFile()">📥 Tải File JSON</button>
       <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">📤 Nhập File JSON</button>
       <input type="file" id="fileInput" accept=".json" style="display:none" onchange="importJsonFile(event)">
@@ -301,6 +302,71 @@
         <button type="submit" class="btn btn-primary" id="btnModalSave">Lưu Dữ Liệu</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Modal Quản Lý Phiên Bản Ứng Dụng (App Release Control Plane) -->
+<div class="modal-overlay" id="releaseModal">
+  <div class="modal-card" style="max-width: 760px;">
+    <div class="modal-header">
+      <h3>🚀 Quản Trị Bản Cập Nhật Ứng Dụng (Firebase Control Plane)</h3>
+      <button class="btn btn-outline btn-sm" onclick="closeReleaseModal()">✕</button>
+    </div>
+    <div class="modal-body" style="grid-template-columns: 1fr 1fr; max-height: 70vh; overflow-y: auto;">
+      <div class="form-group">
+        <label for="relVersion">Phiên Bản Phát Hành (Version):</label>
+        <input type="text" id="relVersion" class="form-control" placeholder="Ví dụ: 2.1.0" value="2.1.0">
+      </div>
+      <div class="form-group">
+        <label for="relMinVersion">Phiên Bản Tối Thiểu Được Hỗ Trợ:</label>
+        <input type="text" id="relMinVersion" class="form-control" placeholder="Ví dụ: 2.0.0" value="2.0.0">
+      </div>
+      <div class="form-group">
+        <label for="relStatus">Trạng Thái Bản Phát Hành:</label>
+        <select id="relStatus" class="form-control">
+          <option value="ACTIVE">ACTIVE (Đang hoạt động bình thường)</option>
+          <option value="MAINTENANCE">MAINTENANCE (Bảo trì hệ thống)</option>
+          <option value="PAUSED">PAUSED (Tạm dừng cập nhật)</option>
+        </select>
+      </div>
+      <div class="form-group" style="display:flex; align-items:center; gap:8px; margin-top:20px;">
+        <input type="checkbox" id="relMandatory" style="width:18px; height:18px; cursor:pointer;">
+        <label for="relMandatory" style="margin-bottom:0; cursor:pointer; font-weight:600; color:#DC2626;">Bắt buộc cập nhật ngay (Mandatory)</label>
+      </div>
+      <div class="form-group" style="grid-column: span 2;">
+        <label for="relTitle">Tiêu Đề Bản Cập Nhật:</label>
+        <input type="text" id="relTitle" class="form-control" placeholder="Ví dụ: Bản cập nhật VGCA Sign Tool Pro v2.1.0">
+      </div>
+      <div class="form-group" style="grid-column: span 2;">
+        <label for="relDescription">Mô Tả Tóm Tắt:</label>
+        <input type="text" id="relDescription" class="form-control" placeholder="Mô tả ngắn gọn về các tính năng mới...">
+      </div>
+      <div class="form-group" style="grid-column: span 2;">
+        <label for="relDownloadUrl">Link Tải Gói Cập Nhật ZIP (GitHub Release):</label>
+        <input type="text" id="relDownloadUrl" class="form-control" placeholder="https://github.com/.../VGCASignToolPro_Update_v2.1.0.zip">
+      </div>
+      <div class="form-group" style="grid-column: span 2;">
+        <label for="relSha256">Mã Băm Đối Soát SHA-256 Gói ZIP:</label>
+        <input type="text" id="relSha256" class="form-control" placeholder="64 ký tự hexa SHA-256">
+      </div>
+      <div class="form-group" style="grid-column: span 2;">
+        <label for="relInstallerUrl">Link Tải Bộ Cài Đặt Setup .exe:</label>
+        <input type="text" id="relInstallerUrl" class="form-control" placeholder="https://github.com/.../VGCASignToolPro_Setup_v2.1.exe">
+      </div>
+      <div class="form-group" style="grid-column: span 2;">
+        <label for="relInstallerSha256">Mã Băm Đối Soát SHA-256 File Setup:</label>
+        <input type="text" id="relInstallerSha256" class="form-control" placeholder="64 ký tự hexa SHA-256">
+      </div>
+      <div class="form-group" style="grid-column: span 2;">
+        <label for="relChangelog">Nhật Ký Thay Đổi (Changelog - mỗi dòng 1 tính năng):</label>
+        <textarea id="relChangelog" class="form-control" rows="4" placeholder="Triệt tiêu hoàn toàn polling timer...&#10;Mở khóa sửa đổi CCCD trên Web..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-indigo" onclick="fetchReleaseFromFirebase()">🔄 Đọc Từ Firebase</button>
+      <button type="button" class="btn btn-outline" onclick="closeReleaseModal()">Đóng</button>
+      <button type="button" class="btn btn-success" onclick="publishReleaseToFirebase()">🚀 Lưu & Kích Hoạt Lên Firebase</button>
+    </div>
   </div>
 </div>
 
@@ -770,6 +836,89 @@
     setTimeout(() => {
       toast.style.display = "none";
     }, 4000);
+  }
+
+  // ==========================================
+  // QUẢN TRỊ BẢN PHÁT HÀNH & CẬP NHẬT ỨNG DỤNG (OTA RELEASE)
+  // ==========================================
+  function openReleaseModal() {
+    document.getElementById("releaseModal").classList.add("active");
+    fetchReleaseFromFirebase();
+  }
+
+  function closeReleaseModal() {
+    document.getElementById("releaseModal").classList.remove("active");
+  }
+
+  async function fetchReleaseFromFirebase() {
+    try {
+      const firebaseUrl = getFirebaseUrl();
+      const secret = getDbSecret();
+      const endpoint = `${firebaseUrl}/app_release.json${secret ? `?auth=${encodeURIComponent(secret)}` : ''}`;
+      
+      const res = await fetch(endpoint);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data) {
+        document.getElementById("relVersion").value = data.version || "";
+        document.getElementById("relMinVersion").value = data.minSupportedVersion || "";
+        document.getElementById("relStatus").value = data.status || "ACTIVE";
+        document.getElementById("relMandatory").checked = Boolean(data.mandatory);
+        document.getElementById("relTitle").value = data.title || "";
+        document.getElementById("relDescription").value = data.description || "";
+        document.getElementById("relDownloadUrl").value = data.downloadUrl || "";
+        document.getElementById("relSha256").value = data.sha256 || "";
+        document.getElementById("relInstallerUrl").value = data.installerUrl || "";
+        document.getElementById("relInstallerSha256").value = data.installerSha256 || "";
+        document.getElementById("relChangelog").value = Array.isArray(data.changelog) ? data.changelog.join("\n") : (data.changelog || "");
+        showToast("Đã tải thông tin phiên bản từ Firebase thành công!", "success");
+      }
+    } catch (err) {
+      showToast("Lỗi đọc cấu hình release: " + err.message, "error");
+    }
+  }
+
+  async function publishReleaseToFirebase() {
+    try {
+      const version = document.getElementById("relVersion").value.trim();
+      if (!version) {
+        alert("Vui lòng nhập phiên bản phát hành!");
+        return;
+      }
+      const rawChangelog = document.getElementById("relChangelog").value.trim();
+      const changelog = rawChangelog ? rawChangelog.split("\n").map(s => s.trim()).filter(Boolean) : [];
+
+      const payload = {
+        version: version,
+        minSupportedVersion: document.getElementById("relMinVersion").value.trim() || "2.0.0",
+        releaseDate: new Date().toISOString().split("T")[0],
+        title: document.getElementById("relTitle").value.trim(),
+        description: document.getElementById("relDescription").value.trim(),
+        downloadUrl: document.getElementById("relDownloadUrl").value.trim(),
+        installerUrl: document.getElementById("relInstallerUrl").value.trim(),
+        sha256: document.getElementById("relSha256").value.trim(),
+        installerSha256: document.getElementById("relInstallerSha256").value.trim(),
+        mandatory: document.getElementById("relMandatory").checked,
+        status: document.getElementById("relStatus").value,
+        changelog: changelog
+      };
+
+      const firebaseUrl = getFirebaseUrl();
+      const secret = getDbSecret();
+      const endpoint = `${firebaseUrl}/app_release.json${secret ? `?auth=${encodeURIComponent(secret)}` : ''}`;
+
+      const res = await fetch(endpoint, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      showToast(`Đã xuất bản thành công bản cập nhật v${version} lên Firebase!`, "success");
+      closeReleaseModal();
+    } catch (err) {
+      alert("Lỗi lưu release lên Firebase: " + err.message);
+    }
   }
 </script>
 

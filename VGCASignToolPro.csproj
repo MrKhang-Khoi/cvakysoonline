@@ -19,6 +19,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Updater\**" />
+    <EmbeddedResource Remove="Updater\**" />
+    <None Remove="Updater\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="wwwroot\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
@@ -32,5 +38,13 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </None>
   </ItemGroup>
+
+  <Target Name="BuildAndCopyUpdater" AfterTargets="Build">
+    <MSBuild Projects="Updater\VGCASignToolPro.Updater.csproj" Targets="Build" Properties="Configuration=$(Configuration);Platform=AnyCPU" />
+    <ItemGroup>
+      <UpdaterFiles Include="Updater\bin\$(Configuration)\net8.0-windows\VGCASignToolPro.Updater.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(UpdaterFiles)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>

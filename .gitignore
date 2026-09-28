@@ -10,3 +10,5 @@ test_utf8_files/
 .codegraph/
 test_run.log
 tests/
+dist/
+Output_Installer/

@@ -25,6 +25,7 @@ namespace VGCASignToolPro
         private readonly WebUploadService _webUploader = new();
         private readonly VgcaAuthService _vgcaAuth = new();
         private readonly ReportWorkflowService _workflowService = new();
+        private readonly UpdateService _updateService = new();
         private string? _activeWorkflowReportId;
         private string? _activeWorkflowExpectedBaseHash;
         private bool _isOutboxViewMode;
@@ -77,6 +78,16 @@ namespace VGCASignToolPro
                 InitializeVgcaAuthRoster();
                 LoadCertificatesAndVerifyVGCALogin();
                 LoadProfiles();
+
+                // Kiểm tra cập nhật ngầm sau khi app khởi động 2.5 giây (không block UI)
+                _ = Task.Run(async () =>
+                {
+                    await Task.Delay(2500);
+                    await Dispatcher.InvokeAsync(async () =>
+                    {
+                        await CheckUpdateSilentAsync();
+                    });
+                });
             }
             catch (Exception ex)
             {
@@ -531,6 +542,82 @@ namespace VGCASignToolPro
                     "Đăng Nhập VGCA", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
+
+        #region AUTO-UPDATE VÀ ĐỒNG BỘ PHIÊN BẢN (FIREBASE + GITHUB)
+
+        private async Task CheckUpdateSilentAsync()
+        {
+            try
+            {
+                var result = await _updateService.CheckForUpdateAsync();
+                if (result.Success && result.HasUpdate && result.Release != null)
+                {
+                    TxtUpdateStatusHeader.Text = $"Bản Mới v{result.LatestVersion} ✨";
+                    BtnCheckUpdate.Background = new SolidColorBrush(Color.FromRgb(180, 83, 9)); // Amber highlight
+                    UpdateStatus($"Phát hiện bản nâng cấp mới: v{result.LatestVersion} ({result.Release.Title}).");
+
+                    if (result.IsMandatory)
+                    {
+                        var dialog = new UpdateDialog(result, _updateService) { Owner = this };
+                        dialog.ShowDialog();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceWarning($"Lỗi kiểm tra cập nhật ngầm: {ex.Message}");
+            }
+        }
+
+        private async void BtnCheckUpdate_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                TxtUpdateStatusHeader.Text = "Đang kiểm tra...";
+                BtnCheckUpdate.IsEnabled = false;
+                UpdateStatus("Đang kết nối Firebase và kiểm tra bản phát hành mới...");
+
+                var result = await _updateService.CheckForUpdateAsync();
+                BtnCheckUpdate.IsEnabled = true;
+
+                if (result.Success)
+                {
+                    if (result.HasUpdate && result.Release != null)
+                    {
+                        TxtUpdateStatusHeader.Text = $"Bản Mới v{result.LatestVersion} ✨";
+                        BtnCheckUpdate.Background = new SolidColorBrush(Color.FromRgb(180, 83, 9));
+
+                        var dialog = new UpdateDialog(result, _updateService) { Owner = this };
+                        dialog.ShowDialog();
+                    }
+                    else
+                    {
+                        TxtUpdateStatusHeader.Text = "Mới Nhất ✔";
+                        BtnCheckUpdate.Background = new SolidColorBrush(Color.FromRgb(30, 41, 59));
+                        UpdateStatus($"Bạn đang sử dụng phiên bản mới nhất: v{_updateService.CurrentVersionString}.");
+                        MessageBox.Show(
+                            $"Bạn đang sử dụng phiên bản chuẩn mới nhất (v{_updateService.CurrentVersionString}).\n\nKhông có bản cập nhật nào mới hơn trên hệ thống nhà trường.",
+                            "Hệ Thống Đã Cập Nhật", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+                else
+                {
+                    TxtUpdateStatusHeader.Text = "Kiểm Tra Lại";
+                    UpdateStatus($"Lỗi kiểm tra cập nhật: {result.Message}");
+                    MessageBox.Show(
+                        $"Không thể kiểm tra bản cập nhật từ máy chủ:\n\n{result.Message}\n\nVui lòng kiểm tra lại kết nối mạng Internet của nhà trường.",
+                        "Lỗi Kết Nối", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                BtnCheckUpdate.IsEnabled = true;
+                TxtUpdateStatusHeader.Text = "Kiểm Tra Lại";
+                MessageBox.Show($"Lỗi kiểm tra cập nhật: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
 
         private void CmbCertificates_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
