@@ -612,6 +612,29 @@
                     </Border>
 
                     <!-- BANNER THÀNH CÔNG VÀ CÁC NÚT THAO TÁC NHANH SAU KHI KÝ -->
+                    <!-- BANNER KHI ĐANG DUYỆT BÁO CÁO LIÊN THÔNG TỪ HỘP THƯ TAB 3 -->
+                    <Border Grid.Row="1" x:Name="BorderWorkflowReviewNotice" Visibility="Collapsed" 
+                            Background="#EFF6FF" BorderBrush="#93C5FD" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,6">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📋" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="TxtWorkflowReviewNoticeHeader" Text="CHẾ ĐỘ PHÊ DUYỆT BÁO CÁO LIÊN THÔNG (CẤP 2)" 
+                                               FontWeight="Bold" Foreground="#1E40AF" FontSize="12" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <TextBlock x:Name="TxtWorkflowReviewNoticeDetail" Text="Văn bản được tải từ hệ thống trình ký. Vui lòng kiểm tra nội dung và cắm USB Token để ký số phê duyệt." 
+                                           FontSize="11" Foreground="#2563EB" Margin="22,2,0,0" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="✕ Thoát Chế Độ Duyệt" Style="{StaticResource SecondaryButton}" 
+                                    Padding="10,5" FontSize="11" Click="BtnExitWorkflowReviewMode_Click" />
+                        </Grid>
+                    </Border>
+
+                    <!-- BANNER THÀNH CÔNG VÀ CÁC NÚT THAO TÁC NHANH SAU KHI KÝ -->
                     <Border Grid.Row="1" x:Name="BorderSignSuccessBanner" Visibility="Collapsed" 
                             Background="#ECFDF5" BorderBrush="#6EE7B7" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,0,0,6">
                         <Grid>
@@ -635,8 +658,12 @@
                                         Padding="10,5" FontSize="11" Margin="0,0,6,0" Click="BtnOpenSignedPdfExternal_Click" />
                                 <Button Content="📁 Mở Thư Mục" Style="{StaticResource SecondaryButton}" 
                                         Padding="10,5" FontSize="11" Margin="0,0,6,0" Click="BtnOpenSignedFolder_Click" />
-                                <Button Content="🌐 Đưa Lên Cổng Web (Tab 3) ➡" Style="{StaticResource SuccessButton}" 
-                                        Padding="12,5" FontSize="11" FontWeight="Bold" Click="BtnGoToUploadWeb_Click" />
+                                <Button x:Name="BtnSubmitWorkflowReport" Content="📤 Trình Ký Báo Cáo (Tab 3) ➡" Style="{StaticResource SuccessButton}" 
+                                        Background="#0D9488" BorderBrush="#0F766E"
+                                        Padding="12,5" FontSize="11" FontWeight="Bold" Margin="0,0,6,0" Click="BtnSubmitWorkflowReport_Click" />
+                                <Button x:Name="BtnCommitWorkflowApproval" Content="✅ Nộp Báo Cáo Đã Duyệt ➡" Style="{StaticResource SuccessButton}" 
+                                        Background="#2563EB" BorderBrush="#1D4ED8"
+                                        Padding="12,5" FontSize="11" FontWeight="Bold" Visibility="Collapsed" Click="BtnCommitWorkflowApproval_Click" />
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -690,88 +717,272 @@
                             </StackPanel>
                         </Border>
                     </Border>
+
+                    <!-- OVERLAY TRÌNH KÝ BÁO CÁO LIÊN THÔNG (POPUP KHI BẤM NÚT TRÌNH KÝ TẠI TAB 2) -->
+                    <Border x:Name="OverlaySubmitWorkflow" Grid.RowSpan="4" Background="#990F172A" Visibility="Collapsed" Panel.ZIndex="150">
+                        <Border Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="12" 
+                                MaxWidth="620" Width="600" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="28">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="25" ShadowDepth="6" Opacity="0.25" />
+                            </Border.Effect>
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                                    <Border Background="#CCFBF1" CornerRadius="8" Padding="10" Margin="0,0,12,0">
+                                        <TextBlock Text="📤" FontSize="26" />
+                                    </Border>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="TRÌNH KÝ BÁO CÁO LIÊN THÔNG" FontWeight="Bold" FontSize="16" Foreground="#0F766E" />
+                                        <TextBlock Text="Gửi báo cáo lên hệ thống để Tổ trưởng / Ban Giám hiệu phê duyệt tiếp theo" FontSize="12" Foreground="#64748B" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <TextBlock Text="Tiêu đề báo cáo:" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
+                                <TextBox x:Name="TxtWorkflowSubmitTitle" Padding="8,6" FontSize="13" Margin="0,0,0,12" Background="#F8FAFC" />
+
+                                <TextBlock Text="Người lập báo cáo:" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
+                                <Border Background="#F1F5F9" CornerRadius="6" Padding="10,6" Margin="0,0,0,12">
+                                    <TextBlock x:Name="TxtWorkflowSubmitSender" Text="Giáo viên (Đang đăng nhập)" FontSize="12" Foreground="#1E293B" FontWeight="Medium" />
+                                </Border>
+
+                                <TextBlock Text="Chọn Người nhận phê duyệt (Tổ trưởng / Ban Giám hiệu):" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
+                                <ComboBox x:Name="CboWorkflowApprover" Padding="8,6" FontSize="13" Margin="0,0,0,12" />
+
+                                <TextBlock Text="Ghi chú kèm theo (tùy chọn):" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
+                                <TextBox x:Name="TxtWorkflowSubmitNotes" Padding="8,6" FontSize="12" Height="50" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,20" Background="#F8FAFC" />
+
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <Button Content="✕ Hủy Bỏ" Style="{StaticResource SecondaryButton}" 
+                                            Padding="16,8" FontSize="13" Margin="0,0,10,0" Click="BtnCancelSubmitWorkflow_Click" />
+                                    <Button x:Name="BtnConfirmSubmitWorkflow" Content="🚀 Xác Nhận Gửi Trình Ký" Style="{StaticResource SuccessButton}" 
+                                            Background="#0D9488" BorderBrush="#0F766E"
+                                            Padding="20,8" FontSize="13" FontWeight="Bold" Click="BtnConfirmSubmitWorkflow_Click" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Border>
                 </Grid>
             </TabItem>
 
-            <!-- ================= TAB 3: GỬI LÊN WEB ================= -->
-            <TabItem Header="  3. Gửi File Lên Cổng Web  " FontSize="14" FontWeight="SemiBold">
+            <!-- ================= TAB 3: HỘP THƯ TRÌNH KÝ BÁO CÁO LIÊN THÔNG ================= -->
+            <TabItem x:Name="TabItemWorkflow" Header="  3. Hộp Thư Trình Ký Báo Cáo  " FontSize="14" FontWeight="SemiBold">
                 <Grid Margin="0,10,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="520" />
-                        <ColumnDefinition Width="14" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <!-- THANH ĐIỀU KHIỂN & CHỈ SỐ NHANH -->
+                        <RowDefinition Height="Auto" />
+                        <!-- BẢNG ĐIỀU HÀNH & SUB-TABS TRÌNH KÝ -->
+                        <RowDefinition Height="*" />
+                        <!-- CHÂN TRANG TRẠNG THÁI -->
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
-                    <GroupBox Grid.Column="0" Header="Cấu Hình Gói Tin Đẩy Lên Cổng Web">
-                        <StackPanel Margin="6">
-                            <TextBlock Text="Tệp PDF đã ký cần gửi:" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBox Grid.Column="0" x:Name="TxtUploadFilePath" Background="#F8FAFC" Padding="6" Text="Chưa có file nào sẵn sàng..." />
-                                <Button Grid.Column="1" Content="📁 Chọn File..." Style="{StaticResource SecondaryButton}" 
-                                        Margin="6,0,0,0" Click="BtnSelectSignedPdfForUpload_Click" />
-                            </Grid>
+                    <!-- HÀNG 0: THANH ĐIỀU HÀNH NGƯỜI DÙNG & CHỈ SỐ BÁO CÁO -->
+                    <Border Grid.Row="0" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
 
-                            <TextBlock Text="Địa chỉ URL Web Gateway tiếp nhận (HTTP/HTTPS):" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
-                            <TextBox x:Name="TxtUploadUrl" Text="https://httpbin.org/post" Padding="6" Margin="0,0,0,8" />
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,12,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="👤" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock x:Name="TxtWorkflowUserGreeting" Text="Giáo viên: Chưa xác định" FontWeight="Bold" FontSize="12" Foreground="#1E40AF" />
+                                            <TextBlock x:Name="TxtWorkflowUserUnit" Text="Trường THCS Chu Văn An" FontSize="11" Foreground="#3B82F6" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
 
-                            <TextBlock Text="Mã định danh Token / Bearer Key (nếu có):" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
-                            <TextBox x:Name="TxtAuthToken" Text="Bearer vgca-secure-token-2026" Padding="6" Margin="0,0,0,8" />
+                                <!-- THẺ ĐẾM BÁO CÁO CHỜ DUYỆT -->
+                                <Border Background="#FEF3C7" BorderBrush="#FDE68A" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="📥 Chờ tôi duyệt: " FontSize="11" Foreground="#92400E" FontWeight="SemiBold" />
+                                        <TextBlock x:Name="TxtCountInbox" Text="0" FontWeight="Bold" FontSize="13" Foreground="#B45309" Margin="4,0,0,0" />
+                                    </StackPanel>
+                                </Border>
 
-                            <TextBlock Text="Tiêu đề văn bản:" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
-                            <TextBox x:Name="TxtUploadDocTitle" Text="Văn bản đã ký duyệt" Padding="6" Margin="0,0,0,8" />
+                                <!-- THẺ ĐẾM BÁO CÁO TÔI ĐÃ GỬI -->
+                                <Border Background="#F0FDF4" BorderBrush="#BBF7D0" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="📤 Tôi đã gửi: " FontSize="11" Foreground="#166534" FontWeight="SemiBold" />
+                                        <TextBlock x:Name="TxtCountOutbox" Text="0" FontWeight="Bold" FontSize="13" Foreground="#15803D" Margin="4,0,0,0" />
+                                    </StackPanel>
+                                </Border>
 
-                            <Grid Margin="0,0,0,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="8" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Người ký:" FontSize="11" Foreground="#64748B" />
-                                    <TextBox x:Name="TxtUploadSigner" Padding="6" Text="Hà Văn Tý" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Đơn vị / Phòng ban:" FontSize="11" Foreground="#64748B" />
-                                    <TextBox x:Name="TxtUploadDepartment" Text="Trường THCS Chu Văn An" Padding="6" />
-                                </StackPanel>
-                            </Grid>
+                                <!-- THẺ ĐẾM TOÀN TRƯỜNG HOÀN TẤT -->
+                                <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="10,4">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="📁 Toàn trường hoàn tất: " FontSize="11" Foreground="#475569" FontWeight="SemiBold" />
+                                        <TextBlock x:Name="TxtCountCompleted" Text="0" FontWeight="Bold" FontSize="13" Foreground="#334155" Margin="4,0,0,0" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
 
-                            <Button x:Name="BtnExecuteUpload" Content="🚀 TIẾN HÀNH GỬI TÀI LIỆU LÊN CỔNG WEB" 
-                                    Style="{StaticResource SuccessButton}" 
-                                    FontSize="13" Padding="16,10" Margin="0,10,0,0" 
-                                    Click="BtnExecuteUpload_Click" />
-                        </StackPanel>
-                    </GroupBox>
-
-                    <GroupBox Grid.Column="2" Header="Phản Hồi Mạng Thật Từ Máy Chủ (Live HTTP Response Trace)">
-                        <Grid Margin="6">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="*" />
-                            </Grid.RowDefinitions>
-
-                            <Border Grid.Row="0" Background="#F1F5F9" CornerRadius="4" Padding="10" Margin="0,0,0,8">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="Trạng thái HTTP: " FontWeight="Bold" Foreground="#334155" />
-                                    <TextBlock x:Name="TxtHttpStatus" Text="Chưa gửi yêu cầu" FontWeight="Bold" Foreground="#64748B" Margin="0,0,20,0" />
-                                    <TextBlock Text="Thời gian phản hồi: " FontWeight="Bold" Foreground="#334155" />
-                                    <TextBlock x:Name="TxtHttpLatency" Text="0 ms" FontWeight="Bold" Foreground="#0284C7" />
-                                </StackPanel>
-                            </Border>
-
-                            <Border Grid.Row="1" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="1" CornerRadius="6" Padding="10">
-                                <TextBox x:Name="TxtHttpResponseContent" 
-                                         Background="Transparent" Foreground="#38BDF8" 
-                                         BorderThickness="0" FontFamily="Consolas" FontSize="11" 
-                                         IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" 
-                                         Text="Chưa có dữ liệu phản hồi từ máy chủ." />
-                            </Border>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button x:Name="BtnRefreshWorkflow" Content="🔄 Làm Mới Dữ Liệu" Style="{StaticResource SecondaryButton}" 
+                                        FontSize="12" FontWeight="SemiBold" Padding="12,6" Margin="0,0,8,0" Click="BtnRefreshWorkflow_Click" />
+                                <Button Content="➕ Soạn Báo Cáo Mới (Tab 2)" Style="{StaticResource PrimaryButton}" 
+                                        FontSize="12" FontWeight="Bold" Padding="14,6" Click="BtnNewReportFromTab3_Click" />
+                            </StackPanel>
                         </Grid>
-                    </GroupBox>
+                    </Border>
+
+                    <!-- HÀNG 1: SUB-TABS TRÌNH KÝ (INBOX, OUTBOX, ARCHIVE) -->
+                    <Border Grid.Row="1" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="6">
+                        <TabControl x:Name="TabControlWorkflowSub" Background="Transparent" BorderThickness="0">
+                            
+                            <!-- SUB-TAB 1: BÁO CÁO CHỜ TÔI DUYỆT (INBOX) -->
+                            <TabItem Header="  📥 Báo Cáo Chờ Tôi Duyệt  " FontSize="13" FontWeight="SemiBold">
+                                <Grid Margin="4,8,4,4">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <!-- DANH SÁCH BÁO CÁO ĐẾN -->
+                                    <Border Grid.Row="0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
+                                        <ListView x:Name="LvInboxReports" BorderThickness="0" Background="Transparent" 
+                                                  SelectionMode="Single" MouseDoubleClick="LvInboxReports_MouseDoubleClick">
+                                            <ListView.View>
+                                                <GridView>
+                                                    <GridViewColumn Header="Mã Báo Cáo" Width="140" DisplayMemberBinding="{Binding ReportId}" />
+                                                    <GridViewColumn Header="Tiêu Đề Báo Cáo" Width="380" DisplayMemberBinding="{Binding Title}" />
+                                                    <GridViewColumn Header="Người Lập Báo Cáo" Width="220" DisplayMemberBinding="{Binding SenderName}" />
+                                                    <GridViewColumn Header="Thời Gian Gửi" Width="150" DisplayMemberBinding="{Binding CreatedTimeFormatted}" />
+                                                    <GridViewColumn Header="Trạng Thái" Width="160">
+                                                        <GridViewColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="{Binding StatusBadgeColor}" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left">
+                                                                    <TextBlock Text="{Binding StatusText}" Foreground="White" FontSize="11" FontWeight="Bold" />
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </GridViewColumn.CellTemplate>
+                                                    </GridViewColumn>
+                                                </GridView>
+                                            </ListView.View>
+                                        </ListView>
+                                    </Border>
+
+                                    <!-- THANH THAO TÁC DUYỆT -->
+                                    <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,8,0,0">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="💡 Mẹo: Nhấp đúp vào dòng báo cáo hoặc bấm nút bên phải để nạp văn bản sang Tab 2 ký số phê duyệt." 
+                                                       FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
+                                            <Button Grid.Column="1" x:Name="BtnOpenForReview" Content="📥 Mở &amp; Ký Duyệt Báo Cáo (Tab 2) ➡" 
+                                                    Style="{StaticResource PrimaryButton}" 
+                                                    FontSize="12" FontWeight="Bold" Padding="16,8" Click="BtnOpenForReview_Click" />
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </TabItem>
+
+                            <!-- SUB-TAB 2: BÁO CÁO TÔI ĐÃ GỬI (OUTBOX) -->
+                            <TabItem Header="  📤 Báo Cáo Tôi Đã Gửi  " FontSize="13" FontWeight="SemiBold">
+                                <Grid Margin="4,8,4,4">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <!-- DANH SÁCH BÁO CÁO ĐI -->
+                                    <Border Grid.Row="0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
+                                        <ListView x:Name="LvOutboxReports" BorderThickness="0" Background="Transparent" SelectionMode="Single">
+                                            <ListView.View>
+                                                <GridView>
+                                                    <GridViewColumn Header="Mã Báo Cáo" Width="140" DisplayMemberBinding="{Binding ReportId}" />
+                                                    <GridViewColumn Header="Tiêu Đề Báo Cáo" Width="380" DisplayMemberBinding="{Binding Title}" />
+                                                    <GridViewColumn Header="Người Nhận Phê Duyệt" Width="220" DisplayMemberBinding="{Binding ApproverName}" />
+                                                    <GridViewColumn Header="Thời Gian Gửi" Width="150" DisplayMemberBinding="{Binding CreatedTimeFormatted}" />
+                                                    <GridViewColumn Header="Trạng Thái" Width="160">
+                                                        <GridViewColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="{Binding StatusBadgeColor}" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left">
+                                                                    <TextBlock Text="{Binding StatusText}" Foreground="White" FontSize="11" FontWeight="Bold" />
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </GridViewColumn.CellTemplate>
+                                                    </GridViewColumn>
+                                                </GridView>
+                                            </ListView.View>
+                                        </ListView>
+                                    </Border>
+
+                                    <!-- THANH THAO TÁC THU HỒI -->
+                                    <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,8,0,0">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="🔒 Lưu ý: Bạn chỉ được phép thu hồi khi người duyệt chưa mở file (hoặc quá 60 phút không ký)." 
+                                                       FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
+                                            <Button Grid.Column="1" x:Name="BtnRecallReport" Content="🔴 Thu Hồi Báo Cáo" 
+                                                    Style="{StaticResource SecondaryButton}" 
+                                                    Foreground="#DC2626" BorderBrush="#FCA5A5" Background="#FEF2F2"
+                                                    FontSize="12" FontWeight="Bold" Padding="16,8" Click="BtnRecallReport_Click" />
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </TabItem>
+
+                            <!-- SUB-TAB 3: KHO BÁO CÁO TOÀN TRƯỜNG ĐÃ HOÀN TẤT (ARCHIVE) -->
+                            <TabItem Header="  📁 Kho Báo Cáo Đã Duyệt Toàn Trường  " FontSize="13" FontWeight="SemiBold">
+                                <Grid Margin="4,8,4,4">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <!-- DANH SÁCH BÁO CÁO ĐÃ KÝ 2 CẤP -->
+                                    <Border Grid.Row="0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
+                                        <ListView x:Name="LvArchiveReports" BorderThickness="0" Background="Transparent" SelectionMode="Single">
+                                            <ListView.View>
+                                                <GridView>
+                                                    <GridViewColumn Header="Mã Báo Cáo" Width="140" DisplayMemberBinding="{Binding ReportId}" />
+                                                    <GridViewColumn Header="Tiêu Đề Báo Cáo" Width="360" DisplayMemberBinding="{Binding Title}" />
+                                                    <GridViewColumn Header="Người Lập" Width="180" DisplayMemberBinding="{Binding SenderName}" />
+                                                    <GridViewColumn Header="Người Phê Duyệt" Width="180" DisplayMemberBinding="{Binding ApproverName}" />
+                                                    <GridViewColumn Header="Cập Nhật Lần Cuối" Width="150" DisplayMemberBinding="{Binding CreatedTimeFormatted}" />
+                                                    <GridViewColumn Header="Kết Quả" Width="140">
+                                                        <GridViewColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="#16A34A" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left">
+                                                                    <TextBlock Text="Đã hoàn tất 2 cấp" Foreground="White" FontSize="11" FontWeight="Bold" />
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </GridViewColumn.CellTemplate>
+                                                    </GridViewColumn>
+                                                </GridView>
+                                            </ListView.View>
+                                        </ListView>
+                                    </Border>
+
+                                    <!-- THANH THAO TÁC XEM / TẢI VỀ -->
+                                    <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,8,0,0">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="✅ Các văn bản tại đây đã có đầy đủ 2 chữ ký số PAdES LTV hợp lệ theo Nghị định 130/2018/NĐ-CP." 
+                                                       FontSize="12" Foreground="#059669" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <Button x:Name="BtnViewArchiveReport" Content="👁 Xem Tệp Đầy Đủ (Tab 2)" Style="{StaticResource SecondaryButton}" 
+                                                        FontSize="12" FontWeight="SemiBold" Padding="14,8" Margin="0,0,8,0" Click="BtnViewArchiveReport_Click" />
+                                                <Button x:Name="BtnDownloadArchiveReport" Content="💾 Tải Về Máy Tính" Style="{StaticResource SuccessButton}" 
+                                                        FontSize="12" FontWeight="Bold" Padding="16,8" Click="BtnDownloadArchiveReport_Click" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </TabItem>
+                        </TabControl>
+                    </Border>
                 </Grid>
             </TabItem>
 
