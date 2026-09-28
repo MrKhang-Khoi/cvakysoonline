@@ -134,8 +134,8 @@ namespace VGCASignToolPro.Services
 
                 // Chèn CSS định dạng trang giấy A4, font tiếng Việt chuẩn và kích hoạt chế độ chỉnh sửa trực tiếp
                 string customStyles = @"
-<meta charset=""utf-8"">
-<style>
+<meta http-equiv=""Content-Type"" content=""text/html; charset=utf-8"">
+<style id=""vgca-editor-style"">
     * {
         font-family: 'Times New Roman', 'Segoe UI', Arial, Tahoma, sans-serif !important;
     }
@@ -170,7 +170,7 @@ namespace VGCASignToolPro.Services
         line-height: 1.4 !important;
     }
 </style>
-<script>
+<script id=""vgca-editor-script"">
     function enableEditing() {
         document.body.contentEditable = 'true';
         document.designMode = 'on';
@@ -178,6 +178,8 @@ namespace VGCASignToolPro.Services
         sections.forEach(function(sec) {
             sec.contentEditable = 'true';
         });
+        window.__vgcaIsModified = false;
+        window.addEventListener('input', function() { window.__vgcaIsModified = true; });
     }
     window.addEventListener('DOMContentLoaded', enableEditing);
     window.addEventListener('load', enableEditing);
@@ -313,6 +315,216 @@ namespace VGCASignToolPro.Services
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
             }
+        }
+
+        /// <summary>
+        /// Lưu nội dung HTML đã chỉnh sửa trực tiếp từ giao diện vào tệp Word (.docx/.doc) và xuất sang PDF chuẩn vector in ấn.
+        /// </summary>
+        public Task<string> SaveEditedHtmlAndConvertToPdfAsync(
+            string htmlContent,
+            string originalWordFilePath,
+            string workingHtmlPath,
+            bool saveToOriginalWordFile,
+            string? outputPdfPath = null)
+        {
+            return Task.Run(() => SaveEditedHtmlAndConvertToPdf(
+                htmlContent, originalWordFilePath, workingHtmlPath, saveToOriginalWordFile, outputPdfPath));
+        }
+
+        public string SaveEditedHtmlAndConvertToPdf(
+            string htmlContent,
+            string originalWordFilePath,
+            string workingHtmlPath,
+            bool saveToOriginalWordFile,
+            string? outputPdfPath = null)
+        {
+            if (string.IsNullOrWhiteSpace(htmlContent))
+            {
+                throw new ArgumentException("Nội dung HTML không được để trống.", nameof(htmlContent));
+            }
+
+            if (string.IsNullOrWhiteSpace(originalWordFilePath))
+            {
+                throw new ArgumentException("Đường dẫn tệp Word không được để trống.", nameof(originalWordFilePath));
+            }
+
+            // Làm sạch nội dung HTML trước khi chuyển giao cho Microsoft Word
+            string cleanHtml = CleanHtmlForWordConversion(htmlContent);
+
+            // Ghi nội dung HTML đã làm sạch vào tệp tạm thời cùng thư mục với workingHtmlPath để bảo toàn đường dẫn ảnh (_files)
+            string targetHtmlDir = Path.GetDirectoryName(workingHtmlPath) ?? Path.GetTempPath();
+            string cleanHtmlPath = Path.Combine(targetHtmlDir, $"{Path.GetFileNameWithoutExtension(workingHtmlPath)}_clean.htm");
+            File.WriteAllText(cleanHtmlPath, cleanHtml, new UTF8Encoding(false));
+
+            if (string.IsNullOrWhiteSpace(outputPdfPath))
+            {
+                string dir = Path.GetDirectoryName(originalWordFilePath) ?? AppDomain.CurrentDomain.BaseDirectory;
+                string baseName = Path.GetFileNameWithoutExtension(originalWordFilePath);
+                outputPdfPath = Path.Combine(dir, $"{baseName}_converted.pdf");
+            }
+
+            string? targetPdfDir = Path.GetDirectoryName(outputPdfPath);
+            if (!string.IsNullOrEmpty(targetPdfDir) && !Directory.Exists(targetPdfDir))
+            {
+                Directory.CreateDirectory(targetPdfDir);
+            }
+
+            StatusChanged?.Invoke("Đang khởi tạo engine Microsoft Word (Late-Bound COM) để xuất văn bản đã sửa...");
+
+            Type? wordType = Type.GetTypeFromProgID("Word.Application");
+            if (wordType == null)
+            {
+                throw new InvalidOperationException("Không tìm thấy Microsoft Word trên hệ thống.");
+            }
+
+            dynamic? wordApp = null;
+            dynamic? wordDoc = null;
+
+            try
+            {
+                wordApp = Activator.CreateInstance(wordType);
+                if (wordApp == null)
+                {
+                    throw new InvalidOperationException("Không thể khởi động tiến trình Word.Application.");
+                }
+
+                wordApp.Visible = false;
+                wordApp.ScreenUpdating = false;
+
+                StatusChanged?.Invoke("Đang nạp dữ liệu văn bản đã chỉnh sửa vào engine Microsoft Word...");
+
+                // Mở file HTML với Encoding = 65001 (msoEncodingUTF8) để bảo toàn 100% tiếng Việt có dấu
+                wordDoc = wordApp.Documents.Open(
+                    FileName: cleanHtmlPath,
+                    ConfirmConversions: false,
+                    ReadOnly: false,
+                    AddToRecentFiles: false,
+                    PasswordDocument: Type.Missing,
+                    PasswordTemplate: Type.Missing,
+                    Revert: Type.Missing,
+                    WritePasswordDocument: Type.Missing,
+                    WritePasswordTemplate: Type.Missing,
+                    Format: Type.Missing,
+                    Encoding: 65001,
+                    Visible: false);
+
+                // Nếu người dùng chọn lưu vào tệp Word gốc trên máy tính
+                if (saveToOriginalWordFile)
+                {
+                    StatusChanged?.Invoke($"Đang lưu các thay đổi trực tiếp vào tệp Word: {Path.GetFileName(originalWordFilePath)}...");
+
+                    // Đảm bảo tệp không bị thuộc tính ReadOnly khóa
+                    if (File.Exists(originalWordFilePath))
+                    {
+                        FileInfo fi = new FileInfo(originalWordFilePath);
+                        if (fi.IsReadOnly)
+                        {
+                            fi.IsReadOnly = false;
+                        }
+                    }
+
+                    string ext = Path.GetExtension(originalWordFilePath).ToLowerInvariant();
+                    int saveFormat = ext.Equals(".doc", StringComparison.OrdinalIgnoreCase) ? 0 : 16; // 0 = wdFormatDocument, 16 = wdFormatDocumentDefault (.docx)
+
+                    try
+                    {
+                        wordDoc.SaveAs2(
+                            FileName: originalWordFilePath,
+                            FileFormat: saveFormat,
+                            AddToRecentFiles: false);
+                    }
+                    catch (COMException ex)
+                    {
+                        System.Diagnostics.Trace.TraceWarning($"Tệp Word gốc bị khóa bởi ứng dụng khác: {ex.Message}");
+                        string dir = Path.GetDirectoryName(originalWordFilePath) ?? AppDomain.CurrentDomain.BaseDirectory;
+                        string name = Path.GetFileNameWithoutExtension(originalWordFilePath);
+                        string backupPath = Path.Combine(dir, $"{name}_edited{ext}");
+                        wordDoc.SaveAs2(FileName: backupPath, FileFormat: saveFormat, AddToRecentFiles: false);
+                        StatusChanged?.Invoke($"Tệp Word gốc bị khóa bởi ứng dụng khác. Đã lưu bản sửa tại: {Path.GetFileName(backupPath)}");
+                    }
+
+                    StatusChanged?.Invoke($"Đã lưu thành công tệp Word: {Path.GetFileName(originalWordFilePath)}");
+                }
+
+                // Xuất văn bản sang PDF chuẩn vector in ấn Nghị định 30/2020/NĐ-CP
+                StatusChanged?.Invoke($"Đang xuất tài liệu sang PDF: {Path.GetFileName(outputPdfPath)}...");
+                wordDoc.ExportAsFixedFormat(
+                    OutputFileName: outputPdfPath,
+                    ExportFormat: 17, // wdExportFormatPDF
+                    OpenAfterExport: false,
+                    OptimizeFor: 0, // wdExportOptimizeForPrint
+                    Range: 0, // wdExportAllDocument
+                    From: 1,
+                    To: 1,
+                    Item: 0, // wdExportDocumentContent
+                    IncludeDocProps: true,
+                    KeepIRM: true,
+                    CreateBookmarks: 1,
+                    DocStructureTags: true,
+                    BitmapMissingFonts: true,
+                    UseISO19005_1: false);
+
+                StatusChanged?.Invoke($"Đã chuyển đổi hoàn tất sang PDF: {Path.GetFileName(outputPdfPath)}");
+                return outputPdfPath;
+            }
+            finally
+            {
+                if (wordDoc != null)
+                {
+                    try { wordDoc.Close(false); } catch { }
+                    try { Marshal.ReleaseComObject(wordDoc); } catch { }
+                    wordDoc = null;
+                }
+
+                if (wordApp != null)
+                {
+                    try { wordApp.Quit(false); } catch { }
+                    try { Marshal.ReleaseComObject(wordApp); } catch { }
+                    wordApp = null;
+                }
+
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                try
+                {
+                    if (File.Exists(cleanHtmlPath))
+                    {
+                        File.Delete(cleanHtmlPath);
+                    }
+                }
+                catch { }
+            }
+        }
+
+        private static string CleanHtmlForWordConversion(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+            {
+                return string.Empty;
+            }
+
+            // Loại bỏ tag style và script phục vụ soạn thảo trên WebView2
+            string cleaned = System.Text.RegularExpressions.Regex.Replace(
+                html,
+                @"<style id=""vgca-editor-style"">[\s\S]*?</style>",
+                "",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            cleaned = System.Text.RegularExpressions.Regex.Replace(
+                cleaned,
+                @"<script id=""vgca-editor-script"">[\s\S]*?</script>",
+                "",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            // Loại bỏ các thuộc tính contenteditable
+            cleaned = System.Text.RegularExpressions.Regex.Replace(
+                cleaned,
+                @"\s+contenteditable(=[""'][^""']*[""'])?",
+                "",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            return cleaned;
         }
     }
 }

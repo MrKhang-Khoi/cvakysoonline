@@ -1,9 +1,9 @@
 # BÁO CÁO THẨM ĐỊNH MÃ NGUỒN CODEX (DEEP LINE-BY-LINE v4.0)
 
-- **Thời gian**: 11:37:05 28/9/2026
+- **Thời gian**: 12:08:12 28/9/2026
 - **Trạng thái**: ✅ **[APPROVED] - ĐÃ PHÊ DUYỆT HOÀN TOÀN**
 - **Số lượng vi phạm**: 0 lỗi
-- **Tóm tắt**: Toàn bộ 32 lát cắt của 1 file đã được phê duyệt 100%.
+- **Tóm tắt**: Toàn bộ 34 lát cắt của 1 file đã được phê duyệt 100%.
 
 ---
 
@@ -14,153 +14,164 @@ Toàn bộ các file mã nguồn và lát cắt dòng code đã được thẩm 
 ### 📄 NGUYÊN VĂN PHẢN HỒI TỪ CODEX AUDITOR:
 ```text
 
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1 - 60 / Tổng 1919 dòng] ===
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1 - 60 / Tổng 1989 dòng] ===
 [APPROVED]
-(Kế thừa từ cache đã duyệt)
+CONTRACT: MainWindow.MainWindow | Khởi tạo service nội bộ, thiết lập giá trị mặc định chữ ký và gán event handler UI an toàn theo vòng đời Window.
 
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 61 - 120 / Tổng 1919 dòng] ===
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 61 - 120 / Tổng 1989 dòng] ===
 [APPROVED]
-(Kế thừa từ cache đã duyệt)
+CONTRACT: MainWindow_Loaded | Bọc try-catch toàn bộ tác vụ khởi tạo async void, chống crash UI thread, hiển thị thông báo lỗi.
+CONTRACT: InitializePreviewEngineAsync | Khởi tạo WebView2 dùng thư mục cache LocalAppData tránh lỗi phân quyền, dò tìm fallback thư mục wwwroot tối đa 4 cấp cha, fail-fast ném lỗi rõ ràng khi thiếu control hoặc asset.
 
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 121 - 180 / Tổng 1919 dòng] ===
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 121 - 180 / Tổng 1989 dòng] ===
 [APPROVED]
-(Kế thừa từ cache đã duyệt)
+CONTRACT: CoreWebView2_WebMessageReceived | Parse an toàn JSON message từ WebView2 qua JsonDocument, validate chặt chẽ schema/type tọa độ tem ký, cập nhật state và đồng bộ UI an toàn.
 
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 181 - 240 / Tổng 1919 dòng] ===
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 181 - 240 / Tổng 1989 dòng] ===
 [APPROVED]
-(Kế thừa từ cache đã duyệt)
+CONTRACT: MainWindow.WebMessageHandling & UpdateStatus & InitializeVgcaAuthRoster | Bóc tách tin nhắn WebView2 an toàn qua JsonElement.TryGetProperty, cập nhật UI qua Dispatcher an toàn luồng, kiểm tra danh bạ giáo viên null-safe trước khi xử lý.
 
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 241 - 300 / Tổng 1919 dòng] ===
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 241 - 300 / Tổng 1989 dòng] ===
 [APPROVED]
-(Kế thừa từ cache đã duyệt)
+CONTRACT: GenerateAndDisplayVgcaQr | Sinh mã QR xác thực VGCA, kiểm tra null ảnh bitmap, bắt lỗi fail-safe qua UpdateStatus.
+CONTRACT: OnVgcaLoginStateChanged | Đồng bộ UI qua Dispatcher.Invoke, kiểm tra null teacher an toàn, fallback chuỗi rỗng và hiển thị thông tin chứng thư chính xác.
 
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 301 - 360 / Tổng 1919 dòng] ===
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 301 - 360 / Tổng 1989 dòng] ===
 [APPROVED]
-(Kế thừa từ cache đã duyệt)
+CONTRACT: CmbRosterQuickSelect_SelectionChanged | Đồng bộ UI chứng thư theo thông tin giáo viên, pattern matching an toàn null, chuyển tab fail-safe khi chưa đăng nhập.
 
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 361 - 420 / Tổng 1919 dòng] ===
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 361 - 420 / Tổng 1989 dòng] ===
 [APPROVED]
+CONTRACT: BtnVgcaLogin_Click | Xác thực mật khẩu VGCA với fallback chứng thư số phần cứng, validate input fail-closed, null-safe trên kết quả Teacher model.
+CONTRACT: BtnRefreshQr_Click | Khởi tạo event handler làm mới QR (ranh giới cắt dòng).
 
-CONTRACT: BtnVgcaLogin_Click | Validate input CCCD/password, authenticate via VGCA service, fallback check hardware cert with private key an toàn, unlock account khi CCCD khớp, cập nhật UI state đầy đủ.
-CONTRACT: BtnRefreshQr_Click | Trigger tạo và render lại VGCA QR code.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 421 - 480 / Tổng 1919 dòng] ===
-[APPROVED]
-
-CONTRACT: BtnApproveQr_Click | Validate CCCD rỗng, check null `_vgcaAuth`, kiểm tra `result.Success` và null-safe `Teacher` properties, hiển thị lỗi fail-closed.
-CONTRACT: BtnVgcaLogout_Click | Xác nhận qua MessageBox, check null `_vgcaAuth`, gọi logout và reset QR code an toàn.
-CONTRACT: BtnGoToLoginTab_Click | Khởi tạo handler chuyển tab, tuân thủ slicing continuity invariant.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 481 - 540 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: LoadCertificatesAndVerifyVGCALogin | Tải chứng thư số khóa riêng, cập nhật ItemsSource ComboBox, map thuộc tính UI có null-coalescing, xác thực VGCA fail-closed theo trạng thái chứng thư.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 541 - 600 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: MainWindow_Activated | Kiểm tra `_vgcaAuth.IsLoggedIn` trước khi quét lại chứng thư, bắt và ghi log ngoại lệ, tránh crash UI thread khi kích hoạt cửa sổ.
-CONTRACT: BtnSyncVgcaCertificate_Click | Đồng bộ chứng thư VGCA, kiểm tra an toàn `_currentActiveCert` null/valid trước khi hiển thị chi tiết, cập nhật UI trạng thái chính xác.
-CONTRACT: BtnUnlockAccount_Click | Validate đầu vào CCCD tránh chuỗi rỗng trước khi xử lý mở khóa tài khoản.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 601 - 660 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: BtnRefreshCertificates_Click, BtnLaunchVgcaManager_Click, CmbCertificates_SelectionChanged | Xử lý sự kiện UI đồng bộ chứng thư và mở khóa tài khoản an toàn. Pattern matching `is CertificateModel` chống null dereference. Không nuốt lỗi, logic UI hợp lệ.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 661 - 720 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: LoadProfiles | Nạp danh sách profile vào ItemsSource an toàn, bắt ngoại lệ toàn diện, cập nhật Trace và Status khi lỗi.
-CONTRACT: CmbProfiles_SelectionChanged | Kiểm tra kiểu an toàn qua pattern matching, validate đường dẫn file trước khi gán ảnh, tự động fallback và dọn dẹp state khi file không tồn tại.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 721 - 780 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: SetAndPersistStampImage | Nạp BitmapImage giải phóng file lock qua Freeze/BitmapCacheOption.OnLoad, bắt ngoại lệ decode ảnh, đồng bộ UI và persist profile an toàn.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 781 - 840 / Tổng 1919 dòng] ===
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 421 - 480 / Tổng 1989 dòng] ===
 [APPROVED]
 
-CONTRACT: ClearStampImage, BtnSelectStampImage_Click, BtnTab2ChangeStamp_Click | Dọn dẹp trạng thái UI con dấu an toàn, cập nhật profile và gọi hộp thoại chọn tệp ảnh chuẩn xác. Không leak tài nguyên, bắt và ghi log ngoại lệ đầy đủ.
+CONTRACT: BtnApproveQr_Click | Validate input `TxtVgcaCccd`, kiểm tra null `_vgcaAuth`, xử lý kết quả login với fallback null-coalescing cho UI.
+CONTRACT: BtnVgcaLogout_Click | Xác nhận người dùng qua `MessageBox`, kiểm tra null `_vgcaAuth`, reset trạng thái xác thực và tạo lại mã QR.
 
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 841 - 900 / Tổng 1919 dòng] ===
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 481 - 540 / Tổng 1989 dòng] ===
+[APPROVED]
+CONTRACT: LoadCertificatesAndVerifyVGCALogin | Tải danh sách chứng thư có private key, binding UI ComboBox, tự động xác thực phần cứng VGCA và xử lý trạng thái đăng nhập an toàn null/fail-closed.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 541 - 600 / Tổng 1989 dòng] ===
 [APPROVED]
 
-CONTRACT: BtnClearStampImage_Click | Gọi hàm xóa ảnh dấu, không logic thừa.
-CONTRACT: BtnSaveProfile_Click | Validate kích thước, map enum chế độ hiển thị, kiểm tra file ảnh tồn tại qua File.Exists, try-catch bắt lỗi lưu profile và log Trace.
-CONTRACT: CmbDisplayMode_SelectionChanged | Map SelectionIndex sang giá trị Mode trên profile được chọn, null-safe qua pattern matching.
+CONTRACT: MainWindow_Activated | Kích hoạt cửa sổ tự động quét lại chứng thư VGCA khi chưa đăng nhập, bắt ngoại lệ an toàn qua TraceWarning.
+CONTRACT: BtnSyncVgcaCertificate_Click | Kích hoạt đồng bộ chứng thư số, kiểm tra null và cờ IsVGCACertificate trước khi hiển thị thông tin UI, xử lý trạng thái lỗi fail-closed.
+CONTRACT: BtnUnlockAccount_Click | Khởi tạo trích xuất dữ liệu CCCD từ ô nhập liệu giao diện.
 
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 901 - 960 / Tổng 1919 dòng] ===
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 601 - 660 / Tổng 1989 dòng] ===
 [APPROVED]
-CONTRACT: BtnGoToSignWorkspace_Click | Chặn chuyển tab khi chưa xác thực VGCA, chuyển tab an toàn.
-CONTRACT: BtnSelectWord_Click | Mở hộp thoại chọn tệp Word, reset trạng thái workspace, chuyển đổi Word sang HTML bất đồng bộ và nạp URI an toàn vào CoreWebView2.
+CONTRACT: BtnUnlockAccount / BtnRefreshCertificates_Click / BtnLaunchVgcaManager_Click / CmbCertificates_SelectionChanged | Kiểm tra CCCD đầu vào, gọi service xác thực và mở ứng dụng CSP an toàn, binding dữ liệu CertificateModel lên UI qua pattern matching tránh NullReferenceException.
 
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 961 - 1020 / Tổng 1919 dòng] ===
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 661 - 720 / Tổng 1989 dòng] ===
 [APPROVED]
+CONTRACT: LoadProfiles | Nạp danh sách profile chữ ký vào CmbProfiles, tự động chọn index 0 nếu có dữ liệu, bắt ngoại lệ UI an toàn.
+CONTRACT: CmbProfiles_SelectionChanged | Kiểm tra type-safe qua pattern matching `is SignatureProfile`, đồng bộ kích thước/chế độ hiển thị và nạp ảnh con dấu có fallback an toàn.
 
-CONTRACT: BtnSelectExcel_Click | Mở file Excel an toàn, reset trạng thái UI, đọc async base64 và kiểm tra khởi tạo WebView2 đúng chuẩn.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1021 - 1080 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: LoadExcelPreview & BtnExcelLandscape_Click | Nạp preview Excel vào WebView2 an toàn với JSON serialization chống script injection; xử lý timeout navigation và giải phóng event handler trong finally; cập nhật hướng in landscape có kiểm tra null CoreWebView2.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1081 - 1140 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: BtnExcelPortrait_Click | Cập nhật hướng trang bảng tính an toàn qua WebView2 script tĩnh, kiểm tra null trước khi gọi.
-CONTRACT: BtnSelectPdf_Click | Kiểm tra file tồn tại, cập nhật trạng thái UI, nạp PDF bất đồng bộ kèm khối try-catch xử lý lỗi fail-closed.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1141 - 1200 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: ConvertExcelToPdfAsync, ConvertWordToPdfAsync | Validate tệp đầu vào và trạng thái WebView2, cấu hình tham số trang in, xuất PDF vector qua PrintToPdfAsync và kiểm tra tệp kết quả.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1201 - 1260 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: ConvertWordToPdfAsync & ExcelToPdf continuation | Validate null và file tồn tại trước khi chuyển đổi, cập nhật trạng thái UI an toàn, ẩn loading indicator trong finally, quản lý async/await đầy đủ.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1261 - 1320 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: DisplayPdfInInteractiveViewerAsync | Kiểm tra khởi tạo WebView2, giới hạn kích thước file <= 30MB, đọc Base64 bất đồng bộ và kiểm tra an toàn vòng đời UI control sau await.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1321 - 1380 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: PdfViewerNavigation | Điều hướng WebView2 an toàn kèm timeout 10s, giải phóng event handler đầy đủ, kiểm tra JavaScript engine sẵn sàng trước khi nạp dữ liệu và xử lý fail-closed qua RollbackViewerUiState.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1381 - 1440 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: RollbackViewerUiState | Reset UI state, set status error fail-closed khi nạp PDF hỏng hoặc WebView2 bị hủy.
-CONTRACT: BtnInsertSignatureStamp_Click | Validate file PDF hiện tại, resolve stamp image path qua UI/profile/fallback an toàn trước khi chèn.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1441 - 1500 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: InsertStampToViewer | Kiểm tra stampPath và file tồn tại, chuyển Base64 Data URL an toàn injection, parse kích thước fallback chặt chẽ, kiểm tra null CoreWebView2 trước khi gọi ExecuteScriptAsync.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1501 - 1560 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: BtnSignDocument_Click | Kiểm tra file PDF và chứng thư VGCA, đọc tọa độ trang ký và xác thực đường dẫn ảnh con dấu trước khi ký.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1561 - 1620 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: PrepareSigningRequest | Xử lý fallback stamp mặc định, ánh xạ display mode cho profile, probe quyền ghi thư mục xuất file an toàn và khởi tạo SigningRequest.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1621 - 1680 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: MainWindow.SigningWorkflow & BtnSaveSignedCopy_Click | Bất đồng bộ gọi ký PDF an toàn, reset trạng thái UI qua finally, validate null và file tồn tại trước khi lưu bản sao.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1681 - 1740 / Tổng 1919 dòng] ===
-[APPROVED]
-CONTRACT: BtnSaveSignedCopy_Click | Lưu bản sao PDF qua SaveFileDialog, bắt ngoại lệ IO, báo UI chuẩn.
-CONTRACT: BtnOpenSignedPdfExternal_Click | Kiểm tra file tồn tại, mở PDF bằng ứng dụng mặc định qua ProcessStartInfo UseShellExecute, bắt ngoại lệ UI.
-CONTRACT: BtnOpenSignedFolder_Click | Kiểm tra file tồn tại, mở Windows Explorer chọn file đã ký an toàn.
-
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1741 - 1800 / Tổng 1919 dòng] ===
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 721 - 780 / Tổng 1989 dòng] ===
 [APPROVED]
 
-CONTRACT: BtnGoToUploadWeb_Click | Chuyển TabControl sang index 2, không side-effect.
-CONTRACT: BtnFormatBold_Click / BtnFormatItalic_Click / BtnFormatUnderline_Click / BtnAlignLeft_Click / BtnAlignCenter_Click / BtnAlignRight_Click / BtnAlignJustify_Click | Dùng null-conditional `?.` an toàn với CoreWebView2, thực thi JS static qua `ExecuteScriptAsync`, không rủi ro injection, không lỗi null ref.
-CONTRACT: BtnSelectSignedPdfForUpload_Click | Khởi tạo `OpenFileDialog` chọn tệp PDF, tiếp tục cấu hình ở lát cắt kế tiếp.
+CONTRACT: SetAndPersistStampImage | Nạp ảnh con dấu an toàn với `BitmapCacheOption.OnLoad` và `Freeze()`, bắt ngoại lệ giải mã, cập nhật UI và lưu đường dẫn vào profile.
 
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1801 - 1860 / Tổng 1919 dòng] ===
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 781 - 840 / Tổng 1989 dòng] ===
 [APPROVED]
-CONTRACT: BtnExecuteUpload_Click | Validate input file và URL máy chủ, khởi tạo UploadRequest, gọi upload bất đồng bộ qua _webUploader và render trạng thái phản hồi HTTP lên UI an toàn.
 
-=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1861 - 1919 / Tổng 1919 dòng] ===
+CONTRACT: ClearStampImage | Reset sạch UI hiển thị con dấu, gán profile.ImagePath = null, lưu cấu hình an toàn qua _profileManager.SaveProfiles kèm try-catch bắt lỗi.
+CONTRACT: BtnSelectStampImage_Click | Mở OpenFileDialog lọc định dạng ảnh chuẩn, kích hoạt SetAndPersistStampImage khi ShowDialog thành công.
+CONTRACT: BtnTab2ChangeStamp_Click | Chuyển tiếp sự kiện chọn ảnh sang BtnSelectStampImage_Click, tái sử dụng logic không trùng lặp.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 841 - 900 / Tổng 1989 dòng] ===
 [APPROVED]
-CONTRACT: BtnVerifyPdf_Click | Mở OpenFileDialog chọn PDF, gọi _pdfVerifier.VerifyPdf phân tích chữ ký, hiển thị kết quả lên ListSignatures và thông báo UI.
+CONTRACT: MainWindow UI Profile Handlers | BtnClearStampImage_Click, BtnSaveProfile_Click, CmbDisplayMode_SelectionChanged validate dữ liệu UI an toàn, map mode chuẩn xác, bắt ngoại lệ try-catch khi lưu profile qua ProfileManager.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 901 - 960 / Tổng 1989 dòng] ===
+[APPROVED]
+
+CONTRACT: BtnGoToSignWorkspace_Click | Kiểm tra trạng thái đăng nhập `_vgcaAuth.IsLoggedIn` trước khi chuyển tab làm việc; chặn điều hướng nếu chưa xác thực.
+CONTRACT: BtnSelectWord_Click | Mở hộp thoại chọn tệp Word, reset trạng thái tài liệu cũ, cập nhật trạng thái UI và gọi bất đồng bộ chuyển đổi sang HTML với kiểm tra null an toàn trên WebView2.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 961 - 1020 / Tổng 1989 dòng] ===
+[APPROVED]
+CONTRACT: BtnSelectExcel_Click | Reset trạng thái tài liệu cũ, đọc file Excel bất đồng bộ, kiểm tra an toàn WebView2 và khởi tạo nạp viewer HTML đúng chuẩn.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1021 - 1080 / Tổng 1989 dòng] ===
+[APPROVED]
+
+CONTRACT: BtnExcelLandscape_Click & Excel WebView2 Loader | Điều hướng an toàn qua TaskCompletionSource kèm timeout 4s, tự hủy đăng ký sự kiện trong finally. DOM polling tối đa 3s. Tham số JS serialize qua JsonSerializer chống injection. Xử lý ngoại lệ đầy đủ, không rò rỉ trạng thái.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1081 - 1140 / Tổng 1989 dòng] ===
+[APPROVED]
+CONTRACT: BtnExcelPortrait_Click, BtnSelectPdf_Click | Kiểm tra null CoreWebView2 an toàn, validate tệp PDF tồn tại trước khi nạp, reset state và bắt lỗi UI fail-closed khi nạp PDF thất bại.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1141 - 1200 / Tổng 1989 dòng] ===
+[APPROVED]
+CONTRACT: BtnExecuteConvertDocument_Click | Điều hướng convert theo loại file Word/Excel hiện hành, chặn click khi thiếu file nguồn.
+CONTRACT: ConvertExcelToPdfAsync | Kiểm tra file nguồn và CoreWebView2, áp cấu hình printSettings A4 vector, xuất PDF qua WebView2 fail-closed khi in thất bại.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1201 - 1260 / Tổng 1989 dòng] ===
+[APPROVED]
+CONTRACT: ConvertExcelToPdfAsync (phần cuối) | Đồng bộ trạng thái UI, tải tệp PDF vào viewer, bắt ngoại lệ có ghi log/thông báo người dùng và tắt loading bar ở finally.
+CONTRACT: ConvertWordToPdfAsync (phần đầu) | Kiểm tra null converter, kiểm tra tồn tại tệp Word gốc, mở hộp thoại xác nhận lưu thay đổi trước khi chuyển đổi.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1261 - 1320 / Tổng 1989 dòng] ===
+[APPROVED]
+CONTRACT: ConvertToPdfAndReadySign | Trích xuất DOM đã chỉnh sửa từ WebView2 qua ExecuteScriptAsync, deserialize an toàn null, chuyển đổi Word sang PDF và nạp PDF viewer đúng quy trình async.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1321 - 1380 / Tổng 1989 dòng] ===
+[APPROVED]
+CONTRACT: DisplayPdfInInteractiveViewerAsync | Validate kích thước file <= 30MB, đọc bất đồng bộ File.ReadAllBytesAsync, kiểm tra null-safe WebView2 trước và sau khi đọc file.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1381 - 1440 / Tổng 1989 dòng] ===
+[APPROVED]
+CONTRACT: PdfPreviewControl Navigation & Script Readiness | Quản lý vòng đời điều hướng WebView2 an toàn bất đồng bộ, xử lý timeout và hủy đăng ký event handler chống rò rỉ bộ nhớ.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1441 - 1500 / Tổng 1989 dòng] ===
+[APPROVED]
+CONTRACT: RollbackViewerUiState | Reset UI preview placeholder, disable stamp insertion, cập nhật status text fail-closed khi nạp PDF WebView2 lỗi.
+CONTRACT: BtnInsertSignatureStamp_Click | Validate tệp PDF đích tồn tại, chặn thao tác và cảnh báo người dùng chuyển đổi tệp Word/Excel trước khi đóng dấu.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1501 - 1560 / Tổng 1989 dòng] ===
+[APPROVED]
+CONTRACT: PrepareStampDataUrl | Validate stampPath (profile -> desktop fallback -> OpenFileDialog), đọc file async sang Data URL base64, parse TxtDimensions phòng thủ qua TryParse và Math.Max. Kiểm tra null WebView2 trước khi tương tác.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1561 - 1620 / Tổng 1989 dòng] ===
+[APPROVED]
+CONTRACT: BtnSignDocument_Click | Kiểm tra tệp PDF tồn tại, xác thực chứng thư số hoạt động, phân giải tọa độ con dấu tương tác và fallback UI an toàn qua TryParse.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1621 - 1680 / Tổng 1989 dòng] ===
+[APPROVED]
+
+CONTRACT: PrepareSigningContext | Xác định stampPath từ text/profile/desktop fallback, kiểm tra quyền ghi thư mục xuất file (fallback về Desktop khi ghi thất bại), thiết lập outputPath và khởi tạo SigningRequest.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1681 - 1740 / Tổng 1989 dòng] ===
+[APPROVED]
+
+CONTRACT: BtnSignCurrentDocument_Click / DisplayPdfInInteractiveViewerAsync | Khởi tạo request ký số PAdES LTV, khóa nút UI chống race condition, await SignPdfAsync và DisplayPdfInInteractiveViewerAsync an toàn, null-check teacher context, bắt và hiển thị lỗi đầy đủ qua UI/MessageBox.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1741 - 1800 / Tổng 1989 dòng] ===
+[APPROVED]
+CONTRACT: BtnSaveSignedCopy_Click, BtnOpenSignedPdfExternal_Click, BtnOpenSignedFolder_Click | Validate null/tồn tại file qua _lastSignedPdfPath trước khi copy/mở process; bắt ngoại lệ I/O và Process đầy đủ, không nuốt lỗi.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1801 - 1860 / Tổng 1989 dòng] ===
+[APPROVED]
+CONTRACT: BtnGoToUploadWeb_Click, WebView2 formatting handlers | Chuyển tab UI an toàn. Lệnh định dạng WebView2 dùng null-conditional check, chuỗi lệnh cố định an toàn, bắt ngoại lệ mở explorer đầy đủ.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1861 - 1920 / Tổng 1989 dòng] ===
+[APPROVED]
+
+CONTRACT: BtnSelectSignedPdfForUpload_Click | Mở OpenFileDialog chọn PDF, gán path và doc title an toàn.
+CONTRACT: BtnExecuteUpload_Click | Validate rỗng và tồn tại file, kiểm tra protocol HTTP/HTTPS, đóng gói UploadRequest, disable button chống spam click, await upload bất đồng bộ.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1921 - 1980 / Tổng 1989 dòng] ===
+[APPROVED]
+CONTRACT: UploadResponseHandler | Xử lý phản hồi HTTP, bắt ngoại lệ kết nối, khôi phục `BtnExecuteUpload.IsEnabled` trong `finally`.
+CONTRACT: BtnVerifyPdf_Click | Mở OpenFileDialog lọc PDF, gọi `_pdfVerifier.VerifyPdf(pdfPath)` phân tích chữ ký, cập nhật giao diện `ListSignatures.ItemsSource` và thông báo trạng thái.
+
+=== LÁT CẮT: MainWindow.xaml.cs [Dòng 1981 - 1989 / Tổng 1989 dòng] ===
+[APPROVED]
+CONTRACT: MainWindow End-Block | Hiển thị thông báo UI khi tài liệu không có chữ ký số. Đóng đầy đủ phạm vi khối lệnh, kết thúc class và namespace chuẩn xác.
 
 ```

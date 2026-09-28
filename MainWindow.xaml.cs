@@ -29,6 +29,7 @@ namespace VGCASignToolPro
         private CertificateModel? _currentActiveCert;
 
         private string? _originalWordFilePath;
+        private string? _currentEditingWordHtmlPath;
         private string? _originalExcelFilePath;
         private string _currentExcelOrientation = "landscape";
         private string? _currentWorkingPdfPath;
@@ -932,6 +933,7 @@ namespace VGCASignToolPro
             {
                 string wordPath = dialog.FileName;
                 _originalWordFilePath = wordPath;
+                _currentEditingWordHtmlPath = null;
                 _originalExcelFilePath = null;
                 _currentWorkingPdfPath = null;
                 BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
@@ -951,6 +953,7 @@ namespace VGCASignToolPro
 
                     // Chuyển sang HTML có nhúng định dạng A4 và kích hoạt chế độ chỉnh sửa trực tiếp (contentEditable)
                     string htmlPath = await _wordConverter.ConvertWordToEditableHtmlAsync(wordPath);
+                    _currentEditingWordHtmlPath = htmlPath;
 
                     if (_isWebViewInitialized && PdfPreviewControl?.CoreWebView2 != null)
                     {
@@ -966,6 +969,7 @@ namespace VGCASignToolPro
                 {
                     TxtCurrentFileStatus.Text = "Nạp tài liệu thất bại.";
                     _originalWordFilePath = null;
+                    _currentEditingWordHtmlPath = null;
                     System.Diagnostics.Trace.TraceError($"Lỗi nạp tài liệu Word: {ex}");
                     MessageBox.Show($"Không thể hiển thị tài liệu Word:\n{ex.Message}", "Lỗi Nạp Tài Liệu", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
@@ -985,6 +989,7 @@ namespace VGCASignToolPro
                 string excelPath = dialog.FileName;
                 _originalExcelFilePath = excelPath;
                 _originalWordFilePath = null;
+                _currentEditingWordHtmlPath = null;
                 _currentWorkingPdfPath = null;
                 BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
 
@@ -1107,6 +1112,7 @@ namespace VGCASignToolPro
                 }
 
                 _originalWordFilePath = null;
+                _currentEditingWordHtmlPath = null;
                 _originalExcelFilePath = null;
                 _currentWorkingPdfPath = pdfPath;
                 BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
@@ -1239,15 +1245,72 @@ namespace VGCASignToolPro
                 return;
             }
 
+            // HỘP THOẠI XÁC NHẬN LƯU THAY ĐỔI VÀO TỆP WORD GỐC TRÊN MÁY TÍNH
+            MessageBoxResult userChoice = MessageBox.Show(
+                "Bạn có muốn lưu các nội dung đã chỉnh sửa vào tệp Word gốc trên máy tính không?\n\n" +
+                $"• Tệp Word: {Path.GetFileName(_originalWordFilePath)}\n\n" +
+                "➡ Chọn [Yes / Có]: Lưu cập nhật trực tiếp vào tệp Word trên máy và xuất sang PDF.\n" +
+                "➡ Chọn [No / Không]: Không lưu vào tệp Word gốc, chỉ xuất các nội dung đã chỉnh sửa sang PDF.\n" +
+                "➡ Chọn [Cancel / Hủy]: Dừng lại để tiếp tục chỉnh sửa văn bản.",
+                "Lưu Thay Đổi Văn Bản Word",
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Question);
+
+            if (userChoice == MessageBoxResult.Cancel)
+            {
+                // Người dùng chọn Hủy: giữ nguyên giao diện để tiếp tục chỉnh sửa
+                return;
+            }
+
+            bool saveToOriginal = (userChoice == MessageBoxResult.Yes);
+
             BtnConvertToPdfAndReadySign.IsEnabled = false;
             PrgConvertLoading.Visibility = Visibility.Visible;
-            TxtCurrentFileStatus.Text = "Đang chuyển đổi tài liệu sang chuẩn PDF Nghị định 30/2020/NĐ-CP...";
+            TxtCurrentFileStatus.Text = "Đang trích xuất nội dung văn bản và xuất sang PDF chuẩn Nghị định 30/2020/NĐ-CP...";
             UpdateStatus("Bắt đầu chuyển đổi Word sang PDF...");
 
             try
             {
-                string pdfPath = await _wordConverter.ConvertWordToPdfAsync(_originalWordFilePath);
+                string pdfPath;
+
+                // Nếu đang ở chế độ xem và chỉnh sửa trực tiếp trên WebView2
+                if (_isWebViewInitialized && PdfPreviewControl?.CoreWebView2 != null && !string.IsNullOrWhiteSpace(_currentEditingWordHtmlPath))
+                {
+                    // Trích xuất toàn bộ DOM HTML mới nhất từ WebView2 sau khi người dùng đã chỉnh sửa
+                    string extractJs = @"
+                    (() => {
+                        try {
+                            let clone = document.documentElement.cloneNode(true);
+                            let s = clone.querySelector('#vgca-editor-style');
+                            if (s) s.remove();
+                            let sc = clone.querySelector('#vgca-editor-script');
+                            if (sc) sc.remove();
+                            clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+                            return clone.outerHTML;
+                        } catch (err) {
+                            return document.documentElement.outerHTML;
+                        }
+                    })()";
+
+                    string rawJsonHtml = await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync(extractJs);
+                    string editedHtml = System.Text.Json.JsonSerializer.Deserialize<string>(rawJsonHtml) ?? "";
+
+                    pdfPath = await _wordConverter.SaveEditedHtmlAndConvertToPdfAsync(
+                        editedHtml,
+                        _originalWordFilePath,
+                        _currentEditingWordHtmlPath,
+                        saveToOriginal);
+                }
+                else
+                {
+                    pdfPath = await _wordConverter.ConvertWordToPdfAsync(_originalWordFilePath);
+                }
+
+                string originalWordFileName = Path.GetFileName(_originalWordFilePath);
                 _currentWorkingPdfPath = pdfPath;
+                _originalWordFilePath = null;
+                _currentEditingWordHtmlPath = null;
+                PnlEditingToolbar.Visibility = Visibility.Collapsed;
 
                 // Nạp file PDF chuẩn vào WebView2 bằng Engine tương tác
                 await DisplayPdfInInteractiveViewerAsync(pdfPath);
@@ -1259,8 +1322,15 @@ namespace VGCASignToolPro
                 BtnInsertSignatureStamp.IsEnabled = true;
                 UpdateStatus($"Đã xuất tệp PDF hoàn chỉnh: {Path.GetFileName(pdfPath)}");
 
+                string saveNotice = saveToOriginal
+                    ? $"• Tệp Word gốc trên máy tính ({originalWordFileName}) đã được cập nhật lưu thành công.\n"
+                    : $"• Tệp Word gốc trên máy tính ({originalWordFileName}) được giữ nguyên (không lưu thay đổi).\n";
+
                 MessageBox.Show(
-                    $"Chuyển đổi sang PDF thành công!\n\nTệp tin đã lưu tại:\n{pdfPath}\n\nNội dung văn bản chuẩn đã được hiển thị trên màn hình. Bạn có thể bấm '📍 Chèn Chữ Ký' để kéo thả con dấu đến đúng vị trí cần ký, sau đó bấm '✍ TIẾN HÀNH KÝ SỐ'.",
+                    $"Chuyển đổi sang PDF thành công!\n\n" +
+                    saveNotice +
+                    $"• Tệp PDF chuẩn đã lưu tại:\n{pdfPath}\n\n" +
+                    "Nội dung văn bản chuẩn (bao gồm toàn bộ nội dung đã chỉnh sửa) đã được hiển thị trên màn hình. Bạn có thể bấm '📍 Chèn Chữ Ký' để kéo thả con dấu đến đúng vị trí cần ký, sau đó bấm '✍ TIẾN HÀNH KÝ SỐ'.",
                     "Chuyển Đổi Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
