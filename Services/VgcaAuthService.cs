@@ -5,9 +5,11 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -304,6 +306,206 @@ namespace VGCASignToolPro.Services
         public List<VgcaTeacherModel> GetTeacherList()
         {
             return _roster.Values.OrderBy(t => t.FullName).ToList();
+        }
+
+        /// <summary>
+        /// Ghi danh mục giáo viên xuống tệp cục bộ kèm con dấu niêm phong bảo mật HMAC-SHA256
+        /// </summary>
+        public void SaveRosterWithHmacSeal(string json)
+        {
+            try
+            {
+                File.WriteAllText(_rosterFilePath, json, Encoding.UTF8);
+                string hmacPath = _rosterFilePath + ".hmac";
+                byte[] hmacKey = GetRosterHmacKey();
+                try
+                {
+                    using var hmac = new HMACSHA256(hmacKey);
+                    byte[] computedHmacBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(json));
+                    File.WriteAllText(hmacPath, Convert.ToBase64String(computedHmacBytes), Encoding.UTF8);
+                }
+                finally
+                {
+                    CryptographicOperations.ZeroMemory(hmacKey);
+                }
+                _rosterLoadFailed = false;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError($"Lỗi lưu danh sách giáo viên kèm HMAC: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// Cập nhật danh sách giáo viên từ chuỗi JSON (Hỗ trợ cấu trúc school_roster hoặc mảng giáo viên)
+        /// </summary>
+        public (bool Success, string Message, int Count) UpdateRosterFromJson(string json, bool saveToDisk = true)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(json))
+                {
+                    return (false, "Dữ liệu JSON rỗng.", _roster.Count);
+                }
+
+                using var stringReader = new StringReader(json);
+                using var jsonReader = new JsonTextReader(stringReader) { MaxDepth = 10 };
+                JToken root = JToken.Load(jsonReader);
+
+                JArray? list = null;
+                if (root is JObject jObj)
+                {
+                    list = jObj["roster"] as JArray ?? jObj["teachers"] as JArray;
+                }
+                else if (root is JArray jArr)
+                {
+                    list = jArr;
+                }
+
+                if (list == null || list.Count == 0)
+                {
+                    return (false, "Không tìm thấy danh sách giáo viên hợp lệ trong tệp JSON.", _roster.Count);
+                }
+
+                int updatedCount = 0;
+                foreach (JToken item in list)
+                {
+                    string cccd = item["cccd"]?.ToString()?.Trim() ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(cccd)) continue;
+
+                    string fullName = item["fullName"]?.ToString()?.Trim() ?? string.Empty;
+                    string title = item["title"]?.ToString()?.Trim() ?? "Giáo viên";
+                    string dept = item["department"]?.ToString()?.Trim() ?? string.Empty;
+                    string phone = item["phone"]?.ToString()?.Trim() ?? string.Empty;
+                    string email = item["email"]?.ToString()?.Trim() ?? string.Empty;
+                    string org = item["organization"]?.ToString()?.Trim() ?? string.Empty;
+
+                    if (_roster.TryGetValue(cccd, out var existing))
+                    {
+                        if (!string.IsNullOrEmpty(fullName)) existing.FullName = fullName;
+                        if (!string.IsNullOrEmpty(title)) existing.Title = title;
+                        if (!string.IsNullOrEmpty(dept)) existing.Department = dept;
+                        if (!string.IsNullOrEmpty(phone)) existing.Phone = phone;
+                        if (!string.IsNullOrEmpty(email)) existing.Email = email;
+                        if (!string.IsNullOrEmpty(org)) existing.Organization = org;
+                    }
+                    else
+                    {
+                        var newTeacher = new VgcaTeacherModel
+                        {
+                            Cccd = cccd,
+                            FullName = fullName,
+                            Title = title,
+                            Department = dept,
+                            Phone = phone,
+                            Email = email,
+                            Organization = !string.IsNullOrEmpty(org) ? org : "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+                            Status = "ACTIVE",
+                            RemainingCounter = VgcaTeacherModel.MaxAttempts,
+                            FailedAttempts = 0
+                        };
+                        _roster[cccd] = newTeacher;
+                    }
+                    updatedCount++;
+                }
+
+                if (saveToDisk && updatedCount > 0)
+                {
+                    // Đóng gói lại thành cấu trúc chuẩn
+                    var exportObj = new JObject
+                    {
+                        ["schoolName"] = root is JObject ro && ro["schoolName"] != null ? ro["schoolName"] : "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+                        ["description"] = "Danh mục phân quyền tài khoản Giáo viên toàn trường kết nối ký số Ban Cơ Yếu Chính Phủ",
+                        ["updatedAt"] = DateTime.UtcNow.ToString("o"),
+                        ["roster"] = JArray.FromObject(_roster.Values.Select(t => new
+                        {
+                            cccd = t.Cccd,
+                            fullName = t.FullName,
+                            title = t.Title,
+                            phone = t.Phone,
+                            department = t.Department,
+                            organization = t.Organization,
+                            email = t.Email,
+                            status = t.Status
+                        }))
+                    };
+
+                    SaveRosterWithHmacSeal(exportObj.ToString(Formatting.Indented));
+                }
+
+                _rosterLoadFailed = false;
+                return (true, $"Đã cập nhật đồng bộ {updatedCount} giáo viên thành công.", _roster.Count);
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi định dạng JSON: {ex.Message}", _roster.Count);
+            }
+        }
+
+        /// <summary>
+        /// Đồng bộ danh sách giáo viên từ Đám mây (Firebase RTDB hoặc GitHub Raw URL theo cấu hình)
+        /// </summary>
+        public async Task<(bool Success, string Message, int Count)> SyncRosterFromCloudAsync(string? customUrl = null)
+        {
+            try
+            {
+                string targetUrl = customUrl ?? string.Empty;
+                if (string.IsNullOrEmpty(targetUrl))
+                {
+                    string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                    string configPath = Path.Combine(baseDir, "workflow_config.json");
+                    if (File.Exists(configPath))
+                    {
+                        try
+                        {
+                            string cfgText = await File.ReadAllTextAsync(configPath).ConfigureAwait(false);
+                            var cfgObj = JObject.Parse(cfgText);
+                            string rosterUrl = cfgObj["rosterUrl"]?.ToString() ?? string.Empty;
+                            string firebaseUrl = cfgObj["firebaseUrl"]?.ToString() ?? string.Empty;
+                            string secret = cfgObj["databaseSecret"]?.ToString() ?? string.Empty;
+
+                            if (!string.IsNullOrEmpty(rosterUrl))
+                            {
+                                targetUrl = rosterUrl;
+                            }
+                            else if (!string.IsNullOrEmpty(firebaseUrl))
+                            {
+                                targetUrl = string.IsNullOrEmpty(secret)
+                                    ? $"{firebaseUrl.TrimEnd('/')}/school_roster.json"
+                                    : $"{firebaseUrl.TrimEnd('/')}/school_roster.json?auth={secret}";
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Trace.TraceWarning($"Lỗi đọc workflow_config.json: {ex.Message}");
+                        }
+                    }
+                }
+
+                if (string.IsNullOrEmpty(targetUrl))
+                {
+                    return (false, "Chưa cấu hình URL đồng bộ danh sách giáo viên.", _roster.Count);
+                }
+
+                using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+                var res = await http.GetAsync(targetUrl).ConfigureAwait(false);
+                if (!res.IsSuccessStatusCode)
+                {
+                    return (false, $"Máy chủ phản hồi mã lỗi: {res.StatusCode}", _roster.Count);
+                }
+
+                string json = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(json) || json == "null")
+                {
+                    return (false, "Chưa có dữ liệu danh sách giáo viên trên máy chủ.", _roster.Count);
+                }
+
+                return UpdateRosterFromJson(json, saveToDisk: true);
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi kết nối máy chủ: {ex.Message}", _roster.Count);
+            }
         }
 
         public VgcaLoginResult AuthenticatePassword(string cccd, string password)

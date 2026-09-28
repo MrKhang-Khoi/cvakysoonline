@@ -27,6 +27,7 @@ namespace VGCASignToolPro
         private readonly ReportWorkflowService _workflowService = new();
         private string? _activeWorkflowReportId;
         private string? _activeWorkflowExpectedBaseHash;
+        private bool _isOutboxViewMode;
         private List<ReportModel> _allReports = new();
 
         private List<CertificateModel> _certificates = new();
@@ -34,7 +35,7 @@ namespace VGCASignToolPro
         private CertificateModel? _currentActiveCert;
 
         private string? _originalWordFilePath;
-        private string? _currentEditingWordHtmlPath;
+        private bool _isWordModified = false;
         private string? _originalExcelFilePath;
         private string _currentExcelOrientation = "landscape";
         private string? _currentWorkingPdfPath;
@@ -1046,11 +1047,22 @@ namespace VGCASignToolPro
             {
                 // 1. Reset các biến đường dẫn tài liệu
                 _originalWordFilePath = null;
-                _currentEditingWordHtmlPath = null;
+                _isWordModified = false;
                 _originalExcelFilePath = null;
                 _currentWorkingPdfPath = null;
 
-                // 2. Reset trạng thái con dấu chữ ký
+                // 2. Ẩn và dọn dẹp trình soạn thảo Word nếu đang mở
+                if (WordEditorControl != null)
+                {
+                    WordEditorControl.Visibility = Visibility.Collapsed;
+                    WordEditorControl.Document = null;
+                }
+                if (PdfPreviewControl != null)
+                {
+                    PdfPreviewControl.Visibility = Visibility.Visible;
+                }
+
+                // 3. Reset trạng thái con dấu chữ ký
                 _hasUserPlacedStamp = false;
                 _userStampPage = 1;
 
@@ -1171,15 +1183,15 @@ namespace VGCASignToolPro
             SetProcessingBusyState(true, $"Đang nạp cấu trúc tài liệu Word: {Path.GetFileName(wordPath)}...");
 
             _originalWordFilePath = wordPath;
-            _currentEditingWordHtmlPath = null;
             _originalExcelFilePath = null;
             _currentWorkingPdfPath = null;
+            _isWordModified = false;
             BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
 
             TxtCurrentFileName.Text = Path.GetFileName(wordPath);
             PnlEditingToolbar.Visibility = Visibility.Visible;
             PnlExcelToolbarControls.Visibility = Visibility.Collapsed;
-            TxtEditorModeBadge.Text = "✏ Chế độ xem & chỉnh sửa trực tiếp Word";
+            TxtEditorModeBadge.Text = "✏ Chế độ xem & chỉnh sửa Word (A4 Paged View)";
             BtnConvertToPdfAndReadySign.IsEnabled = false;
             BtnInsertSignatureStamp.IsEnabled = false;
             BtnSignCurrentDocument.IsEnabled = false;
@@ -1190,17 +1202,24 @@ namespace VGCASignToolPro
                 long fileSizeKb = new FileInfo(wordPath).Length / 1024;
                 TxtCurrentFileStatus.Text = $"Đang tải cấu trúc tài liệu ({fileSizeKb:N0} KB)...";
 
-                // Chuyển sang HTML có nhúng định dạng A4 và kích hoạt chế độ chỉnh sửa trực tiếp
-                string htmlPath = await _wordConverter.ConvertWordToEditableHtmlAsync(wordPath);
-                _currentEditingWordHtmlPath = htmlPath;
-
-                if (_isWebViewInitialized && PdfPreviewControl?.CoreWebView2 != null)
+                // Nạp trực tiếp vào điều khiển Native A4 Paged Word Editor của Syncfusion (hoàn toàn không cần Microsoft Word)
+                var (docStream, formatType) = await Task.Run(() => _wordConverter.LoadWordToEditorStream(wordPath));
+                using (docStream)
                 {
-                    PnlPreviewPlaceholder.Visibility = Visibility.Collapsed;
-                    PdfPreviewControl.CoreWebView2.Navigate(new Uri(htmlPath).AbsoluteUri);
+                    WordEditorControl.Load(docStream, formatType);
                 }
 
-                TxtCurrentFileStatus.Text = "Đang ở chế độ xem & điều chỉnh trực tiếp. Bạn có thể sửa văn bản ngay bên dưới, sau đó bấm 'Chuyển Qua PDF Để Ký'.";
+                WordEditorControl.LayoutType = Syncfusion.Windows.Controls.RichTextBoxAdv.LayoutType.Pages;
+
+                PnlPreviewPlaceholder.Visibility = Visibility.Collapsed;
+                PdfPreviewControl.Visibility = Visibility.Collapsed;
+                WordEditorControl.Visibility = Visibility.Visible;
+
+                _isWordModified = false;
+                WordEditorControl.ContentChanged -= WordEditorControl_ContentChanged;
+                WordEditorControl.ContentChanged += WordEditorControl_ContentChanged;
+
+                TxtCurrentFileStatus.Text = "Đang ở chế độ xem & điều chỉnh trực tiếp (khổ A4). Bạn có thể sửa văn bản ngay bên dưới, sau đó bấm 'Chuyển Qua PDF Để Ký'.";
                 BtnConvertToPdfAndReadySign.IsEnabled = true;
                 UpdateStatus($"Đã nạp văn bản Word: {Path.GetFileName(wordPath)}. Sẵn sàng xem và điều chỉnh.");
             }
@@ -1208,7 +1227,9 @@ namespace VGCASignToolPro
             {
                 TxtCurrentFileStatus.Text = "Nạp tài liệu thất bại.";
                 _originalWordFilePath = null;
-                _currentEditingWordHtmlPath = null;
+                _isWordModified = false;
+                WordEditorControl.Visibility = Visibility.Collapsed;
+                PdfPreviewControl.Visibility = Visibility.Visible;
                 BtnCloseCurrentFile.Visibility = Visibility.Collapsed;
                 System.Diagnostics.Trace.TraceError($"Lỗi nạp tài liệu Word: {ex}");
                 MessageBox.Show($"Không thể hiển thị tài liệu Word:\n{ex.Message}", "Lỗi Nạp Tài Liệu", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -1217,6 +1238,11 @@ namespace VGCASignToolPro
             {
                 SetProcessingBusyState(false);
             }
+        }
+
+        private void WordEditorControl_ContentChanged(object? sender, EventArgs e)
+        {
+            _isWordModified = true;
         }
 
         private async void BtnSelectExcel_Click(object sender, RoutedEventArgs e)
@@ -1260,9 +1286,12 @@ namespace VGCASignToolPro
 
             _originalExcelFilePath = excelPath;
             _originalWordFilePath = null;
-            _currentEditingWordHtmlPath = null;
             _currentWorkingPdfPath = null;
+            _isWordModified = false;
             BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
+
+            if (WordEditorControl != null) WordEditorControl.Visibility = Visibility.Collapsed;
+            if (PdfPreviewControl != null) PdfPreviewControl.Visibility = Visibility.Visible;
 
             TxtCurrentFileName.Text = Path.GetFileName(excelPath);
             TxtCurrentFileStatus.Text = "Đang phân tích cấu trúc bảng tính Excel...";
@@ -1409,10 +1438,13 @@ namespace VGCASignToolPro
             SetProcessingBusyState(true, $"Đang nạp tệp PDF: {Path.GetFileName(pdfPath)}...");
 
             _originalWordFilePath = null;
-            _currentEditingWordHtmlPath = null;
             _originalExcelFilePath = null;
             _currentWorkingPdfPath = pdfPath;
+            _isWordModified = false;
             BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
+
+            if (WordEditorControl != null) WordEditorControl.Visibility = Visibility.Collapsed;
+            if (PdfPreviewControl != null) PdfPreviewControl.Visibility = Visibility.Visible;
 
             try
             {
@@ -1566,44 +1598,8 @@ namespace VGCASignToolPro
                 return;
             }
 
-            // Kiểm tra xem người dùng có thực hiện chỉnh sửa nội dung văn bản trên WebView2 hay không
-            bool isModified = false;
-            if (_isWebViewInitialized && PdfPreviewControl?.CoreWebView2 != null)
-            {
-                try
-                {
-                    string res = await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync("Boolean(window.__vgcaIsModified)");
-                    bool.TryParse(res, out isModified);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Trace.TraceWarning($"Lỗi kiểm tra cờ sửa đổi Word: {ex.Message}");
-                }
-            }
-
-            bool saveToOriginal = false;
-            if (isModified)
-            {
-                // HỘP THOẠI XÁC NHẬN LƯU THAY ĐỔI VÀO TỆP WORD GỐC TRÊN MÁY TÍNH
-                MessageBoxResult userChoice = MessageBox.Show(
-                    "Bạn đã chỉnh sửa nội dung văn bản trực tiếp trên giao diện.\n" +
-                    "Bạn có muốn lưu các thay đổi này vào tệp Word gốc trên máy tính không?\n\n" +
-                    $"• Tệp Word: {Path.GetFileName(_originalWordFilePath)}\n\n" +
-                    "➡ Chọn [Yes / Có]: Lưu cập nhật trực tiếp vào tệp Word trên máy và xuất sang PDF.\n" +
-                    "➡ Chọn [No / Không]: Không lưu vào tệp Word gốc, chỉ xuất các nội dung đã chỉnh sửa sang PDF.\n" +
-                    "➡ Chọn [Cancel / Hủy]: Dừng lại để tiếp tục chỉnh sửa văn bản.",
-                    "Lưu Thay Đổi Văn Bản Word",
-                    MessageBoxButton.YesNoCancel,
-                    MessageBoxImage.Question);
-
-                if (userChoice == MessageBoxResult.Cancel)
-                {
-                    // Người dùng chọn Hủy: giữ nguyên giao diện để tiếp tục chỉnh sửa
-                    return;
-                }
-
-                saveToOriginal = (userChoice == MessageBoxResult.Yes);
-            }
+            // Kiểm tra xem người dùng có thực hiện chỉnh sửa nội dung văn bản trên WordEditorControl hay không
+            bool isModified = _isWordModified;
 
             SetProcessingBusyState(true, "Bắt đầu chuyển đổi Word sang PDF...");
             PrgConvertLoading.Visibility = Visibility.Visible;
@@ -1613,45 +1609,31 @@ namespace VGCASignToolPro
             {
                 string pdfPath;
 
-                // Nếu người dùng ĐÃ chỉnh sửa nội dung văn bản trên WebView2
-                if (isModified && _isWebViewInitialized && PdfPreviewControl?.CoreWebView2 != null && !string.IsNullOrWhiteSpace(_currentEditingWordHtmlPath))
+                // NGUYÊN TẮC BẢO VỆ TÀI LIỆU GỐC (ZERO DATA LOSS / READ-ONLY INVARIANT):
+                // Tuyệt đối không bao giờ ghi đè lên tệp Word gốc trên máy người dùng.
+                // Mọi nội dung chỉnh sửa trên trình soạn thảo sẽ được chuyển trực tiếp từ luồng RAM (docStream) sang PDF để phục vụ ký số.
+                if (isModified)
                 {
-                    // Trích xuất toàn bộ DOM HTML mới nhất từ WebView2 sau khi người dùng đã chỉnh sửa
-                    string extractJs = @"
-                    (() => {
-                        try {
-                            let clone = document.documentElement.cloneNode(true);
-                            let s = clone.querySelector('#vgca-editor-style');
-                            if (s) s.remove();
-                            let sc = clone.querySelector('#vgca-editor-script');
-                            if (sc) sc.remove();
-                            clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
-                            return clone.outerHTML;
-                        } catch (err) {
-                            return document.documentElement.outerHTML;
-                        }
-                    })()";
-
-                    string rawJsonHtml = await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync(extractJs);
-                    string editedHtml = System.Text.Json.JsonSerializer.Deserialize<string>(rawJsonHtml) ?? "";
-
-                    pdfPath = await _wordConverter.SaveEditedHtmlAndConvertToPdfAsync(
-                        editedHtml,
-                        _originalWordFilePath,
-                        _currentEditingWordHtmlPath,
-                        saveToOriginal);
+                    using MemoryStream docStream = new MemoryStream();
+                    WordEditorControl.Save(docStream, Syncfusion.Windows.Controls.RichTextBoxAdv.FormatType.Docx);
+                    docStream.Position = 0;
+                    pdfPath = await _wordConverter.ConvertWordStreamToPdfAsync(docStream, _originalWordFilePath);
                 }
                 else
                 {
-                    // Văn bản chưa bị chỉnh sửa: Chuyển đổi trực tiếp từ file Word gốc bằng Word COM (Native) để bảo toàn 100% vector, đường nét, bố cục không bị xê dịch
+                    // Văn bản chưa bị chỉnh sửa: Chuyển đổi trực tiếp từ file Word gốc bằng Syncfusion DocIO độc lập
                     pdfPath = await _wordConverter.ConvertWordToPdfAsync(_originalWordFilePath);
                 }
 
                 string originalWordFileName = Path.GetFileName(_originalWordFilePath);
                 _currentWorkingPdfPath = pdfPath;
                 _originalWordFilePath = null;
-                _currentEditingWordHtmlPath = null;
+                _isWordModified = false;
                 PnlEditingToolbar.Visibility = Visibility.Collapsed;
+
+                // Chuyển chế độ hiển thị từ WordEditorControl sang WebView2 PDF Viewer
+                WordEditorControl.Visibility = Visibility.Collapsed;
+                PdfPreviewControl.Visibility = Visibility.Visible;
 
                 // Nạp file PDF chuẩn vào WebView2 bằng Engine tương tác
                 await DisplayPdfInInteractiveViewerAsync(pdfPath);
@@ -1665,9 +1647,7 @@ namespace VGCASignToolPro
                 UpdateStatus($"Đã xuất tệp PDF hoàn chỉnh: {Path.GetFileName(pdfPath)}");
 
                 string saveNotice = isModified
-                    ? (saveToOriginal
-                        ? $"• Tệp Word gốc trên máy tính ({originalWordFileName}) đã được cập nhật lưu thành công.\n"
-                        : $"• Tệp Word gốc trên máy tính ({originalWordFileName}) được giữ nguyên (không lưu thay đổi).\n")
+                    ? $"• Tệp Word gốc ({originalWordFileName}) được bảo toàn nguyên vẹn 100% trên máy tính.\n• Toàn bộ nội dung đã điều chỉnh được chuyển trực tiếp vào tệp PDF phục vụ ký số.\n"
                     : $"• Tệp PDF được tạo trực tiếp từ bản Word gốc chuẩn xác 100% không xê dịch nét kẻ.\n";
 
                 MessageBox.Show(
@@ -2195,41 +2175,134 @@ namespace VGCASignToolPro
             MainTabControl.SelectedIndex = 2; // Chuyển sang Tab 3
         }
 
-        #region Các lệnh điều chỉnh văn bản trực tiếp (ExecCommand trong WebView2)
+        #region Các lệnh điều chỉnh văn bản trực tiếp (SfRichTextBoxAdv hoặc ExecCommand trong WebView2)
 
         private void BtnFormatBold_Click(object sender, RoutedEventArgs e)
         {
-            PdfPreviewControl.CoreWebView2?.ExecuteScriptAsync("document.execCommand('bold', false, null);");
+            if (WordEditorControl != null && WordEditorControl.Visibility == Visibility.Visible)
+            {
+                if (Syncfusion.Windows.Controls.RichTextBoxAdv.SfRichTextBoxAdv.BoldCommand.CanExecute(null, WordEditorControl))
+                {
+                    Syncfusion.Windows.Controls.RichTextBoxAdv.SfRichTextBoxAdv.BoldCommand.Execute(null, WordEditorControl);
+                }
+            }
+            else
+            {
+                PdfPreviewControl.CoreWebView2?.ExecuteScriptAsync("document.execCommand('bold', false, null);");
+            }
         }
 
         private void BtnFormatItalic_Click(object sender, RoutedEventArgs e)
         {
-            PdfPreviewControl.CoreWebView2?.ExecuteScriptAsync("document.execCommand('italic', false, null);");
+            if (WordEditorControl != null && WordEditorControl.Visibility == Visibility.Visible)
+            {
+                if (Syncfusion.Windows.Controls.RichTextBoxAdv.SfRichTextBoxAdv.ItalicCommand.CanExecute(null, WordEditorControl))
+                {
+                    Syncfusion.Windows.Controls.RichTextBoxAdv.SfRichTextBoxAdv.ItalicCommand.Execute(null, WordEditorControl);
+                }
+            }
+            else
+            {
+                PdfPreviewControl.CoreWebView2?.ExecuteScriptAsync("document.execCommand('italic', false, null);");
+            }
         }
 
         private void BtnFormatUnderline_Click(object sender, RoutedEventArgs e)
         {
-            PdfPreviewControl.CoreWebView2?.ExecuteScriptAsync("document.execCommand('underline', false, null);");
+            if (WordEditorControl != null && WordEditorControl.Visibility == Visibility.Visible)
+            {
+                if (Syncfusion.Windows.Controls.RichTextBoxAdv.SfRichTextBoxAdv.ToggleUnderlineCommand.CanExecute(null, WordEditorControl))
+                {
+                    Syncfusion.Windows.Controls.RichTextBoxAdv.SfRichTextBoxAdv.ToggleUnderlineCommand.Execute(null, WordEditorControl);
+                }
+            }
+            else
+            {
+                PdfPreviewControl.CoreWebView2?.ExecuteScriptAsync("document.execCommand('underline', false, null);");
+            }
         }
 
         private void BtnAlignLeft_Click(object sender, RoutedEventArgs e)
         {
-            PdfPreviewControl.CoreWebView2?.ExecuteScriptAsync("document.execCommand('justifyLeft', false, null);");
+            if (WordEditorControl != null && WordEditorControl.Visibility == Visibility.Visible)
+            {
+                WordEditorControl.Selection.ParagraphFormat.TextAlignment = System.Windows.TextAlignment.Left;
+            }
+            else
+            {
+                PdfPreviewControl.CoreWebView2?.ExecuteScriptAsync("document.execCommand('justifyLeft', false, null);");
+            }
         }
 
         private void BtnAlignCenter_Click(object sender, RoutedEventArgs e)
         {
-            PdfPreviewControl.CoreWebView2?.ExecuteScriptAsync("document.execCommand('justifyCenter', false, null);");
+            if (WordEditorControl != null && WordEditorControl.Visibility == Visibility.Visible)
+            {
+                WordEditorControl.Selection.ParagraphFormat.TextAlignment = System.Windows.TextAlignment.Center;
+            }
+            else
+            {
+                PdfPreviewControl.CoreWebView2?.ExecuteScriptAsync("document.execCommand('justifyCenter', false, null);");
+            }
         }
 
         private void BtnAlignRight_Click(object sender, RoutedEventArgs e)
         {
-            PdfPreviewControl.CoreWebView2?.ExecuteScriptAsync("document.execCommand('justifyRight', false, null);");
+            if (WordEditorControl != null && WordEditorControl.Visibility == Visibility.Visible)
+            {
+                WordEditorControl.Selection.ParagraphFormat.TextAlignment = System.Windows.TextAlignment.Right;
+            }
+            else
+            {
+                PdfPreviewControl.CoreWebView2?.ExecuteScriptAsync("document.execCommand('justifyRight', false, null);");
+            }
         }
 
         private void BtnAlignJustify_Click(object sender, RoutedEventArgs e)
         {
-            PdfPreviewControl.CoreWebView2?.ExecuteScriptAsync("document.execCommand('justifyFull', false, null);");
+            if (WordEditorControl != null && WordEditorControl.Visibility == Visibility.Visible)
+            {
+                WordEditorControl.Selection.ParagraphFormat.TextAlignment = System.Windows.TextAlignment.Justify;
+            }
+            else
+            {
+                PdfPreviewControl.CoreWebView2?.ExecuteScriptAsync("document.execCommand('justifyFull', false, null);");
+            }
+        }
+
+        private void BtnSaveWordCopy_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (WordEditorControl == null || WordEditorControl.Visibility != Visibility.Visible)
+                {
+                    MessageBox.Show("Chức năng chỉ khả dụng khi đang ở chế độ xem và chỉnh sửa văn bản Word.", "Thông Báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                string baseName = !string.IsNullOrWhiteSpace(_originalWordFilePath)
+                    ? Path.GetFileNameWithoutExtension(_originalWordFilePath)
+                    : "Van_ban_soan_thao";
+
+                var sfd = new Microsoft.Win32.SaveFileDialog
+                {
+                    Title = "Lưu bản sao Word đã chỉnh sửa thành tệp mới",
+                    Filter = "Tài liệu Word (*.docx)|*.docx",
+                    FileName = $"{baseName}_da_sua.docx"
+                };
+
+                if (sfd.ShowDialog() == true)
+                {
+                    using MemoryStream ms = new MemoryStream();
+                    WordEditorControl.Save(ms, Syncfusion.Windows.Controls.RichTextBoxAdv.FormatType.Docx);
+                    _wordConverter.SaveWordDocument(ms, sfd.FileName);
+                    MessageBox.Show($"Đã lưu bản sao Word thành công tại:\n{sfd.FileName}\n\n(Tệp Word gốc hoàn toàn được bảo vệ nguyên vẹn)", "Lưu Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi lưu bản sao Word: {ex.Message}", "Lỗi Hệ Thống", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         #endregion
@@ -2259,8 +2332,11 @@ namespace VGCASignToolPro
                     if (string.Equals(t.Cccd, currentCccd, StringComparison.OrdinalIgnoreCase)) continue;
                     bool isLeadership = !string.IsNullOrEmpty(t.Title) && 
                         (t.Title.Contains("Hiệu trưởng", StringComparison.OrdinalIgnoreCase) || 
-                         t.Title.Contains("Hiệu phó", StringComparison.OrdinalIgnoreCase));
-                    string prefix = isLeadership ? "⭐ " : "";
+                         t.Title.Contains("Hiệu phó", StringComparison.OrdinalIgnoreCase) ||
+                         t.Title.Contains("Phó hiệu trưởng", StringComparison.OrdinalIgnoreCase));
+                    bool isDepartmentHead = !string.IsNullOrEmpty(t.Title) &&
+                        t.Title.Contains("Tổ trưởng", StringComparison.OrdinalIgnoreCase);
+                    string prefix = isLeadership ? "⭐ " : (isDepartmentHead ? "📋 " : "");
                     items.Add(new WorkflowApproverItem
                     {
                         Cccd = t.Cccd,
@@ -2270,6 +2346,7 @@ namespace VGCASignToolPro
                 }
 
                 var sorted = items.OrderByDescending(i => i.DisplayText.StartsWith("⭐"))
+                                  .ThenByDescending(i => i.DisplayText.StartsWith("📋"))
                                   .ThenBy(i => i.DisplayText)
                                   .ToList();
 
@@ -2290,6 +2367,18 @@ namespace VGCASignToolPro
             try
             {
                 string myCccd = _vgcaAuth.CurrentTeacher?.Cccd ?? string.Empty;
+
+                // Tự động đồng bộ danh sách giáo viên mới nhất từ đám mây (nếu có cập nhật từ web quản trị)
+                try
+                {
+                    await _vgcaAuth.SyncRosterFromCloudAsync();
+                    PopulateWorkflowApprovers(myCccd);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Trace.TraceWarning($"Bỏ qua lỗi tự động đồng bộ roster: {ex.Message}");
+                }
+
                 if (string.IsNullOrEmpty(myCccd))
                 {
                     LvInboxReports.ItemsSource = null;
@@ -2523,6 +2612,18 @@ namespace VGCASignToolPro
 
         private void BtnExitWorkflowReviewMode_Click(object sender, RoutedEventArgs e)
         {
+            if (_isOutboxViewMode)
+            {
+                _isOutboxViewMode = false;
+                BorderWorkflowReviewNotice.Visibility = Visibility.Collapsed;
+                BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
+                BtnSignCurrentDocument.IsEnabled = _lastSignedPdfPath != null;
+                MainTabControl.SelectedIndex = 2;
+                TabControlWorkflowSub.SelectedIndex = 1;
+                UpdateStatus("Đã đóng chế độ xem báo cáo đã gửi.");
+                return;
+            }
+
             var confirm = MessageBox.Show("Bạn có chắc chắn muốn thoát khỏi chế độ phê duyệt báo cáo liên thông không?",
                 "Thoát Chế Độ Phê Duyệt", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
@@ -2641,6 +2742,68 @@ namespace VGCASignToolPro
             finally
             {
                 BtnRecallReport.IsEnabled = true;
+            }
+        }
+
+        private async void BtnViewOutboxReport_Click(object sender, RoutedEventArgs e)
+        {
+            await OpenSelectedOutboxReportForViewingAsync();
+        }
+
+        private async void LvOutboxReports_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            await OpenSelectedOutboxReportForViewingAsync();
+        }
+
+        private async Task OpenSelectedOutboxReportForViewingAsync()
+        {
+            if (LvOutboxReports.SelectedItem is not ReportModel report)
+            {
+                MessageBox.Show("Vui lòng chọn một báo cáo trong danh sách đã gửi để xem.",
+                    "Chưa Chọn Báo Cáo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            UpdateStatus($"Đang tải bản sao báo cáo '{report.ReportId}' để hiển thị...");
+            BtnViewOutboxReport.IsEnabled = false;
+
+            try
+            {
+                string tempDir = Path.Combine(Path.GetTempPath(), "VGCASignToolPro_Reports");
+                Directory.CreateDirectory(tempDir);
+                // Tạo tên file Snapshot ngẫu nhiên GUID để triệt tiêu hoàn toàn xung đột handle file trên ổ đĩa
+                string destPath = Path.Combine(tempDir, $"{report.ReportId}_OutboxView_{Guid.NewGuid():N}.pdf");
+
+                bool downloaded = await _workflowService.DownloadFileAsync(report.DriveFileId, destPath);
+                if (downloaded && File.Exists(destPath))
+                {
+                    _isOutboxViewMode = true;
+                    _activeWorkflowReportId = null; // Cấm không gán ID phiên duyệt để tránh commit nhầm
+
+                    BorderWorkflowReviewNotice.Visibility = Visibility.Visible;
+                    TxtWorkflowReviewNoticeHeader.Text = $"CHẾ ĐỘ XEM BÁO CÁO ĐÃ GỬI (CHỈ ĐỌC): {report.Title}";
+                    TxtWorkflowReviewNoticeDetail.Text = $"Người nhận: {report.ApproverName} • Ngày gửi: {report.CreatedTimeFormatted} • Trạng thái: {report.StatusText} (Chế độ xem an toàn, không ảnh hưởng phiên ký của người duyệt).";
+                    BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
+                    BtnSubmitWorkflowReport.Visibility = Visibility.Collapsed;
+                    BtnSignCurrentDocument.IsEnabled = false;
+                    BtnInsertSignatureStamp.IsEnabled = false;
+
+                    await LoadPdfDocumentAsync(destPath);
+                    MainTabControl.SelectedIndex = 1;
+                    UpdateStatus($"Đang hiển thị bản gửi: '{report.Title}' (Chế độ xem chỉ đọc).");
+                }
+                else
+                {
+                    MessageBox.Show("Không thể tải tệp báo cáo từ máy chủ đám mây.", "Lỗi Tải Tệp", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi hiển thị tệp: {ex.Message}", "Lỗi Hệ Thống", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                BtnViewOutboxReport.IsEnabled = true;
             }
         }
 

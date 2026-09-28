@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cổng Quản Trị Danh Mục Giáo Viên - VGCA Sign Tool Pro</title>
+  <style>
+    :root {
+      --primary: #0F766E;
+      --primary-hover: #0D9488;
+      --primary-light: #CCFBF1;
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --text: #0F172A;
+      --text-muted: #64748B;
+      --border: #E2E8F0;
+      --danger: #DC2626;
+      --danger-light: #FEE2E2;
+      --warning: #D97706;
+      --warning-light: #FEF3C7;
+      --success: #16A34A;
+      --success-light: #DCFCE7;
+      --indigo: #4F46E5;
+      --indigo-light: #EEF2FF;
+      --radius: 8px;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 24px; min-height: 100vh; }
+    .container { max-width: 1280px; margin: 0 auto; }
+
+    /* Header */
+    header { background: var(--card-bg); border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+    .header-title h1 { font-size: 20px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
+    .header-title p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+    .badge-status { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; background: var(--primary-light); color: var(--primary); }
+
+    /* Cards Grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .stat-card { background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px; border: 1px solid var(--border); box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between; }
+    .stat-info .stat-label { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-info .stat-val { font-size: 24px; font-weight: 700; color: var(--text); margin-top: 4px; }
+    .stat-icon { width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+
+    /* Config panel */
+    .config-panel { background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px; border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 20px; }
+    .config-header { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+    .config-grid { display: grid; grid-template-columns: 2fr 1.5fr auto; gap: 12px; align-items: end; }
+    @media (max-width: 860px) { .config-grid { grid-template-columns: 1fr; } }
+    .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+    .form-control { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; transition: border-color 0.2s; background: #FFF; }
+    .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1); }
+
+    /* Action bar */
+    .action-bar { background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px; border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    .search-box { display: flex; gap: 10px; flex: 1; max-width: 500px; }
+    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; text-decoration: none; }
+    .btn-primary { background: var(--primary); color: #FFF; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-success { background: var(--success); color: #FFF; }
+    .btn-success:hover { background: #15803D; }
+    .btn-indigo { background: var(--indigo); color: #FFF; }
+    .btn-indigo:hover { background: #4338CA; }
+    .btn-outline { background: #FFF; border-color: var(--border); color: var(--text); }
+    .btn-outline:hover { background: #F1F5F9; }
+    .btn-danger { background: var(--danger); color: #FFF; }
+    .btn-danger:hover { background: #B91C1C; }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+    /* Table */
+    .table-container { background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); overflow-x: auto; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    thead { background: #F1F5F9; border-bottom: 1px solid var(--border); }
+    th { padding: 12px 16px; font-weight: 600; color: #475569; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+    td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tbody tr:hover { background: #F8FAFC; }
+
+    /* Role badges */
+    .badge-role { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .badge-hieutruong { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
+    .badge-hieupho { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
+    .badge-totruong { background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; }
+    .badge-giaovien { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+
+    /* Modal */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); display: none; align-items: center; justify-content: center; z-index: 9999; padding: 16px; backdrop-filter: blur(2px); }
+    .modal-overlay.active { display: flex; }
+    .modal-card { background: #FFF; width: 100%; max-width: 620px; border-radius: 12px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); overflow: hidden; animation: modalIn 0.2s ease-out; }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    .modal-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; }
+    .modal-header h3 { font-size: 16px; font-weight: 700; color: var(--text); }
+    .modal-body { padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 600px) { .modal-body { grid-template-columns: 1fr; } }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; background: #F8FAFC; }
+
+    /* Toast notification */
+    .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 8px; color: #FFF; font-size: 13px; font-weight: 600; box-shadow: var(--shadow-lg); z-index: 10000; display: none; align-items: center; gap: 8px; animation: toastIn 0.25s ease-out; }
+    @keyframes toastIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+    .toast.info { background: var(--primary); }
+
+    /* Help Accordion */
+    .help-card { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px; font-size: 13px; line-height: 1.6; }
+    .help-card h4 { color: #1E40AF; font-size: 14px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+    .help-card ol { padding-left: 20px; color: #1E3A8A; }
+    .help-card li { margin-bottom: 4px; }
+    .help-card code { background: #DBEAFE; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 12px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header>
+    <div class="header-title">
+      <h1>🏛 CỔNG QUẢN TRỊ DANH MỤC GIÁO VIÊN &amp; TRÌNH KÝ LIÊN THÔNG</h1>
+      <p>Quản lý danh bạ nhân sự, phân quyền phê duyệt cấp trường &bull; Kết nối ký số Ban Cơ Yếu Chính Phủ</p>
+    </div>
+    <div>
+      <span class="badge-status" id="badgeCloudStatus">☁️ Sẵn sàng kết nối Firebase</span>
+    </div>
+  </header>
+
+  <!-- Hướng dẫn sử dụng nhanh -->
+  <div class="help-card">
+    <h4>💡 HƯỚNG DẪN KẾT NỐI VÀ LƯU TRỮ TRÊN GITHUB</h4>
+    <ol>
+      <li><strong>Cách 1 (Khuyên dùng - 1 Click Đồng Bộ):</strong> Nhập thông tin giáo viên vào bảng &rarr; Bấm <strong>"☁️ Đồng Bộ Lên Firebase"</strong>. Toàn bộ phần mềm máy tính trong trường sẽ tự động cập nhật danh sách ngay lập tức.</li>
+      <li><strong>Cách 2 (Lưu tệp trên GitHub):</strong> Bấm <strong>"📥 Tải File JSON"</strong> &rarr; Upload tệp <code>school_roster.json</code> lên Repository GitHub của bạn. Copy link raw (dạng <code>https://raw.githubusercontent.com/.../school_roster.json</code>) dán vào ô <em>rosterUrl</em> trong file <code>workflow_config.json</code> của ứng dụng.</li>
+      <li><strong>Cách 3 (Lưu trang HTML này trên GitHub):</strong> Đặt tên file là <code>index.html</code> hoặc <code>admin_roster.html</code> đưa lên GitHub Repo &rarr; Bật <strong>GitHub Pages</strong> để truy cập quản trị mọi lúc mọi nơi trên điện thoại, máy tính bảng hoặc máy tính giáo viên.</li>
+    </ol>
+  </div>
+
+  <!-- Thống kê -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-info">
+        <div class="stat-label">Tổng Số Nhân Sự</div>
+        <div class="stat-val" id="statTotal">0</div>
+      </div>
+      <div class="stat-icon" style="background:#EFF6FF; color:#2563EB;">👥</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-info">
+        <div class="stat-label">Ban Giám Hiệu</div>
+        <div class="stat-val" id="statLeadership">0</div>
+      </div>
+      <div class="stat-icon" style="background:#FEF2F2; color:#DC2626;">⭐</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-info">
+        <div class="stat-label">Tổ Trưởng Chuyên Môn</div>
+        <div class="stat-val" id="statDepts">0</div>
+      </div>
+      <div class="stat-icon" style="background:#FFFBEB; color:#D97706;">📋</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-info">
+        <div class="stat-label">Giáo Viên Bộ Môn</div>
+        <div class="stat-val" id="statTeachers">0</div>
+      </div>
+      <div class="stat-icon" style="background:#F0FDF4; color:#16A34A;">🎓</div>
+    </div>
+  </div>
+
+  <!-- Bảng cấu hình kết nối Firebase / GitHub -->
+  <div class="config-panel">
+    <div class="config-header">
+      <span>⚙️ Cấu Hình Máy Chủ Đám Mây (Firebase Realtime Database)</span>
+      <button class="btn btn-outline btn-sm" onclick="toggleConfig()">Thu gọn / Mở rộng</button>
+    </div>
+    <div class="config-grid" id="configGrid">
+      <div class="form-group">
+        <label for="cfgFirebaseUrl">Firebase Realtime Database URL:</label>
+        <input type="text" id="cfgFirebaseUrl" class="form-control" placeholder="https://your-project-rtdb.firebaseio.com" value="https://cva-kyso-lienthong-default-rtdb.asia-southeast1.firebasedatabase.app">
+      </div>
+      <div class="form-group">
+        <label for="cfgDbSecret">Database Secret (Khóa xác thực bí mật):</label>
+        <input type="password" id="cfgDbSecret" class="form-control" placeholder="Nhập secret nếu database có bảo mật" value="TOdsGaw1iflR0dCDtHqQ8pBii9UgiqLaq8nfF250">
+      </div>
+      <div>
+        <button class="btn btn-outline" onclick="saveConnectionSettings()">💾 Lưu Cấu Hình</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Thanh thao tác & Tìm kiếm -->
+  <div class="action-bar">
+    <div class="search-box">
+      <input type="text" id="searchInput" class="form-control" placeholder="🔍 Tìm theo Họ tên, CCCD, Số điện thoại..." oninput="filterTable()">
+      <select id="filterRole" class="form-control" style="max-width: 160px;" onchange="filterTable()">
+        <option value="">Tất cả chức vụ</option>
+        <option value="Hiệu trưởng">Hiệu trưởng</option>
+        <option value="Phó hiệu trưởng">Phó hiệu trưởng</option>
+        <option value="Tổ trưởng">Tổ trưởng</option>
+        <option value="Giáo viên">Giáo viên</option>
+      </select>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="openAddModal()">➕ Thêm Giáo Viên</button>
+      <button class="btn btn-success" onclick="syncToFirebase()">☁️ Đồng Bộ Lên Firebase</button>
+      <button class="btn btn-indigo" onclick="loadFromFirebase()">🔄 Tải Từ Firebase</button>
+      <button class="btn btn-outline" onclick="exportJsonFile()">📥 Tải File JSON</button>
+      <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">📤 Nhập File JSON</button>
+      <input type="file" id="fileInput" accept=".json" style="display:none" onchange="importJsonFile(event)">
+    </div>
+  </div>
+
+  <!-- Bảng danh sách giáo viên -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 50px;">STT</th>
+          <th>Họ và Tên</th>
+          <th>Số CCCD (12 số)</th>
+          <th>Chức Vụ</th>
+          <th>Tổ Chuyên Môn</th>
+          <th>Số Điện Thoại</th>
+          <th>Email Công Vụ</th>
+          <th style="width: 140px; text-align: center;">Thao Tác</th>
+        </tr>
+      </thead>
+      <tbody id="rosterTableBody">
+        <!-- Render động bằng JavaScript -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Thêm / Chỉnh Sửa Giáo Viên -->
+<div class="modal-overlay" id="teacherModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 id="modalTitle">Thêm Giáo Viên Mới</h3>
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">✕</button>
+    </div>
+    <form id="teacherForm" onsubmit="handleFormSubmit(event)">
+      <div class="modal-body">
+        <input type="hidden" id="editIndex" value="-1">
+
+        <div class="form-group" style="grid-column: span 2;">
+          <label for="inpFullName">Họ và Tên (*):</label>
+          <input type="text" id="inpFullName" class="form-control" required placeholder="Ví dụ: Nguyễn Văn A">
+        </div>
+
+        <div class="form-group">
+          <label for="inpCccd">Số CCCD (12 số) (*):</label>
+          <input type="text" id="inpCccd" class="form-control" required maxlength="12" pattern="[0-9]{12}" placeholder="Ví dụ: 062187000641">
+        </div>
+
+        <div class="form-group">
+          <label for="inpTitle">Chức Vụ (*):</label>
+          <select id="inpTitle" class="form-control" required>
+            <option value="Giáo viên">Giáo viên</option>
+            <option value="Tổ trưởng">Tổ trưởng</option>
+            <option value="Hiệu trưởng">Hiệu trưởng</option>
+            <option value="Phó hiệu trưởng">Phó hiệu trưởng</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="inpDepartment">Tổ Chuyên Môn (*):</label>
+          <input type="text" id="inpDepartment" class="form-control" list="deptDatalist" required placeholder="Chọn hoặc nhập tên tổ...">
+          <datalist id="deptDatalist">
+            <option value="Ban Giám hiệu">
+            <option value="Tổ Toán - Tin">
+            <option value="Tổ Ngữ Văn">
+            <option value="Tổ Khoa học Tự nhiên">
+            <option value="Tổ Khoa học Xã hội">
+            <option value="Tổ Ngoại ngữ">
+            <option value="Tổ Giáo dục Thể chất - Nghệ thuật">
+            <option value="Văn phòng nhà trường">
+          </datalist>
+        </div>
+
+        <div class="form-group">
+          <label for="inpPhone">Số Điện Thoại:</label>
+          <input type="tel" id="inpPhone" class="form-control" placeholder="Ví dụ: 0819810007">
+        </div>
+
+        <div class="form-group" style="grid-column: span 2;">
+          <label for="inpEmail">Email Công Vụ:</label>
+          <input type="email" id="inpEmail" class="form-control" placeholder="Ví dụ: nva-dakmar@quangngai.gov.vn">
+        </div>
+
+        <div class="form-group" style="grid-column: span 2;">
+          <label for="inpOrg">Đơn Vị Trực Thuộc:</label>
+          <input type="text" id="inpOrg" class="form-control" value="TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal()">Hủy Bỏ</button>
+        <button type="submit" class="btn btn-primary" id="btnModalSave">Lưu Dữ Liệu</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toastMessage"></div>
+
+<script>
+  // Dữ liệu ban đầu chuẩn từ trường
+  const defaultTeachers = [
+    {
+      cccd: "062187000641",
+      fullName: "Trần Thị Thúy Loan",
+      title: "Giáo viên",
+      phone: "0819810007",
+      department: "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+      organization: "ỦY BAN NHÂN DÂN XÃ ĐAK MAR - TỈNH QUẢNG NGÃI",
+      email: "tttloan-dakmar@quangngai.gov.vn"
+    },
+    {
+      cccd: "042084002100",
+      fullName: "Hà Văn Tý",
+      title: "Giáo viên",
+      phone: "0818810007",
+      department: "ỦY BAN NHÂN DÂN XÃ ĐĂK HÀ",
+      organization: "ỦY BAN NHÂN DÂN TỈNH QUẢNG NGÃI",
+      email: "hvty-dakha@quangngai.gov.vn"
+    },
+    {
+      cccd: "062185001053",
+      fullName: "Nguyễn Thị Mai (CCCD 062185001053)",
+      title: "Tổ trưởng",
+      phone: "0819000105",
+      department: "Tổ Ngữ Văn - Trường THCS Nguyễn Huệ",
+      organization: "ỦY BAN NHÂN DÂN XÃ ĐAK MAR - TỈNH QUẢNG NGÃI",
+      email: "gv062185001053@quangngai.gov.vn"
+    },
+    {
+      cccd: "062180000001",
+      fullName: "Lê Văn Hùng",
+      title: "Hiệu trưởng",
+      phone: "0905123456",
+      department: "Ban Giám hiệu",
+      organization: "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+      email: "lvhung@quangngai.gov.vn"
+    },
+    {
+      cccd: "062182000002",
+      fullName: "Phạm Thị Lan",
+      title: "Phó hiệu trưởng",
+      phone: "0905654321",
+      department: "Ban Giám hiệu",
+      organization: "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+      email: "ptlan@quangngai.gov.vn"
+    }
+  ];
+
+  let teachers = [];
+
+  // Khởi tạo trang
+  window.addEventListener("DOMContentLoaded", () => {
+    loadSavedSettings();
+    loadTeachersFromStorage();
+    renderTable();
+    updateStats();
+  });
+
+  function loadSavedSettings() {
+    const savedUrl = localStorage.getItem("vgca_firebase_url");
+    const savedSec = localStorage.getItem("vgca_firebase_sec");
+    if (savedUrl) document.getElementById("cfgFirebaseUrl").value = savedUrl;
+    if (savedSec) document.getElementById("cfgDbSecret").value = savedSec;
+  }
+
+  function saveConnectionSettings() {
+    const url = document.getElementById("cfgFirebaseUrl").value.trim();
+    const sec = document.getElementById("cfgDbSecret").value.trim();
+    localStorage.setItem("vgca_firebase_url", url);
+    localStorage.setItem("vgca_firebase_sec", sec);
+    showToast("Đã lưu cấu hình kết nối Firebase vào bộ nhớ trình duyệt.", "success");
+  }
+
+  function loadTeachersFromStorage() {
+    const stored = localStorage.getItem("vgca_teachers_roster");
+    if (stored) {
+      try {
+        teachers = JSON.parse(stored);
+      } catch (e) {
+        teachers = [...defaultTeachers];
+      }
+    } else {
+      teachers = [...defaultTeachers];
+      saveTeachersToStorage();
+    }
+  }
+
+  function saveTeachersToStorage() {
+    localStorage.setItem("vgca_teachers_roster", JSON.stringify(teachers));
+  }
+
+  function renderTable(data = null) {
+    const list = data || teachers;
+    const tbody = document.getElementById("rosterTableBody");
+    tbody.replaceChildren();
+
+    if (list.length === 0) {
+      const emptyTr = document.createElement("tr");
+      const emptyTd = document.createElement("td");
+      emptyTd.colSpan = 8;
+      emptyTd.style.textAlign = "center";
+      emptyTd.style.padding = "24px";
+      emptyTd.style.color = "var(--text-muted)";
+      emptyTd.textContent = "Không tìm thấy giáo viên nào.";
+      emptyTr.appendChild(emptyTd);
+      tbody.appendChild(emptyTr);
+      return;
+    }
+
+    list.forEach((t, idx) => {
+      const tr = document.createElement("tr");
+
+      // 1. STT
+      const tdStt = document.createElement("td");
+      tdStt.style.color = "var(--text-muted)";
+      tdStt.style.fontWeight = "600";
+      tdStt.textContent = String(idx + 1);
+      tr.appendChild(tdStt);
+
+      // 2. Họ và tên
+      const tdName = document.createElement("td");
+      tdName.style.fontWeight = "600";
+      tdName.style.color = "#1E293B";
+      tdName.textContent = t.fullName || "--";
+      tr.appendChild(tdName);
+
+      // 3. Số CCCD
+      const tdCccd = document.createElement("td");
+      const codeElem = document.createElement("code");
+      codeElem.textContent = t.cccd || "--";
+      tdCccd.appendChild(codeElem);
+      tr.appendChild(tdCccd);
+
+      // 4. Chức vụ
+      const tdRole = document.createElement("td");
+      const spanBadge = document.createElement("span");
+      let badgeClass = "badge-giaovien";
+      let prefix = "";
+      if (t.title === "Hiệu trưởng") { badgeClass = "badge-hieutruong"; prefix = "⭐ "; }
+      else if (t.title === "Phó hiệu trưởng") { badgeClass = "badge-hieupho"; prefix = "⭐ "; }
+      else if (t.title === "Tổ trưởng") { badgeClass = "badge-totruong"; prefix = "📋 "; }
+      spanBadge.className = `badge-role ${badgeClass}`;
+      spanBadge.textContent = `${prefix}${t.title || "Giáo viên"}`;
+      tdRole.appendChild(spanBadge);
+      tr.appendChild(tdRole);
+
+      // 5. Tổ chuyên môn
+      const tdDept = document.createElement("td");
+      tdDept.textContent = t.department || "--";
+      tr.appendChild(tdDept);
+
+      // 6. Số điện thoại
+      const tdPhone = document.createElement("td");
+      tdPhone.textContent = t.phone || "--";
+      tr.appendChild(tdPhone);
+
+      // 7. Email
+      const tdEmail = document.createElement("td");
+      if (t.email) {
+        const aEmail = document.createElement("a");
+        aEmail.href = `mailto:${encodeURIComponent(t.email)}`;
+        aEmail.style.color = "var(--primary)";
+        aEmail.style.textDecoration = "none";
+        aEmail.textContent = t.email;
+        tdEmail.appendChild(aEmail);
+      } else {
+        tdEmail.textContent = "--";
+      }
+      tr.appendChild(tdEmail);
+
+      // 8. Thao tác
+      const tdAction = document.createElement("td");
+      tdAction.style.textAlign = "center";
+
+      const btnEdit = document.createElement("button");
+      btnEdit.className = "btn btn-outline btn-sm";
+      btnEdit.textContent = "✏️ Sửa";
+      btnEdit.style.marginRight = "6px";
+      btnEdit.addEventListener("click", () => openEditModal(t.cccd));
+
+      const btnDelete = document.createElement("button");
+      btnDelete.className = "btn btn-danger btn-sm";
+      btnDelete.textContent = "🗑️ Xóa";
+      btnDelete.addEventListener("click", () => deleteTeacher(t.cccd));
+
+      tdAction.appendChild(btnEdit);
+      tdAction.appendChild(btnDelete);
+      tr.appendChild(tdAction);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateStats() {
+    document.getElementById("statTotal").textContent = teachers.length;
+    const bgh = teachers.filter(t => t.title === "Hiệu trưởng" || t.title === "Phó hiệu trưởng").length;
+    const tt = teachers.filter(t => t.title === "Tổ trưởng").length;
+    const gv = teachers.filter(t => t.title === "Giáo viên").length;
+
+    document.getElementById("statLeadership").textContent = bgh;
+    document.getElementById("statDepts").textContent = tt;
+    document.getElementById("statTeachers").textContent = gv;
+  }
+
+  function filterTable() {
+    const q = document.getElementById("searchInput").value.toLowerCase().trim();
+    const role = document.getElementById("filterRole").value;
+
+    const filtered = teachers.filter(t => {
+      const matchQ = (t.fullName || "").toLowerCase().includes(q) ||
+                     (t.cccd || "").includes(q) ||
+                     (t.phone || "").includes(q) ||
+                     (t.department || "").toLowerCase().includes(q);
+      const matchRole = !role || t.title === role;
+      return matchQ && matchRole;
+    });
+
+    renderTable(filtered);
+  }
+
+  // Modal handlers
+  function openAddModal() {
+    document.getElementById("modalTitle").textContent = "Thêm Giáo Viên Mới";
+    document.getElementById("editIndex").value = "-1";
+    document.getElementById("inpFullName").value = "";
+    document.getElementById("inpCccd").value = "";
+    document.getElementById("inpCccd").disabled = false;
+    document.getElementById("inpTitle").value = "Giáo viên";
+    document.getElementById("inpDepartment").value = "";
+    document.getElementById("inpPhone").value = "";
+    document.getElementById("inpEmail").value = "";
+    document.getElementById("inpOrg").value = "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ";
+    document.getElementById("teacherModal").classList.add("active");
+  }
+
+  function openEditModal(cccd) {
+    const teacher = teachers.find(t => t.cccd === cccd);
+    if (!teacher) return;
+
+    document.getElementById("modalTitle").textContent = "Chỉnh Sửa Thông Tin Giáo Viên";
+    document.getElementById("editIndex").value = cccd;
+    document.getElementById("inpFullName").value = teacher.fullName || "";
+    document.getElementById("inpCccd").value = teacher.cccd || "";
+    document.getElementById("inpCccd").disabled = true; // Không sửa CCCD để tránh mất liên kết
+    document.getElementById("inpTitle").value = teacher.title || "Giáo viên";
+    document.getElementById("inpDepartment").value = teacher.department || "";
+    document.getElementById("inpPhone").value = teacher.phone || "";
+    document.getElementById("inpEmail").value = teacher.email || "";
+    document.getElementById("inpOrg").value = teacher.organization || "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ";
+    document.getElementById("teacherModal").classList.add("active");
+  }
+
+  function closeModal() {
+    document.getElementById("teacherModal").classList.remove("active");
+  }
+
+  function handleFormSubmit(e) {
+    e.preventDefault();
+    const editCccd = document.getElementById("editIndex").value;
+    const fullName = document.getElementById("inpFullName").value.trim();
+    const cccd = document.getElementById("inpCccd").value.trim();
+    const title = document.getElementById("inpTitle").value;
+    const department = document.getElementById("inpDepartment").value.trim();
+    const phone = document.getElementById("inpPhone").value.trim();
+    const email = document.getElementById("inpEmail").value.trim();
+    const organization = document.getElementById("inpOrg").value.trim();
+
+    if (!/^[0-9]{12}$/.test(cccd)) {
+      alert("Số CCCD bắt buộc phải gồm đúng 12 chữ số!");
+      return;
+    }
+
+    if (editCccd === "-1") {
+      // Thêm mới: kiểm tra trùng CCCD
+      if (teachers.some(t => t.cccd === cccd)) {
+        alert("Số CCCD này đã tồn tại trong danh sách! Vui lòng kiểm tra lại.");
+        return;
+      }
+      teachers.push({ cccd, fullName, title, department, phone, email, organization, status: "ACTIVE" });
+      showToast(`Đã thêm thầy/cô ${fullName} thành công!`, "success");
+    } else {
+      // Chỉnh sửa
+      const idx = teachers.findIndex(t => t.cccd === editCccd);
+      if (idx !== -1) {
+        teachers[idx].fullName = fullName;
+        teachers[idx].title = title;
+        teachers[idx].department = department;
+        teachers[idx].phone = phone;
+        teachers[idx].email = email;
+        teachers[idx].organization = organization;
+        showToast(`Đã cập nhật thông tin thầy/cô ${fullName}!`, "success");
+      }
+    }
+
+    saveTeachersToStorage();
+    renderTable();
+    updateStats();
+    closeModal();
+  }
+
+  function deleteTeacher(cccd) {
+    const teacher = teachers.find(t => t.cccd === cccd);
+    if (!teacher) return;
+    if (confirm(`Bạn có chắc chắn muốn xóa giáo viên:\n${teacher.fullName} (CCCD: ${teacher.cccd}) khỏi danh sách không?`)) {
+      teachers = teachers.filter(t => t.cccd !== cccd);
+      saveTeachersToStorage();
+      renderTable();
+      updateStats();
+      showToast(`Đã xóa giáo viên ${teacher.fullName}`, "info");
+    }
+  }
+
+  // ĐỒNG BỘ LÊN FIREBASE REALTIME DATABASE
+  async function syncToFirebase() {
+    const url = document.getElementById("cfgFirebaseUrl").value.trim().replace(/\/$/, "");
+    const sec = document.getElementById("cfgDbSecret").value.trim();
+    if (!url) {
+      alert("Vui lòng nhập Firebase Realtime Database URL!");
+      return;
+    }
+
+    const payload = {
+      schoolName: "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+      description: "Danh mục phân quyền tài khoản Giáo viên toàn trường kết nối ký số Ban Cơ Yếu Chính Phủ",
+      updatedAt: new Date().toISOString(),
+      roster: teachers
+    };
+
+    const targetUrl = sec ? `${url}/school_roster.json?auth=${sec}` : `${url}/school_roster.json`;
+
+    showToast("Đang đồng bộ dữ liệu lên Firebase...", "info");
+    try {
+      const res = await fetch(targetUrl, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        showToast("Đồng bộ danh sách giáo viên lên Firebase THÀNH CÔNG! Toàn trường đã nhận được bản mới.", "success");
+        document.getElementById("badgeCloudStatus").textContent = "☁️ Đã đồng bộ lên Firebase lúc " + new Date().toLocaleTimeString();
+      } else {
+        showToast(`Lỗi đồng bộ: Mã phản hồi ${res.status}`, "error");
+      }
+    } catch (err) {
+      showToast(`Lỗi kết nối Firebase: ${err.message}`, "error");
+    }
+  }
+
+  // TẢI DỮ LIỆU TỪ FIREBASE
+  async function loadFromFirebase() {
+    const url = document.getElementById("cfgFirebaseUrl").value.trim().replace(/\/$/, "");
+    const sec = document.getElementById("cfgDbSecret").value.trim();
+    if (!url) {
+      alert("Vui lòng nhập Firebase Realtime Database URL!");
+      return;
+    }
+
+    const targetUrl = sec ? `${url}/school_roster.json?auth=${sec}` : `${url}/school_roster.json`;
+    showToast("Đang tải dữ liệu từ Firebase...", "info");
+
+    try {
+      const res = await fetch(targetUrl);
+      if (!res.ok) {
+        showToast(`Không thể tải: Mã lỗi ${res.status}`, "error");
+        return;
+      }
+
+      const data = await res.json();
+      if (!data) {
+        showToast("Chưa có danh sách giáo viên trên Firebase!", "info");
+        return;
+      }
+
+      const list = Array.isArray(data) ? data : (data.roster || data.teachers || []);
+      if (list.length > 0) {
+        teachers = list;
+        saveTeachersToStorage();
+        renderTable();
+        updateStats();
+        showToast(`Đã tải thành công ${list.length} giáo viên từ Firebase!`, "success");
+      } else {
+        showToast("Dữ liệu trên Firebase rỗng!", "info");
+      }
+    } catch (err) {
+      showToast(`Lỗi tải dữ liệu: ${err.message}`, "error");
+    }
+  }
+
+  // XUẤT TỆP JSON
+  function exportJsonFile() {
+    const payload = {
+      schoolName: "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+      description: "Danh mục phân quyền tài khoản Giáo viên toàn trường kết nối ký số Ban Cơ Yếu Chính Phủ",
+      updatedAt: new Date().toISOString(),
+      roster: teachers
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "school_roster.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("Đã tải tệp school_roster.json về máy tính thành công!", "success");
+  }
+
+  // NHẬP TỆP JSON
+  function importJsonFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target.result);
+        const list = Array.isArray(data) ? data : (data.roster || data.teachers || []);
+        if (list && list.length > 0) {
+          teachers = list;
+          saveTeachersToStorage();
+          renderTable();
+          updateStats();
+          showToast(`Đã nhập thành công ${list.length} giáo viên từ tệp JSON!`, "success");
+        } else {
+          alert("Không tìm thấy danh sách giáo viên hợp lệ trong tệp JSON!");
+        }
+      } catch (err) {
+        alert("Lỗi đọc tệp JSON: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
+
+  function toggleConfig() {
+    const grid = document.getElementById("configGrid");
+    grid.style.display = grid.style.display === "none" ? "grid" : "none";
+  }
+
+  function showToast(msg, type = "info") {
+    const toast = document.getElementById("toastMessage");
+    toast.textContent = msg;
+    toast.className = `toast ${type}`;
+    toast.style.display = "flex";
+    setTimeout(() => {
+      toast.style.display = "none";
+    }, 4000);
+  }
+</script>
+
+</body>
+</html>

@@ -14,6 +14,8 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="QRCoder" Version="1.8.0" />
+    <PackageReference Include="Syncfusion.DocToPDFConverter.Wpf" Version="28.2.9" />
+    <PackageReference Include="Syncfusion.SfRichTextBoxAdv.WPF" Version="28.2.9" />
   </ItemGroup>
 
   <ItemGroup>

@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        xmlns:syncfusion="clr-namespace:Syncfusion.Windows.Controls.RichTextBoxAdv;assembly=Syncfusion.SfRichTextBoxAdv.Wpf"
         mc:Ignorable="d"
         Title="VGCA Sign Tool Pro - Hệ Thống Ký Số Điện Tử &amp; Soạn Thảo Văn Bản Tích Hợp" 
         Height="820" Width="1320"
@@ -581,6 +582,8 @@
                                     <Button Content="↔ Giữa" ToolTip="Căn giữa" Style="{StaticResource FormatButton}" Click="BtnAlignCenter_Click" />
                                     <Button Content="⇥ Phải" ToolTip="Căn lề phải" Style="{StaticResource FormatButton}" Click="BtnAlignRight_Click" />
                                     <Button Content="⇿ Đều" ToolTip="Căn đều hai bên" Style="{StaticResource FormatButton}" Click="BtnAlignJustify_Click" />
+                                    <Separator Width="1" Height="16" Margin="6,0" Background="#CBD5E1" />
+                                    <Button x:Name="BtnSaveWordCopy" Content="💾 Lưu bản sao Word..." ToolTip="Lưu nội dung đã chỉnh sửa thành một tệp Word mới (bảo toàn tuyệt đối tệp gốc)" Style="{StaticResource FormatButton}" Padding="8,2" Click="BtnSaveWordCopy_Click" />
 
                                     <!-- NÚT ĐỊNH DẠNG KHỔ IN EXCEL (HIỆN KHI MỞ FILE EXCEL) -->
                                     <StackPanel x:Name="PnlExcelToolbarControls" Orientation="Horizontal" Visibility="Collapsed" Margin="8,0,0,0">
@@ -671,7 +674,15 @@
                     <!-- KHUNG XEM TRƯỚC VÀ CHỈNH SỬA VĂN BẢN TRỰC TIẾP (WEBVIEW2 CANVAS) -->
                     <Border Grid.Row="2" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6">
                         <Grid>
-                            <wv2:WebView2 x:Name="PdfPreviewControl" />
+                            <!-- 1. WebView2 dành riêng cho PDF (Ký số & con dấu) và bảng tính Excel -->
+                            <wv2:WebView2 x:Name="PdfPreviewControl" Visibility="Visible" />
+
+                            <!-- 2. Điều khiển Native A4 Paged Word Editor của Syncfusion dành riêng cho file Word (.docx, .doc) -->
+                            <syncfusion:SfRichTextBoxAdv x:Name="WordEditorControl" 
+                                                         Visibility="Collapsed" 
+                                                         LayoutType="Pages"
+                                                         Background="#F1F5F9"
+                                                         AllowDrop="False" />
                             
                             <Border x:Name="PnlPreviewPlaceholder" Background="#F8FAFC" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -891,7 +902,8 @@
 
                                     <!-- DANH SÁCH BÁO CÁO ĐI -->
                                     <Border Grid.Row="0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
-                                        <ListView x:Name="LvOutboxReports" BorderThickness="0" Background="Transparent" SelectionMode="Single">
+                                        <ListView x:Name="LvOutboxReports" BorderThickness="0" Background="Transparent" SelectionMode="Single"
+                                                  MouseDoubleClick="LvOutboxReports_MouseDoubleClick">
                                             <ListView.View>
                                                 <GridView>
                                                     <GridViewColumn Header="Mã Báo Cáo" Width="140" DisplayMemberBinding="{Binding ReportId}" />
@@ -919,12 +931,18 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="🔒 Lưu ý: Bạn chỉ được phép thu hồi khi người duyệt chưa mở file (hoặc quá 60 phút không ký)." 
+                                            <TextBlock Grid.Column="0" Text="💡 Mẹo: Nhấp đúp vào dòng báo cáo hoặc bấm 'Xem Bản Đã Gửi' để xem nội dung (chỉ đọc, không xung đột khi người nhận đang ký)." 
                                                        FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
-                                            <Button Grid.Column="1" x:Name="BtnRecallReport" Content="🔴 Thu Hồi Báo Cáo" 
-                                                    Style="{StaticResource SecondaryButton}" 
-                                                    Foreground="#DC2626" BorderBrush="#FCA5A5" Background="#FEF2F2"
-                                                    FontSize="12" FontWeight="Bold" Padding="16,8" Click="BtnRecallReport_Click" />
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <Button x:Name="BtnViewOutboxReport" Content="👁 Xem Bản Đã Gửi (Tab 2)" 
+                                                        Style="{StaticResource PrimaryButton}" 
+                                                        Background="#4F46E5" BorderBrush="#4338CA"
+                                                        FontSize="12" FontWeight="Bold" Padding="14,8" Margin="0,0,8,0" Click="BtnViewOutboxReport_Click" />
+                                                <Button x:Name="BtnRecallReport" Content="🔴 Thu Hồi Báo Cáo" 
+                                                        Style="{StaticResource SecondaryButton}" 
+                                                        Foreground="#DC2626" BorderBrush="#FCA5A5" Background="#FEF2F2"
+                                                        FontSize="12" FontWeight="Bold" Padding="16,8" Click="BtnRecallReport_Click" />
+                                            </StackPanel>
                                         </Grid>
                                     </Border>
                                 </Grid>

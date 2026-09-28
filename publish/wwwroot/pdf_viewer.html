@@ -533,6 +533,31 @@
             }
         }
 
+        function resetViewer() {
+            if (window._pdfLoadAbort) window._pdfLoadAbort.aborted = true;
+            removeStamp();
+            const container = document.getElementById('viewer-container');
+            if (container) {
+                container.querySelectorAll('canvas').forEach(c => { c.width = 0; c.height = 0; });
+                container.textContent = '';
+                container.style.display = 'none';
+            }
+            const excelContainer = document.getElementById('excel-container');
+            if (excelContainer) {
+                excelContainer.style.display = 'none';
+                const tbody = document.getElementById('excel-table-body');
+                if (tbody) tbody.textContent = '';
+                const thead = document.getElementById('excel-table-head');
+                if (thead) thead.textContent = '';
+            }
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'none';
+            currentPdf = null;
+            renderedPages = [];
+            currentWorkbook = null;
+            currentSheetName = null;
+        }
+
         async function loadPdfFromBase64(base64Data) {
             if (!base64Data || typeof base64Data !== 'string') {
                 console.error('loadPdfFromBase64: invalid input');

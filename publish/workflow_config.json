@@ -1,0 +1,6 @@
+{
+  "firebaseUrl": "https://cva-kyso-lienthong-default-rtdb.asia-southeast1.firebasedatabase.app",
+  "databaseSecret": "TOdsGaw1iflR0dCDtHqQ8pBii9UgiqLaq8nfF250",
+  "gatewayWorkerUrl": "https://cva-kyso-gateway.workers.dev",
+  "rosterUrl": ""
+}

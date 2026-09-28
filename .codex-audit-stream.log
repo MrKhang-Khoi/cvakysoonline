@@ -9,135 +9,69 @@
 [32m%s[0m ✅ [GATE 0 PASS]: 100% file mã nguồn sạch cú pháp vật lý Native.
 
 [33m%s[0m ⚠️ [ZERO-TRUST PHÁT HIỆN]: Có 1 file mã nguồn CHƯA ĐƯỢC CODEX XÁC NHẬN (Kể cả đã commit lên Git):
-   • MainWindow.xaml.cs [SHA-256: e00c7c5f28...]
+   • Services/WordConverterService.cs [SHA-256: be9abd8589...]
 [32m%s[0m ✅ [GATE 1 PASS]: Đã cô lập danh sách mã nguồn cần thẩm định chi tiết.
 
-[34m%s[0m 🧩 Thuật toán Cắt lát chi tiết đã chia 1 file thành 39 lát cắt dòng code (đánh số dòng thực tế):
-   1. MainWindow.xaml.cs [Dòng 1 - 60 / Tổng 2291 dòng]
-   2. MainWindow.xaml.cs [Dòng 61 - 120 / Tổng 2291 dòng]
-   3. MainWindow.xaml.cs [Dòng 121 - 180 / Tổng 2291 dòng]
-   4. MainWindow.xaml.cs [Dòng 181 - 240 / Tổng 2291 dòng]
-   5. MainWindow.xaml.cs [Dòng 241 - 300 / Tổng 2291 dòng]
-   6. MainWindow.xaml.cs [Dòng 301 - 360 / Tổng 2291 dòng]
-   7. MainWindow.xaml.cs [Dòng 361 - 420 / Tổng 2291 dòng]
-   8. MainWindow.xaml.cs [Dòng 421 - 480 / Tổng 2291 dòng]
-   9. MainWindow.xaml.cs [Dòng 481 - 540 / Tổng 2291 dòng]
-   10. MainWindow.xaml.cs [Dòng 541 - 600 / Tổng 2291 dòng]
-   11. MainWindow.xaml.cs [Dòng 601 - 660 / Tổng 2291 dòng]
-   12. MainWindow.xaml.cs [Dòng 661 - 720 / Tổng 2291 dòng]
-   13. MainWindow.xaml.cs [Dòng 721 - 780 / Tổng 2291 dòng]
-   14. MainWindow.xaml.cs [Dòng 781 - 840 / Tổng 2291 dòng]
-   15. MainWindow.xaml.cs [Dòng 841 - 900 / Tổng 2291 dòng]
-   16. MainWindow.xaml.cs [Dòng 901 - 960 / Tổng 2291 dòng]
-   17. MainWindow.xaml.cs [Dòng 961 - 1020 / Tổng 2291 dòng]
-   18. MainWindow.xaml.cs [Dòng 1021 - 1080 / Tổng 2291 dòng]
-   19. MainWindow.xaml.cs [Dòng 1081 - 1140 / Tổng 2291 dòng]
-   20. MainWindow.xaml.cs [Dòng 1141 - 1200 / Tổng 2291 dòng]
-   21. MainWindow.xaml.cs [Dòng 1201 - 1260 / Tổng 2291 dòng]
-   22. MainWindow.xaml.cs [Dòng 1261 - 1320 / Tổng 2291 dòng]
-   23. MainWindow.xaml.cs [Dòng 1321 - 1380 / Tổng 2291 dòng]
-   24. MainWindow.xaml.cs [Dòng 1381 - 1440 / Tổng 2291 dòng]
-   25. MainWindow.xaml.cs [Dòng 1441 - 1500 / Tổng 2291 dòng]
-   26. MainWindow.xaml.cs [Dòng 1501 - 1560 / Tổng 2291 dòng]
-   27. MainWindow.xaml.cs [Dòng 1561 - 1620 / Tổng 2291 dòng]
-   28. MainWindow.xaml.cs [Dòng 1621 - 1680 / Tổng 2291 dòng]
-   29. MainWindow.xaml.cs [Dòng 1681 - 1740 / Tổng 2291 dòng]
-   30. MainWindow.xaml.cs [Dòng 1741 - 1800 / Tổng 2291 dòng]
-   31. MainWindow.xaml.cs [Dòng 1801 - 1860 / Tổng 2291 dòng]
-   32. MainWindow.xaml.cs [Dòng 1861 - 1920 / Tổng 2291 dòng]
-   33. MainWindow.xaml.cs [Dòng 1921 - 1980 / Tổng 2291 dòng]
-   34. MainWindow.xaml.cs [Dòng 1981 - 2040 / Tổng 2291 dòng]
-   35. MainWindow.xaml.cs [Dòng 2041 - 2100 / Tổng 2291 dòng]
-   36. MainWindow.xaml.cs [Dòng 2101 - 2160 / Tổng 2291 dòng]
-   37. MainWindow.xaml.cs [Dòng 2161 - 2220 / Tổng 2291 dòng]
-   38. MainWindow.xaml.cs [Dòng 2221 - 2280 / Tổng 2291 dòng]
-   39. MainWindow.xaml.cs [Dòng 2281 - 2291 / Tổng 2291 dòng]
+[34m%s[0m 🧩 Thuật toán Cắt lát chi tiết đã chia 1 file thành 14 lát cắt dòng code (đánh số dòng thực tế):
+   1. Services/WordConverterService.cs [Dòng 1 - 60 / Tổng 811 dòng]
+   2. Services/WordConverterService.cs [Dòng 61 - 120 / Tổng 811 dòng]
+   3. Services/WordConverterService.cs [Dòng 121 - 180 / Tổng 811 dòng]
+   4. Services/WordConverterService.cs [Dòng 181 - 240 / Tổng 811 dòng]
+   5. Services/WordConverterService.cs [Dòng 241 - 300 / Tổng 811 dòng]
+   6. Services/WordConverterService.cs [Dòng 301 - 360 / Tổng 811 dòng]
+   7. Services/WordConverterService.cs [Dòng 361 - 420 / Tổng 811 dòng]
+   8. Services/WordConverterService.cs [Dòng 421 - 480 / Tổng 811 dòng]
+   9. Services/WordConverterService.cs [Dòng 481 - 540 / Tổng 811 dòng]
+   10. Services/WordConverterService.cs [Dòng 541 - 600 / Tổng 811 dòng]
+   11. Services/WordConverterService.cs [Dòng 601 - 660 / Tổng 811 dòng]
+   12. Services/WordConverterService.cs [Dòng 661 - 720 / Tổng 811 dòng]
+   13. Services/WordConverterService.cs [Dòng 721 - 780 / Tổng 811 dòng]
+   14. Services/WordConverterService.cs [Dòng 781 - 811 / Tổng 811 dòng]
 
 [34m%s[0m ⚡ [GATE 2]: Khởi chạy Bộ kiểm thử tự động thích ứng đa nền tảng...
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 1 - 60 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 61 - 120 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 121 - 180 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 181 - 240 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 241 - 300 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 301 - 360 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 361 - 420 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 421 - 480 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 481 - 540 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 541 - 600 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 601 - 660 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 661 - 720 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 721 - 780 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 781 - 840 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 841 - 900 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 901 - 960 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[32m%s[0m    ⚡ [CACHE HIT]: MainWindow.xaml.cs [Dòng 961 - 1020 / Tổng 2291 dòng] (Nội dung không đổi) -> [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 18/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1021 - 1080 / Tổng 2291 dòng]...
+[33m%s[0m ⏳ [LÁT CẮT 1/14] Đang thẩm định: Services/WordConverterService.cs [Dòng 1 - 60 / Tổng 811 dòng]...
 [36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1021 - 1080 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 19/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1081 - 1140 / Tổng 2291 dòng]...
+[32m%s[0m    ✅ Services/WordConverterService.cs [Dòng 1 - 60 / Tổng 811 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 2/14] Đang thẩm định: Services/WordConverterService.cs [Dòng 61 - 120 / Tổng 811 dòng]...
 [36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1081 - 1140 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 20/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1141 - 1200 / Tổng 2291 dòng]...
+[32m%s[0m    ✅ Services/WordConverterService.cs [Dòng 61 - 120 / Tổng 811 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 3/14] Đang thẩm định: Services/WordConverterService.cs [Dòng 121 - 180 / Tổng 811 dòng]...
 [36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1141 - 1200 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 21/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1201 - 1260 / Tổng 2291 dòng]...
+[32m%s[0m    ✅ Services/WordConverterService.cs [Dòng 121 - 180 / Tổng 811 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 4/14] Đang thẩm định: Services/WordConverterService.cs [Dòng 181 - 240 / Tổng 811 dòng]...
 [36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1201 - 1260 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 22/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1261 - 1320 / Tổng 2291 dòng]...
+[32m%s[0m    ✅ Services/WordConverterService.cs [Dòng 181 - 240 / Tổng 811 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 5/14] Đang thẩm định: Services/WordConverterService.cs [Dòng 241 - 300 / Tổng 811 dòng]...
 [36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1261 - 1320 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 23/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1321 - 1380 / Tổng 2291 dòng]...
+[32m%s[0m    ✅ Services/WordConverterService.cs [Dòng 241 - 300 / Tổng 811 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 6/14] Đang thẩm định: Services/WordConverterService.cs [Dòng 301 - 360 / Tổng 811 dòng]...
 [36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1321 - 1380 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 24/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1381 - 1440 / Tổng 2291 dòng]...
+[32m%s[0m    ✅ Services/WordConverterService.cs [Dòng 301 - 360 / Tổng 811 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 7/14] Đang thẩm định: Services/WordConverterService.cs [Dòng 361 - 420 / Tổng 811 dòng]...
 [36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1381 - 1440 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 25/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1441 - 1500 / Tổng 2291 dòng]...
+[32m%s[0m    ✅ Services/WordConverterService.cs [Dòng 361 - 420 / Tổng 811 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 8/14] Đang thẩm định: Services/WordConverterService.cs [Dòng 421 - 480 / Tổng 811 dòng]...
 [36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1441 - 1500 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 26/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1501 - 1560 / Tổng 2291 dòng]...
+[32m%s[0m    ✅ Services/WordConverterService.cs [Dòng 421 - 480 / Tổng 811 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 9/14] Đang thẩm định: Services/WordConverterService.cs [Dòng 481 - 540 / Tổng 811 dòng]...
 [36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1501 - 1560 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 27/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1561 - 1620 / Tổng 2291 dòng]...
+[32m%s[0m    ✅ Services/WordConverterService.cs [Dòng 481 - 540 / Tổng 811 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 10/14] Đang thẩm định: Services/WordConverterService.cs [Dòng 541 - 600 / Tổng 811 dòng]...
 [36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1561 - 1620 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 28/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1621 - 1680 / Tổng 2291 dòng]...
+[32m%s[0m    ✅ Services/WordConverterService.cs [Dòng 541 - 600 / Tổng 811 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 11/14] Đang thẩm định: Services/WordConverterService.cs [Dòng 601 - 660 / Tổng 811 dòng]...
 [36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1621 - 1680 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 29/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1681 - 1740 / Tổng 2291 dòng]...
+[32m%s[0m    ✅ Services/WordConverterService.cs [Dòng 601 - 660 / Tổng 811 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 12/14] Đang thẩm định: Services/WordConverterService.cs [Dòng 661 - 720 / Tổng 811 dòng]...
 [36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1681 - 1740 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 30/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1741 - 1800 / Tổng 2291 dòng]...
+[32m%s[0m    ✅ Services/WordConverterService.cs [Dòng 661 - 720 / Tổng 811 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 13/14] Đang thẩm định: Services/WordConverterService.cs [Dòng 721 - 780 / Tổng 811 dòng]...
 [36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1741 - 1800 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 31/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1801 - 1860 / Tổng 2291 dòng]...
+[32m%s[0m    ✅ Services/WordConverterService.cs [Dòng 721 - 780 / Tổng 811 dòng]: [APPROVED]
+[33m%s[0m ⏳ [LÁT CẮT 14/14] Đang thẩm định: Services/WordConverterService.cs [Dòng 781 - 811 / Tổng 811 dòng]...
 [36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1801 - 1860 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 32/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1861 - 1920 / Tổng 2291 dòng]...
-[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1861 - 1920 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 33/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1921 - 1980 / Tổng 2291 dòng]...
-[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1921 - 1980 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 34/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 1981 - 2040 / Tổng 2291 dòng]...
-[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 1981 - 2040 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 35/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 2041 - 2100 / Tổng 2291 dòng]...
-[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 2041 - 2100 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 36/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 2101 - 2160 / Tổng 2291 dòng]...
-[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 2101 - 2160 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 37/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 2161 - 2220 / Tổng 2291 dòng]...
-[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 2161 - 2220 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 38/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 2221 - 2280 / Tổng 2291 dòng]...
-[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 2221 - 2280 / Tổng 2291 dòng]: [APPROVED]
-[33m%s[0m ⏳ [LÁT CẮT 39/39] Đang thẩm định: MainWindow.xaml.cs [Dòng 2281 - 2291 / Tổng 2291 dòng]...
-[36m%s[0m    🏷️ Phân tầng: [TIER 2 - STANDARD WEB APPLICATION / FULLSTACK SERVICE]
-[32m%s[0m    ✅ MainWindow.xaml.cs [Dòng 2281 - 2291 / Tổng 2291 dòng]: [APPROVED]
-[32m%s[0m    💾 [IMMEDIATE LEDGER COMMIT]: File MainWindow.xaml.cs đã PASS đủ 39/39 lát cắt -> ĐÃ GHI NHẬN VÀO SỔ CÁI!
+[32m%s[0m    ✅ Services/WordConverterService.cs [Dòng 781 - 811 / Tổng 811 dòng]: [APPROVED]
+[32m%s[0m    💾 [IMMEDIATE LEDGER COMMIT]: File Services/WordConverterService.cs đã PASS đủ 14/14 lát cắt -> ĐÃ GHI NHẬN VÀO SỔ CÁI!
 
 [32m%s[0m 🎉 XÁC NHẬN: 100% CÁC LÁT CẮT MÃ NGUỒN ĐÃ ĐƯỢC CODEX PHÊ DUYỆT!
 [32m%s[0m 💾 Đã ghi nhận phê duyệt vào Sổ cái Ledger: C:\Users\HPZBook\Desktop\VGCASignToolPro\.codex-audit-ledger.json

@@ -83,9 +83,9 @@
       "timestamp": "2026-09-28T03:03:02.320Z"
     },
     "Services/WordConverterService.cs": {
-      "sha256": "b24b8489f8413631a6164559f528ee8048a0afaf9e667206f56c55960abc5f33",
+      "sha256": "be9abd85894fbf56b7edd7ff640c4dc996590b4d1c1c1bc0d560ac93201e6623",
       "status": "APPROVED",
-      "timestamp": "2026-09-28T08:12:19.334Z"
+      "timestamp": "2026-09-28T10:14:03.861Z"
     },
     "Services/ExcelConverterService.cs": {
       "sha256": "1cd25a0825744d1b160828aa96380a7660cbfd4f2823255e9b2cf5e489cecab8",
@@ -3143,6 +3143,88 @@
     ],
     "MainWindow.xaml.cs [Dòng 2761 - 2772 / Tổng 2772 dòng]": [
       "VerifySignature fallback & EOF | Xử lý thông báo khi không tìm thấy chữ ký số, đóng method và kết thúc tệp MainWindow.xaml.cs an toàn."
+    ],
+    "Services/WordConverterService.cs [Dòng 1 - 60 / Tổng 554 dòng]": [
+      "ConvertWordToEditableHtmlAsync | Chuyển tác vụ sang background thread qua Task.Run, ủy quyền cho ConvertWordToEditableHtml.",
+      "ConvertWordToEditableHtml (Dòng 22-60) | Validate tồn tại tệp đầu vào, tự sinh đường dẫn HTML tạm thời tránh xung đột tệp, khởi tạo COM Word.Application và cấu hình tắt cảnh báo/giao diện nền."
+    ],
+    "Services/WordConverterService.cs [Dòng 61 - 120 / Tổng 554 dòng]": [
+      "WordToFilteredHtml | Mở COM Word ẩn danh, ép encoding UTF-8, xuất HTML lọc (wdFormatFilteredHTML), giải phóng tài nguyên COM và thu gom rác an toàn trong khối finally."
+    ],
+    "Services/WordConverterService.cs [Dòng 121 - 180 / Tổng 554 dòng]": [
+      "EnhanceHtmlForDirectEditing | Chuẩn hóa charset UTF-8, phát hiện hướng trang Word HTML (Landscape/Portrait), inject CSS định dạng khung trang chỉnh sửa trực tiếp."
+    ],
+    "Services/WordConverterService.cs [Dòng 181 - 240 / Tổng 554 dòng]": [
+      "ConvertWordToPdfAsync / ConvertWordToPdf | Validate đường dẫn file nguồn trước khi xử lý, bọc tác vụ chuyển đổi qua Task.Run đúng chuẩn. Try-catch ghi vết lỗi chèn HTML style không nuốt lỗi âm thầm."
+    ],
+    "Services/WordConverterService.cs [Dòng 241 - 300 / Tổng 554 dòng]": [
+      "ConvertWordToPdf | Late-bound Word COM init an toàn, suppress UI/alerts, mở file readonly và cấu hình export PDF chuẩn xác."
+    ],
+    "Services/WordConverterService.cs [Dòng 301 - 360 / Tổng 554 dòng]": [
+      "Word COM Export & Cleanup / SaveEditedHtmlAndConvertToPdfAsync | COM cleanup an toàn trong finally qua Marshal.ReleaseComObject và GC. Wrapper Task.Run bọc phương thức đồng bộ chuẩn xác."
+    ],
+    "Services/WordConverterService.cs [Dòng 361 - 420 / Tổng 554 dòng]": [
+      "ExportModifiedWordToPdf | Validate input, tạo thư mục output, chuẩn bị tệp HTML sạch UTF-8, khởi tạo engine Word COM late-bound an toàn không dialog treo."
+    ],
+    "Services/WordConverterService.cs [Dòng 421 - 480 / Tổng 554 dòng]": [
+      "WordConverterService.SaveAndExport | Mở tài liệu HTML trung gian qua Word COM, gỡ ReadOnly, lưu đè hoặc lưu dự phòng sang file `_edited` khi file gốc bị khóa, xuất PDF chuẩn vector qua ExportAsFixedFormat."
+    ],
+    "Services/WordConverterService.cs [Dòng 481 - 540 / Tổng 554 dòng]": [
+      "CleanHtmlForWordConversion & Word COM Cleanup | Giải phóng COM object (wordDoc, wordApp) qua Marshal.ReleaseComObject và xóa file tạm trong finally; lọc bỏ thẻ style/script editor WebView2 khỏi HTML an toàn null/empty."
+    ],
+    "Services/WordConverterService.cs [Dòng 541 - 554 / Tổng 554 dòng]": [
+      "CleanHtml / ContentSanitization | Regex xóa thuộc tính contenteditable khỏi HTML, return cleaned string, kết thúc class/namespace an toàn."
+    ],
+    "Services/WordConverterService.cs [Dòng 1 - 60 / Tổng 720 dòng]": [
+      "ConvertWordToEditableHtmlAsync, ConvertWordToEditableHtml (Dòng 1 - 60) | Kiểm tra tồn tại file nguồn, sinh đường dẫn tạm an toàn GUID, khởi tạo COM Word.Application đúng chuẩn trong try-catch, offload Task.Run phù hợp COM automation."
+    ],
+    "Services/WordConverterService.cs [Dòng 61 - 120 / Tổng 720 dòng]": [
+      "WordConverterService (Convert Word to Filtered HTML) | Thiết lập AutomationSecurity/DisplayAlerts tránh treo dialog COM, mở file, chuẩn hóa UTF-8, chuyển đổi reverse loop unlink fields chống lệch index 1-based, xuất wdFormatFilteredHTML = 10 an toàn."
+    ],
+    "Services/WordConverterService.cs [Dòng 121 - 180 / Tổng 720 dòng]": [
+      "WordConverterService (Teardown & FixBrokenImagePaths) | COM Object (Word.Application, Word.Document) giải phóng an toàn trong finally. GC thu dọn COM handle đúng chuẩn. Guard check File.Exists trước khi xử lý path ảnh HTML."
+    ],
+    "Services/WordConverterService.cs [Dòng 1 - 60 / Tổng 811 dòng]": [
+      "SuppressWordSecurityDialog / RestoreWordSecuritySetting | Tạm thời ghi đè và hoàn nguyên registry Word Security Notice qua HKCU, giải phóng RegistryKey an toàn với using declaration, fail-safe khi không đủ quyền."
+    ],
+    "Services/WordConverterService.cs [Dòng 61 - 120 / Tổng 811 dòng]": [
+      "ConvertWordToEditableHtmlAsync, ConvertWordToEditableHtml | Validate đường dẫn file đầu vào, sinh file HTML tạm ngẫu nhiên chống lock, kiểm tra khởi tạo Word COM an toàn."
+    ],
+    "Services/WordConverterService.cs [Dòng 121 - 180 / Tổng 811 dòng]": [
+      "WordConverterService.ConvertToHtml | Mở Word vô hiệu hóa macro/external links, unlink fields nhúng ảnh nội bộ, xuất Filtered HTML UTF-8 an toàn."
+    ],
+    "Services/WordConverterService.cs [Dòng 181 - 240 / Tổng 811 dòng]": [
+      "WordConverterService (COM Cleanup & FixBrokenImagePaths entry) | Đảm bảo giải phóng COM Object (Word.Application, Word.Document) trong khối finally, phục hồi cấu hình Registry an toàn, kiểm tra tồn tại tệp trước khi xử lý đường dẫn ảnh."
+    ],
+    "Services/WordConverterService.cs [Dòng 241 - 300 / Tổng 811 dòng]": [
+      "WordConverterService.HtmlImageFixer | Quét thẻ <img> bằng Regex, bỏ qua data URI / remote URL / absolute path, unescape URL an toàn và validate đường dẫn nằm trong UserProfile."
+    ],
+    "Services/WordConverterService.cs [Dòng 301 - 360 / Tổng 811 dòng]": [
+      "WordConverterService.HtmlImageSrcResolver | Khôi phục và sao chép tài nguyên ảnh cục bộ vào thư mục đích, fallback an toàn khi đường dẫn không tồn tại hoặc lỗi sao chép, giữ nguyên nội dung gốc nếu xử lý thất bại."
+    ],
+    "Services/WordConverterService.cs [Dòng 361 - 420 / Tổng 811 dòng]": [
+      "EnhanceHtmlForDirectEditing | Đọc HTML UTF-8, chuẩn hóa charset UTF-8, phát hiện khổ giấy landscape/portrait và inject CSS layout chuẩn hóa cho trình soạn thảo."
+    ],
+    "Services/WordConverterService.cs [Dòng 421 - 480 / Tổng 811 dòng]": [
+      "ConvertWordToPdfAsync | Bọc hàm đồng bộ qua Task.Run cho tác vụ CPU/Interop nặng. Chèn script/style preview HTML an toàn qua try/catch có Trace log."
+    ],
+    "Services/WordConverterService.cs [Dòng 481 - 540 / Tổng 811 dòng]": [
+      "WordConverterService (Word COM late-bound initialization) | Validate đường dẫn và định dạng file đầu vào, tạo thư mục đích, khởi tạo tiến trình Microsoft Word COM ẩn và mở tài liệu chế độ ReadOnly an toàn."
+    ],
+    "Services/WordConverterService.cs [Dòng 541 - 600 / Tổng 811 dòng]": [
+      "SaveEditedHtmlAndConvertToPdfAsync & ExportAsFixedFormat | Giải phóng tài nguyên COM Word (`Close`, `Quit`, `ReleaseComObject`) trong `finally`, phục hồi registry bảo mật, xử lý ngoại lệ giữ nguyên inner exception, không nuốt lỗi."
+    ],
+    "Services/WordConverterService.cs [Dòng 601 - 660 / Tổng 811 dòng]": [
+      "SaveEditedHtmlAndConvertToPdf | Validate input, tạo clean HTML file, đảm bảo thư mục đích PDF và khởi tạo Word COM Application an toàn."
+    ],
+    "Services/WordConverterService.cs [Dòng 661 - 720 / Tổng 811 dòng]": [
+      "WordConverterService (Dòng 661-720) | Cấu hình Word.Application mở cleanHtmlPath encoding UTF-8 (65001), mở khóa IsReadOnly file gốc, lưu SaveAs2 theo định dạng doc/docx và bắt COMException xử lý fallback ghi file dự phòng."
+    ],
+    "Services/WordConverterService.cs [Dòng 721 - 780 / Tổng 811 dòng]": [
+      "WordConverterService.Convert | Xuất tài liệu Word sang PDF qua ExportAsFixedFormat, dọn dẹp toàn bộ tài nguyên COM (wordDoc, wordApp), xóa file HTML tạm và khôi phục registry trong finally."
+    ],
+    "Services/WordConverterService.cs [Dòng 781 - 811 / Tổng 811 dòng]": [
+      "CleanHtmlForWordConversion | Validate null/whitespace an toàn, bóc tách chính xác thẻ style/script editor và thuộc tính contenteditable trước khi chuyển đổi Word, regex an toàn không ReDoS."
     ]
   },
   "sliceHashes": {
@@ -3722,46 +3804,36 @@
       "timestamp": "2026-09-28T03:03:02.320Z"
     },
     "Services/WordConverterService.cs#L1-60": {
-      "hash": "fb2e13f83addadf40d5eec1c0f24f4d6f8cd76076c2da93e2a95e6c284a93f46",
+      "hash": "734cffbb5a0d52e35ec518129357086e56f49f6fce209cef7d78639c4986adec",
       "status": "APPROVED",
       "contracts": [
-        "WordConverterService.ConvertWordToEditableHtmlAsync, ConvertWordToEditableHtml | Validate đường dẫn file Word đầu vào, sinh file HTML tạm ngẫu nhiên chống xung đột file lock, khởi tạo COM Word.Application ở chế độ chạy ngầm và mở tài liệu ReadOnly an toàn."
+        "SuppressWordSecurityDialog / RestoreWordSecuritySetting | Tạm thời ghi đè và hoàn nguyên registry Word Security Notice qua HKCU, giải phóng RegistryKey an toàn với using declaration, fail-safe khi không đủ quyền."
       ],
-      "timestamp": "2026-09-28T03:03:10.544Z"
+      "timestamp": "2026-09-28T10:12:01.493Z"
     },
     "Services/WordConverterService.cs#L61-120": {
-      "hash": "d3a49f65e223ccecf03a7abb9ba6ee3892b5fcb4ad0ae9f970c977ee68a83dff",
+      "hash": "c3251245d5045032fc2ae1075e3e09800bd419a597487694f226dfc705f59150",
       "status": "APPROVED",
       "contracts": [
-        "EnhanceHtmlForDirectEditing | Export Word sang Filtered HTML qua Interop, giải phóng triệt để COM object và file handle trong finally block, bọc ngoại lệ fail-closed."
+        "ConvertWordToEditableHtmlAsync, ConvertWordToEditableHtml | Validate đường dẫn file đầu vào, sinh file HTML tạm ngẫu nhiên chống lock, kiểm tra khởi tạo Word COM an toàn."
       ],
-      "timestamp": "2026-09-28T03:03:19.475Z"
+      "timestamp": "2026-09-28T10:12:08.269Z"
     },
     "Services/WordConverterService.cs#L121-180": {
-      "hash": "e217b4658be5a01c288177b1ccb3c49f14141a4cdc04f5b9bdf98c74e5b80518",
+      "hash": "2d8a02e78b271a0e236c3a491ff6efadd5cd931176aaf3ef6a1cf2521ba0e8de",
       "status": "APPROVED",
       "contracts": [
-        "WordHtmlPostProcessor | Kiểm tra file tồn tại, đọc UTF-8, chuẩn hóa charset, phát hiện khổ giấy A4 dọc/ngang, nội suy template CSS an toàn."
+        "WordConverterService.ConvertToHtml | Mở Word vô hiệu hóa macro/external links, unlink fields nhúng ảnh nội bộ, xuất Filtered HTML UTF-8 an toàn."
       ],
-      "timestamp": "2026-09-28T08:11:30.908Z"
-    },
-    "Services/WordConverterService.cs#L181-240": {
-      "hash": "a2518d1766f020f19174e685ce76727d95e3f48fa9721590bc4c6a83ddeb374b",
-      "status": "APPROVED",
-      "contracts": [
-        "ConvertWordToPdfAsync | Chạy bất đồng bộ ConvertWordToPdf trên ThreadPool qua Task.Run.",
-        "ConvertWordToPdf | Kiểm tra null/whitespace, file tồn tại, đúng định dạng (.doc, .docx, .rtf, .dotx) trước khi chuyển đổi.",
-        "HTML Style Injection | Chèn style và script preview an toàn vào HTML, bắt exception ghi TraceWarning tránh crash tiến trình."
-      ],
-      "timestamp": "2026-09-28T08:11:39.015Z"
+      "timestamp": "2026-09-28T10:12:17.884Z"
     },
     "Services/WordConverterService.cs#L241-300": {
-      "hash": "3cf4e8a9ca944783555622b791c132abcb39033a57c28591beb6e75d9486ed3c",
+      "hash": "eaf410ed8ccc225f0bb85c0fc3f40db0bc1b81563cbf820044bdb1db501a0570",
       "status": "APPROVED",
       "contracts": [
-        "WordToPdfConverter | Late-bound COM Word.Application khởi tạo an toàn, mở tài liệu ReadOnly, xuất PDF qua ExportAsFixedFormat đúng cấu hình."
+        "WordConverterService.HtmlImageFixer | Quét thẻ <img> bằng Regex, bỏ qua data URI / remote URL / absolute path, unescape URL an toàn và validate đường dẫn nằm trong UserProfile."
       ],
-      "timestamp": "2026-09-28T08:11:47.077Z"
+      "timestamp": "2026-09-28T10:12:34.968Z"
     },
     "Services/WordConverterService.cs#L301-318": {
       "hash": "3a2d1bf74b70d0c38e4e60dcd3234ba05f7277f584c054612d6d1e31f7f01df4",
@@ -3975,28 +4047,28 @@
       "timestamp": "2026-09-28T04:37:05.307Z"
     },
     "Services/WordConverterService.cs#L301-360": {
-      "hash": "e1665d0ba0b3c3c020a8ef80eb41f6416ff939f80768a11282b0596307f1cb95",
+      "hash": "653f841472053d861214ff16a71ef2dd79c28945712858ef624c0377dab09934",
       "status": "APPROVED",
       "contracts": [
-        "SaveEditedHtmlAndConvertToPdf / SaveEditedHtmlAndConvertToPdfAsync | COM cleanup an toàn trong block finally qua Marshal.ReleaseComObject và GC, bọc Task.Run async chuẩn, validate tham số htmlContent và originalWordFilePath không rỗng trước khi xử lý HTML."
+        "WordConverterService.HtmlImageSrcResolver | Khôi phục và sao chép tài nguyên ảnh cục bộ vào thư mục đích, fallback an toàn khi đường dẫn không tồn tại hoặc lỗi sao chép, giữ nguyên nội dung gốc nếu xử lý thất bại."
       ],
-      "timestamp": "2026-09-28T08:11:55.288Z"
+      "timestamp": "2026-09-28T10:12:43.487Z"
     },
     "Services/WordConverterService.cs#L361-420": {
-      "hash": "c07e29c280e100b3ffb20a451f6be5ac961af03e4dcf2b0579f8594799ad3213",
+      "hash": "082ad9d2035a078eb76e870a9cee6158e236d25f3855717b8670b80f3db673c7",
       "status": "APPROVED",
       "contracts": [
-        "WordConverterService (COM Export Slice) | Tạo thư mục xuất an toàn, kiểm tra Microsoft Word COM type fail-closed, khởi tạo instance ẩn, nạp HTML sạch qua UTF-8 (65001) chuẩn xác."
+        "EnhanceHtmlForDirectEditing | Đọc HTML UTF-8, chuẩn hóa charset UTF-8, phát hiện khổ giấy landscape/portrait và inject CSS layout chuẩn hóa cho trình soạn thảo."
       ],
-      "timestamp": "2026-09-28T08:12:04.025Z"
+      "timestamp": "2026-09-28T10:12:54.554Z"
     },
     "Services/WordConverterService.cs#L421-480": {
-      "hash": "be40959d7dc427db38e4fabc462b90b2daec6a18dff6855ec27f201fbc80c835",
+      "hash": "ee8afff84deacfa47bb33daeaf3eb4adff23b0ee01e236bb35509d3feb36b8fa",
       "status": "APPROVED",
       "contracts": [
-        "WordDocumentSaveAndExport | Lưu tệp Word gốc kèm cơ chế fallback khi tệp bị khóa COMException, xuất PDF qua ExportAsFixedFormat chuẩn xác, bắt đầu khối finally giải phóng COM object."
+        "ConvertWordToPdfAsync | Bọc hàm đồng bộ qua Task.Run cho tác vụ CPU/Interop nặng. Chèn script/style preview HTML an toàn qua try/catch có Trace log."
       ],
-      "timestamp": "2026-09-28T08:12:11.627Z"
+      "timestamp": "2026-09-28T10:13:02.561Z"
     },
     "Services/WordConverterService.cs#L481-530": {
       "hash": "36bcf47ea413fa56e89b2ef0b8331027504ce8f141cd099de2b73f5106b38cee",
@@ -4293,8 +4365,72 @@
         "VerifySignature fallback & EOF | Xử lý thông báo khi không tìm thấy chữ ký số, đóng method và kết thúc tệp MainWindow.xaml.cs an toàn."
       ],
       "timestamp": "2026-09-28T08:19:03.299Z"
+    },
+    "Services/WordConverterService.cs#L481-540": {
+      "hash": "3c6efdc78f258c8b1082a0bebd4a6ffb28650047d83883fbca0e76151f9ab2bd",
+      "status": "APPROVED",
+      "contracts": [
+        "WordConverterService (Word COM late-bound initialization) | Validate đường dẫn và định dạng file đầu vào, tạo thư mục đích, khởi tạo tiến trình Microsoft Word COM ẩn và mở tài liệu chế độ ReadOnly an toàn."
+      ],
+      "timestamp": "2026-09-28T10:13:16.750Z"
+    },
+    "Services/WordConverterService.cs#L541-554": {
+      "hash": "b87114b0fa3bb7ac4733651e8635548fd822b311a261b83589789ba08c906bd6",
+      "status": "APPROVED",
+      "contracts": [
+        "CleanHtml / ContentSanitization | Regex xóa thuộc tính contenteditable khỏi HTML, return cleaned string, kết thúc class/namespace an toàn."
+      ],
+      "timestamp": "2026-09-28T09:55:34.753Z"
+    },
+    "Services/WordConverterService.cs#L181-240": {
+      "hash": "cf9c1dc872386a19c122f5eb14e48fec2d943d52d9d0624cef993ecfb6c42e48",
+      "status": "APPROVED",
+      "contracts": [
+        "WordConverterService (COM Cleanup & FixBrokenImagePaths entry) | Đảm bảo giải phóng COM Object (Word.Application, Word.Document) trong khối finally, phục hồi cấu hình Registry an toàn, kiểm tra tồn tại tệp trước khi xử lý đường dẫn ảnh."
+      ],
+      "timestamp": "2026-09-28T10:12:25.813Z"
+    },
+    "Services/WordConverterService.cs#L541-600": {
+      "hash": "ad0088782d2ca5e46e709cd6844f9aaddb6a4e2da105997dbb71ce0c31f36bc8",
+      "status": "APPROVED",
+      "contracts": [
+        "SaveEditedHtmlAndConvertToPdfAsync & ExportAsFixedFormat | Giải phóng tài nguyên COM Word (`Close`, `Quit`, `ReleaseComObject`) trong `finally`, phục hồi registry bảo mật, xử lý ngoại lệ giữ nguyên inner exception, không nuốt lỗi."
+      ],
+      "timestamp": "2026-09-28T10:13:27.000Z"
+    },
+    "Services/WordConverterService.cs#L601-660": {
+      "hash": "20f6312df79d745ca7d2547c51bcba63f2b1a025179adcb3acc48794896509d5",
+      "status": "APPROVED",
+      "contracts": [
+        "SaveEditedHtmlAndConvertToPdf | Validate input, tạo clean HTML file, đảm bảo thư mục đích PDF và khởi tạo Word COM Application an toàn."
+      ],
+      "timestamp": "2026-09-28T10:13:38.127Z"
+    },
+    "Services/WordConverterService.cs#L661-720": {
+      "hash": "21fc7b6b48e5d470f7c6677b2111123087629c32da99cdfb3cca4567ee341347",
+      "status": "APPROVED",
+      "contracts": [
+        "WordConverterService (Dòng 661-720) | Cấu hình Word.Application mở cleanHtmlPath encoding UTF-8 (65001), mở khóa IsReadOnly file gốc, lưu SaveAs2 theo định dạng doc/docx và bắt COMException xử lý fallback ghi file dự phòng."
+      ],
+      "timestamp": "2026-09-28T10:13:47.941Z"
+    },
+    "Services/WordConverterService.cs#L721-780": {
+      "hash": "12ca9415fb690031c5724a5219e01541e718aa3c2f11f891bfd151505c20a7db",
+      "status": "APPROVED",
+      "contracts": [
+        "WordConverterService.Convert | Xuất tài liệu Word sang PDF qua ExportAsFixedFormat, dọn dẹp toàn bộ tài nguyên COM (wordDoc, wordApp), xóa file HTML tạm và khôi phục registry trong finally."
+      ],
+      "timestamp": "2026-09-28T10:13:56.948Z"
+    },
+    "Services/WordConverterService.cs#L781-811": {
+      "hash": "2792101bad90942d993e1fbbed9cbbcbcc057e805a7b90dd7e80574ac210200e",
+      "status": "APPROVED",
+      "contracts": [
+        "CleanHtmlForWordConversion | Validate null/whitespace an toàn, bóc tách chính xác thẻ style/script editor và thuộc tính contenteditable trước khi chuyển đổi Word, regex an toàn không ReDoS."
+      ],
+      "timestamp": "2026-09-28T10:14:03.853Z"
     }
   },
-  "lastAudit": "2026-09-28T08:19:03.324Z",
+  "lastAudit": "2026-09-28T10:14:03.861Z",
   "lastStatus": "APPROVED"
 }
