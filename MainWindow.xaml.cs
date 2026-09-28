@@ -52,8 +52,6 @@ namespace VGCASignToolPro
         private float _userStampWidth = 140f;
         private float _userStampHeight = 140f;
 
-        private readonly System.Windows.Threading.DispatcherTimer _certWatcherTimer = new();
-
         public MainWindow()
         {
             InitializeComponent();
@@ -66,11 +64,6 @@ namespace VGCASignToolPro
             _webUploader.StatusChanged += UpdateStatus;
             _vgcaAuth.LoginStateChanged += OnVgcaLoginStateChanged;
             Activated += MainWindow_Activated;
-
-            // Giám sát nhịp tim chứng thư nền (Liveness Watcher): Tự động nhận diện khi giáo viên đăng nhập Virtual CSP
-            _certWatcherTimer.Interval = TimeSpan.FromSeconds(1.5);
-            _certWatcherTimer.Tick += CertWatcherTimer_Tick;
-            _certWatcherTimer.Start();
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -469,28 +462,6 @@ namespace VGCASignToolPro
             {
                 System.Diagnostics.Trace.TraceError($"Lỗi kiểm tra chứng thư số: {ex}");
                 UpdateStatus($"Lỗi kiểm tra chứng thư số: {ex.Message}");
-            }
-        }
-
-        private void CertWatcherTimer_Tick(object? sender, EventArgs e)
-        {
-            try
-            {
-                // Kiểm tra nhanh chứng thư Ban Cơ yếu đang hoạt động trong Windows Store
-                CertificateModel? activeVgCa = _certService.GetActiveVGCACertificate();
-                string activeThumbprint = activeVgCa?.Thumbprint ?? string.Empty;
-                string currentThumbprint = _currentActiveCert?.Thumbprint ?? string.Empty;
-
-                // Nếu chứng thư trong Windows Store khác với chứng thư hiện tại của ứng dụng
-                // (Ví dụ: giáo viên vừa đăng nhập tài khoản khác trên Virtual CSP, hoặc vừa rút/cắm USB Token, hoặc đăng xuất)
-                if (!string.Equals(activeThumbprint, currentThumbprint, StringComparison.OrdinalIgnoreCase))
-                {
-                    LoadCertificatesAndVerifyVGCALogin();
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Trace.TraceWarning($"Lỗi kiểm tra chứng thư nền: {ex.Message}");
             }
         }
 
