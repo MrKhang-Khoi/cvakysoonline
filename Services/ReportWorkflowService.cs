@@ -82,9 +82,9 @@ namespace VGCASignToolPro.Services
         [JsonIgnore]
         public string StatusText => Status switch
         {
-            "WAITING_OPEN" => "Chờ duyệt (Chưa mở)",
-            "ACQUIRED_LOCKED" => "Đang mở xử lý",
-            "SIGNED_COMMITTED" => "Đã ký duyệt xong",
+            "WAITING_OPEN" => "Chưa mở (Chờ nhận)",
+            "ACQUIRED_LOCKED" => "Đã nhận (Đang xem)",
+            "SIGNED_COMMITTED" => "Đã duyệt & Ký số",
             "RECALLED" => "Đã thu hồi",
             "LOCK_TIMEOUT" => "Quá hạn 60 phút",
             _ => Status
@@ -100,6 +100,19 @@ namespace VGCASignToolPro.Services
             "LOCK_TIMEOUT" => "#64748B",     // Xám
             _ => "#475569"
         };
+
+        [JsonIgnore]
+        public string SignedHashDisplay => string.IsNullOrWhiteSpace(SignedHash) 
+            ? "Chưa có (Chờ ký)" 
+            : (SignedHash.Length > 16 ? $"{SignedHash[..6]}...{SignedHash[^6..]}" : SignedHash);
+
+        [JsonIgnore]
+        public string SignedHashColor => string.IsNullOrWhiteSpace(SignedHash) ? "#94A3B8" : "#0F766E";
+
+        [JsonIgnore]
+        public string SignedHashTooltip => string.IsNullOrWhiteSpace(SignedHash)
+            ? "Văn bản chưa hoàn tất ký số cấp 2 (Chưa sinh mã băm H2)"
+            : $"Mã băm toàn vẹn cấp 2 (H2 - SHA256):\n{SignedHash}";
 
         [JsonIgnore]
         public bool IsRecallable => Status == "WAITING_OPEN" || (Status == "ACQUIRED_LOCKED" && LockedAt > 0 && (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - LockedAt > 3600000));

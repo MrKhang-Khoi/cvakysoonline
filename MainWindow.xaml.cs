@@ -3775,6 +3775,11 @@ namespace VGCASignToolPro
             }
         }
 
+        private void LvArchiveReports_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            BtnViewArchiveReport_Click(sender, e);
+        }
+
         private async void BtnViewArchiveReport_Click(object sender, RoutedEventArgs e)
         {
             if (LvArchiveReports.SelectedItem is not ReportModel report)
