@@ -32,6 +32,7 @@ namespace VGCASignToolPro.Services
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
         public bool CanSeal { get; set; } = false;
+        public string Password { get; set; } = "123456";
         public string Status { get; internal set; } = "ACTIVE";
         public int RemainingCounter { get; internal set; } = MaxAttempts;
         public int FailedAttempts
@@ -250,6 +251,7 @@ namespace VGCASignToolPro.Services
                                 CanSeal = item["canSeal"] != null
                                     ? item["canSeal"]!.Value<bool>()
                                     : (item["title"]?.ToString() == "Hiệu trưởng" || item["title"]?.ToString() == "Phó hiệu trưởng" || item["title"]?.ToString() == "Văn thư"),
+                                Password = item["password"]?.ToString()?.Trim() ?? "123456",
                                 Status = item["status"]?.ToString() ?? "ACTIVE",
                                 RemainingCounter = item["remainingCounter"]?.Type == JTokenType.Integer
                                     ? item["remainingCounter"]!.Value<int>()
@@ -362,6 +364,7 @@ namespace VGCASignToolPro.Services
                     string phone = item["phone"]?.ToString()?.Trim() ?? string.Empty;
                     string email = item["email"]?.ToString()?.Trim() ?? string.Empty;
                     string org = item["organization"]?.ToString()?.Trim() ?? string.Empty;
+                    string password = item["password"]?.ToString()?.Trim() ?? "123456";
                     bool canSeal = item["canSeal"] != null
                         ? item["canSeal"]!.Value<bool>()
                         : (title == "Hiệu trưởng" || title == "Phó hiệu trưởng" || title == "Văn thư");
@@ -374,6 +377,7 @@ namespace VGCASignToolPro.Services
                         if (!string.IsNullOrEmpty(phone)) existing.Phone = phone;
                         if (!string.IsNullOrEmpty(email)) existing.Email = email;
                         if (!string.IsNullOrEmpty(org)) existing.Organization = org;
+                        if (!string.IsNullOrEmpty(password)) existing.Password = password;
                         existing.CanSeal = canSeal;
                     }
                     else
@@ -388,6 +392,7 @@ namespace VGCASignToolPro.Services
                             Email = email,
                             Organization = !string.IsNullOrEmpty(org) ? org : "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
                             CanSeal = canSeal,
+                            Password = password,
                             Status = "ACTIVE",
                             RemainingCounter = VgcaTeacherModel.MaxAttempts,
                             FailedAttempts = 0
@@ -415,6 +420,7 @@ namespace VGCASignToolPro.Services
                             organization = t.Organization,
                             email = t.Email,
                             canSeal = t.CanSeal,
+                            password = t.Password,
                             status = t.Status
                         }))
                     };
@@ -583,9 +589,15 @@ namespace VGCASignToolPro.Services
                     };
                 }
 
-                // Kiểm tra mật khẩu:
+                // Kiểm tra mật khẩu (hỗ trợ cả mật khẩu phân quyền từ file HTML/Firebase và PBKDF2/SHA-256 legacy hash):
                 bool isPasswordCorrect = false;
-                if (!string.IsNullOrEmpty(teacher.PasswordHash))
+
+                // 1. Kiểm tra mật khẩu thiết lập từ file HTML / danh bạ
+                if (!string.IsNullOrEmpty(teacher.Password))
+                {
+                    isPasswordCorrect = string.Equals(cleanPassword, teacher.Password, StringComparison.Ordinal);
+                }
+                else if (!string.IsNullOrEmpty(teacher.PasswordHash))
                 {
                     // ponytail: SHA-256 legacy hash supported for backward compatibility with school_roster.json; dual-mode verifies PBKDF2 (100k iterations) and upgrades on login
                     if (teacher.PasswordHash.StartsWith("pbkdf2$", StringComparison.OrdinalIgnoreCase))
@@ -634,8 +646,8 @@ namespace VGCASignToolPro.Services
                 }
                 else
                 {
-                    // Fail-closed tuyệt đối khi tài khoản chưa được thiết lập PasswordHash
-                    isPasswordCorrect = false;
+                    // Mặc định cho phép 123456 nếu chưa có bất kỳ mật khẩu nào được thiết lập trong danh bạ
+                    isPasswordCorrect = (cleanPassword == "123456");
                 }
 
                 if (isPasswordCorrect)
@@ -689,6 +701,59 @@ namespace VGCASignToolPro.Services
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Đổi mật khẩu tài khoản trực tiếp trên máy tính và lưu trữ an toàn kèm chữ ký HMAC
+        /// </summary>
+        public bool ChangeLocalPassword(string cccd, string newPassword)
+        {
+            if (string.IsNullOrWhiteSpace(cccd) || string.IsNullOrEmpty(newPassword)) return false;
+
+            lock (_authLock)
+            {
+                if (_roster.TryGetValue(cccd.Trim(), out var teacher))
+                {
+                    teacher.Password = newPassword.Trim();
+                    SaveCurrentRoster();
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Lưu trữ danh bạ giáo viên hiện hành xuống tệp cục bộ kèm niêm phong HMAC-SHA256
+        /// </summary>
+        public void SaveCurrentRoster()
+        {
+            try
+            {
+                var exportObj = new JObject
+                {
+                    ["schoolName"] = "TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN",
+                    ["description"] = "Danh bạ cán bộ, giáo viên liên thông ký số Ban Cơ Yếu Chính Phủ",
+                    ["updatedAt"] = DateTime.UtcNow.ToString("o"),
+                    ["roster"] = JArray.FromObject(_roster.Values.Select(t => new
+                    {
+                        cccd = t.Cccd,
+                        fullName = t.FullName,
+                        title = t.Title,
+                        phone = t.Phone,
+                        department = t.Department,
+                        organization = t.Organization,
+                        email = t.Email,
+                        canSeal = t.CanSeal,
+                        password = t.Password,
+                        status = t.Status
+                    }))
+                };
+                SaveRosterWithHmacSeal(exportObj.ToString(Formatting.Indented));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError($"Lỗi lưu danh bạ: {ex.Message}");
+            }
         }
 
         public BitmapSource GenerateQrCode(out string sessionId)

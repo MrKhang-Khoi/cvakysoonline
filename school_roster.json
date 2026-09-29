@@ -12,6 +12,7 @@
       "organization": "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI",
       "email": "hvty-dakha@quangngai.gov.vn",
       "canSeal": false,
+      "password": "123456",
       "status": "ACTIVE",
       "certificates": [
         {
@@ -27,10 +28,18 @@
       "title": "Tổ trưởng Chuyên môn",
       "phone": "0819810007",
       "department": "Tổ Khoa học Tự nhiên",
-      "organization": "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI",
+      "organization": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
       "email": "tttloan-dakmar@quangngai.gov.vn",
       "canSeal": false,
-      "status": "ACTIVE"
+      "password": "123456",
+      "status": "ACTIVE",
+      "certificates": [
+        {
+          "serialNumber": "16CAF8BD6E1B9DBE",
+          "subject": "Trần Thị Thùy Loan",
+          "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ"
+        }
+      ]
     },
     {
       "cccd": "062185001053",
@@ -41,6 +50,7 @@
       "organization": "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI",
       "email": "nvtuan-chuvanan@quangngai.gov.vn",
       "canSeal": true,
+      "password": "123456",
       "status": "ACTIVE"
     },
     {
@@ -52,6 +62,31 @@
       "organization": "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI",
       "email": "lthong-chuvanan@quangngai.gov.vn",
       "canSeal": true,
+      "password": "123456",
+      "status": "ACTIVE"
+    },
+    {
+      "cccd": "062180000001",
+      "fullName": "Lê Văn Hùng",
+      "title": "Hiệu trưởng",
+      "phone": "0905123456",
+      "department": "Ban Giám hiệu",
+      "organization": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+      "email": "lvhung@quangngai.gov.vn",
+      "canSeal": true,
+      "password": "123456",
+      "status": "ACTIVE"
+    },
+    {
+      "cccd": "062182000002",
+      "fullName": "Phạm Thị Lan",
+      "title": "Phó hiệu trưởng",
+      "phone": "0905654321",
+      "department": "Ban Giám hiệu",
+      "organization": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+      "email": "ptlan@quangngai.gov.vn",
+      "canSeal": true,
+      "password": "123456",
       "status": "ACTIVE"
     }
   ]

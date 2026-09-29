@@ -226,6 +226,7 @@
           <th>Tổ Chuyên Môn</th>
           <th>Số Điện Thoại</th>
           <th>Email Công Vụ</th>
+          <th style="width: 120px; text-align: center;">Mật Khẩu App</th>
           <th style="width: 140px; text-align: center;">Đóng Dấu Cơ Quan</th>
           <th style="width: 140px; text-align: center;">Thao Tác</th>
         </tr>
@@ -296,6 +297,17 @@
         <div class="form-group" style="grid-column: span 2;">
           <label for="inpOrg">Đơn Vị Trực Thuộc:</label>
           <input type="text" id="inpOrg" class="form-control" value="TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ">
+        </div>
+
+        <div class="form-group" style="grid-column: span 2; background: #F8FAFC; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border);">
+          <label for="inpPassword" style="font-weight: 600; color: #1E293B;">🔑 Mật Khẩu Đăng Nhập Ứng Dụng:</label>
+          <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <input type="text" id="inpPassword" class="form-control" placeholder="Mặc định: 123456" value="123456" style="font-weight: 600; font-family: monospace;">
+            <button type="button" class="btn btn-outline" style="white-space: nowrap; font-size: 12px; padding: 6px 12px;" onclick="document.getElementById('inpPassword').value = '123456'">Đặt lại 123456</button>
+          </div>
+          <p style="font-size: 11px; color: #64748B; margin: 6px 0 0 2px;">
+            Mật khẩu này dùng để giáo viên đăng nhập phần mềm Desktop (kết hợp với số CCCD). Quản trị viên có thể thiết lập mật khẩu riêng cho BGH hoặc đặt lại về 123456 khi giáo viên quên.
+          </p>
         </div>
 
         <div class="form-group" style="grid-column: span 2; background: #F8FAFC; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border);">
@@ -390,32 +402,46 @@
     {
       cccd: "062187000641",
       fullName: "Trần Thị Thúy Loan",
-      title: "Giáo viên",
+      title: "Tổ trưởng Chuyên môn",
       phone: "0819810007",
-      department: "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
-      organization: "ỦY BAN NHÂN DÂN XÃ ĐAK MAR - TỈNH QUẢNG NGÃI",
+      department: "Tổ Khoa học Tự nhiên",
+      organization: "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
       email: "tttloan-dakmar@quangngai.gov.vn",
-      canSeal: false
+      canSeal: false,
+      password: "123456"
     },
     {
       cccd: "042084002100",
       fullName: "Hà Văn Tý",
       title: "Giáo viên",
       phone: "0818810007",
-      department: "ỦY BAN NHÂN DÂN XÃ ĐĂK HÀ",
+      department: "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ",
       organization: "ỦY BAN NHÂN DÂN TỈNH QUẢNG NGÃI",
       email: "hvty-dakha@quangngai.gov.vn",
-      canSeal: false
+      canSeal: false,
+      password: "123456"
     },
     {
       cccd: "062185001053",
-      fullName: "Nguyễn Thị Mai (CCCD 062185001053)",
-      title: "Tổ trưởng",
+      fullName: "Nguyễn Văn Tuấn",
+      title: "Hiệu trưởng",
       phone: "0819000105",
-      department: "Tổ Ngữ Văn - Trường THCS Nguyễn Huệ",
-      organization: "ỦY BAN NHÂN DÂN XÃ ĐAK MAR - TỈNH QUẢNG NGÃI",
-      email: "gv062185001053@quangngai.gov.vn",
-      canSeal: false
+      department: "Ban Giám hiệu",
+      organization: "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI",
+      email: "nvtuan-chuvanan@quangngai.gov.vn",
+      canSeal: true,
+      password: "123456"
+    },
+    {
+      cccd: "062189002154",
+      fullName: "Lê Thị Hồng",
+      title: "Phó hiệu trưởng",
+      phone: "0819000215",
+      department: "Ban Giám hiệu",
+      organization: "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI",
+      email: "lthong-chuvanan@quangngai.gov.vn",
+      canSeal: true,
+      password: "123456"
     },
     {
       cccd: "062180000001",
@@ -425,7 +451,8 @@
       department: "Ban Giám hiệu",
       organization: "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
       email: "lvhung@quangngai.gov.vn",
-      canSeal: true
+      canSeal: true,
+      password: "123456"
     },
     {
       cccd: "062182000002",
@@ -435,7 +462,8 @@
       department: "Ban Giám hiệu",
       organization: "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
       email: "ptlan@quangngai.gov.vn",
-      canSeal: true
+      canSeal: true,
+      password: "123456"
     }
   ];
 
@@ -568,7 +596,21 @@
       }
       tr.appendChild(tdEmail);
 
-      // 8. Quyền Đóng Dấu Cơ Quan (USB Token)
+      // 8. Mật khẩu Đăng nhập App
+      const tdPass = document.createElement("td");
+      tdPass.style.textAlign = "center";
+      const codePass = document.createElement("code");
+      codePass.style.background = "#F1F5F9";
+      codePass.style.padding = "3px 8px";
+      codePass.style.borderRadius = "4px";
+      codePass.style.fontWeight = "600";
+      codePass.style.color = "#0F172A";
+      codePass.style.fontSize = "12px";
+      codePass.textContent = t.password || "123456";
+      tdPass.appendChild(codePass);
+      tr.appendChild(tdPass);
+
+      // 9. Quyền Đóng Dấu Cơ Quan (USB Token)
       const tdSeal = document.createElement("td");
       tdSeal.style.textAlign = "center";
       const spanSeal = document.createElement("span");
@@ -653,6 +695,7 @@
     document.getElementById("inpPhone").value = "";
     document.getElementById("inpEmail").value = "";
     document.getElementById("inpOrg").value = "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ";
+    document.getElementById("inpPassword").value = "123456";
     document.getElementById("inpCanSeal").checked = false;
     document.getElementById("teacherModal").classList.add("active");
   }
@@ -671,6 +714,7 @@
     document.getElementById("inpPhone").value = teacher.phone || "";
     document.getElementById("inpEmail").value = teacher.email || "";
     document.getElementById("inpOrg").value = teacher.organization || "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ";
+    document.getElementById("inpPassword").value = teacher.password || "123456";
     document.getElementById("inpCanSeal").checked = Boolean(teacher.canSeal);
     document.getElementById("teacherModal").classList.add("active");
   }
@@ -689,6 +733,7 @@
     const phone = document.getElementById("inpPhone").value.trim();
     const email = document.getElementById("inpEmail").value.trim();
     const organization = document.getElementById("inpOrg").value.trim();
+    const password = document.getElementById("inpPassword").value.trim() || "123456";
     const canSeal = document.getElementById("inpCanSeal").checked;
 
     if (!/^[0-9]{12}$/.test(cccd)) {
@@ -702,7 +747,7 @@
         alert("Số CCCD này đã tồn tại trong danh sách! Vui lòng kiểm tra lại.");
         return;
       }
-      teachers.push({ cccd, fullName, title, department, phone, email, organization, canSeal, status: "ACTIVE" });
+      teachers.push({ cccd, fullName, title, department, phone, email, organization, canSeal, password, status: "ACTIVE" });
       showToast(`Đã thêm thầy/cô ${fullName} thành công!`, "success");
     } else {
       // Chỉnh sửa
@@ -725,6 +770,7 @@
         teachers[idx].phone = phone;
         teachers[idx].email = email;
         teachers[idx].organization = organization;
+        teachers[idx].password = password;
         teachers[idx].canSeal = canSeal;
         showToast(`Đã cập nhật thông tin thầy/cô ${fullName}!`, "success");
       }

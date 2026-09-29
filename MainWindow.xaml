@@ -368,39 +368,53 @@
 
                         <!-- CỘT TRÁI: KHUNG ĐĂNG NHẬP VGCA VIRTUAL CSP & THÔNG TIN CHỨNG THƯ -->
                         <StackPanel Grid.Column="0">
-                            <!-- PANEL 1: KHI CHƯA ĐĂNG NHẬP - GIAO DIỆN TÍCH HỢP VGCA VIRTUAL CSP v2.0 -->
-                            <GroupBox x:Name="GrpVgcaLoginBox" Header="Kết Nối Chữ Ký Số VGCA Virtual CSP v2.0 (Ban Cơ Yếu Chính Phủ)">
+                            <!-- PANEL 1: KHI CHƯA ĐĂNG NHẬP - GIAO DIỆN ĐĂNG NHẬP GIÁO VIÊN (CCCD + MẬT KHẨU TỪ HTML) -->
+                            <GroupBox x:Name="GrpVgcaLoginBox" Header="Đăng Nhập Tài Khoản Ký Số Giáo Viên (Ban Cơ Yếu Chính Phủ)">
                                 <StackPanel Margin="6">
-                                    <!-- HEADER GIỚI THIỆU CHUẨN VGCA -->
+                                    <!-- BANNER GIỚI THIỆU -->
                                     <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1" CornerRadius="6" Padding="14,12" Margin="0,0,0,12">
                                         <StackPanel>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                                                <TextBlock Text="🛡️" FontSize="20" Margin="0,0,8,0" VerticalAlignment="Center" />
-                                                <TextBlock Text="CỔNG KẾT NỐI CHỮ KÝ SỐ CHUYÊN DÙNG CHÍNH PHỦ (VGCA)" FontWeight="Bold" Foreground="#1E3A8A" FontSize="13" VerticalAlignment="Center" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                <TextBlock Text="🛡️" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                                <TextBlock Text="HỆ THỐNG KÝ SỐ LIÊN THÔNG GIÁO DỤC" FontWeight="Bold" Foreground="#1E3A8A" FontSize="13" VerticalAlignment="Center" />
                                             </StackPanel>
-                                            <TextBlock Text="Hệ thống tự động đồng bộ và nhận diện Chứng thư số Ban Cơ yếu Chính phủ từ Windows Certificate Store (quản lý bởi VGCA Virtual CSP v2.0 hoặc USB Token). Đảm bảo tuân thủ 100% quy chuẩn bảo mật PKI quốc gia." 
-                                                       TextWrapping="Wrap" FontSize="12" Foreground="#1E40AF" LineHeight="18" />
+                                            <TextBlock Text="Đăng nhập bằng số Căn cước công dân và mật khẩu được cấp bởi Nhà trường để kích hoạt phiên làm việc và phân quyền ký số / đóng dấu." 
+                                                       TextWrapping="Wrap" FontSize="11" Foreground="#1E40AF" LineHeight="16" />
                                         </StackPanel>
                                     </Border>
 
-                                    <!-- HƯỚNG DẪN QUY TRÌNH KẾT NỐI CHUẨN -->
-                                    <Border Background="#FFFBEB" BorderBrush="#FDE68A" BorderThickness="1" CornerRadius="8" Padding="14,12" Margin="0,0,0,14">
+                                    <!-- FORM ĐĂNG NHẬP CHÍNH (CCCD + MẬT KHẨU) -->
+                                    <Border Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="8" Padding="14,14" Margin="0,0,0,12">
                                         <StackPanel>
-                                            <TextBlock Text="📋 Hướng dẫn kết nối chữ ký số:" FontWeight="Bold" Foreground="#92400E" FontSize="12" Margin="0,0,0,8" />
-                                            <TextBlock Text="• Bước 1: Khởi động phần mềm 'VGCA Virtual CSP v2.0' trên máy tính và đăng nhập tài khoản ký số từ xa của Quý Thầy/Cô." 
-                                                       Foreground="#78350F" FontSize="12" LineHeight="18" TextWrapping="Wrap" Margin="0,0,0,6" />
-                                            <TextBlock Text="• Bước 2: Bấm nút '🔄 ĐỒNG BỘ &amp; NHẬN DIỆN CHỨNG THƯ' bên dưới để kích hoạt phiên làm việc và mở khóa Soạn thảo - Ký số." 
-                                                       Foreground="#78350F" FontSize="12" LineHeight="18" TextWrapping="Wrap" />
+                                            <TextBlock Text="Số Căn Cước Công Dân (12 số):" FontWeight="SemiBold" FontSize="12" Foreground="#334155" Margin="0,0,0,4" />
+                                            <TextBox x:Name="TxtLoginCccd" FontSize="13" Padding="8,6" Margin="0,0,0,10" MaxLength="12" FontFamily="Consolas" KeyDown="TxtLoginInput_KeyDown" />
+
+                                            <Grid Margin="0,0,0,4">
+                                                <TextBlock Text="Mật Khẩu Đăng Nhập:" FontWeight="SemiBold" FontSize="12" Foreground="#334155" HorizontalAlignment="Left" />
+                                                <TextBlock Text="(Mặc định: 123456)" FontSize="11" Foreground="#64748B" HorizontalAlignment="Right" />
+                                            </Grid>
+                                            <PasswordBox x:Name="TxtLoginPassword" FontSize="13" Padding="8,6" Margin="0,0,0,14" KeyDown="TxtLoginInput_KeyDown" />
+
+                                            <!-- NÚT ĐĂNG NHẬP CHÍNH -->
+                                            <Button x:Name="BtnSubmitLogin" Content="🔑 ĐĂNG NHẬP HỆ THỐNG" Style="{StaticResource PrimaryButton}" 
+                                                    Background="#2563EB" FontSize="13" FontWeight="Bold" Padding="14,10" Margin="0,0,0,6" Click="BtnSubmitLogin_Click" HorizontalAlignment="Stretch" />
+
+                                            <TextBlock Text="* Ghi chú: Mật khẩu và phân quyền đóng dấu do Quản trị viên thiết lập từ file HTML/Web. Quên mật khẩu xin liên hệ BGH." 
+                                                       FontSize="11" Foreground="#64748B" TextWrapping="Wrap" FontStyle="Italic" Margin="0,2,0,0" />
                                         </StackPanel>
                                     </Border>
 
-                                    <!-- NÚT KHỞI ĐỘNG VGCA VIRTUAL CSP BÊN NGOÀI -->
-                                    <Button x:Name="BtnLaunchVgcaManager" Content="🖥️ KHỞI ĐỘNG ỨNG DỤNG VGCA VIRTUAL CSP v2.0" Style="{StaticResource PrimaryButton}" 
-                                            Background="#2563EB" FontSize="13" FontWeight="Bold" Padding="14,12" Margin="0,0,0,10" Click="BtnLaunchVgcaManager_Click" HorizontalAlignment="Stretch" />
-
-                                    <!-- NÚT ĐỒNG BỘ VÀ NHẬN DIỆN CHỨNG THƯ TRỰC TIẾP TỪ VGCA VIRTUAL CSP -->
-                                    <Button x:Name="BtnSyncVgcaCertificate" Content="🔄 ĐỒNG BỘ &amp; NHẬN DIỆN CHỨNG THƯ TỪ WINDOWS" Style="{StaticResource PrimaryButton}" 
-                                            Background="#0D9488" FontSize="13" FontWeight="Bold" Padding="14,12" Margin="0,0,0,10" Click="BtnSyncVgcaCertificate_Click" HorizontalAlignment="Stretch" />
+                                    <!-- NÚT ĐỒNG BỘ VÀ NHẬN DIỆN CHỨNG THƯ TRỰC TIẾP TỪ VGCA VIRTUAL CSP (TÙY CHỌN DỰ PHÒNG) -->
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Button Grid.Column="0" x:Name="BtnSyncVgcaCertificate" Content="🔄 Quét Token Cắm Sẵn" Style="{StaticResource SecondaryButton}" 
+                                                FontSize="11" FontWeight="SemiBold" Padding="8,8" Margin="0,0,4,0" Click="BtnSyncVgcaCertificate_Click" />
+                                        <Button Grid.Column="1" x:Name="BtnLaunchVgcaManager" Content="🖥️ Mở Virtual CSP" Style="{StaticResource SecondaryButton}" 
+                                                FontSize="11" FontWeight="SemiBold" Padding="8,8" Margin="4,0,0,0" Click="BtnLaunchVgcaManager_Click" />
+                                    </Grid>
 
                                     <!-- KHUNG THÔNG BÁO LỖI / TRẠNG THÁI -->
                                     <Border x:Name="BorderVgcaAuthError" Visibility="Collapsed" Background="#FEF2F2" BorderBrush="#FCA5A5" BorderThickness="1" CornerRadius="6" Padding="12,10" Margin="0,0,0,10">
@@ -425,13 +439,18 @@
                                             <StackPanel Grid.Column="0">
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="🛡️" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" />
-                                                    <TextBlock Text="PHIÊN ĐĂNG NHẬP VGCA ĐÃ XÁC THỰC" FontWeight="Bold" Foreground="#15803D" FontSize="12" VerticalAlignment="Center" />
+                                                    <TextBlock Text="PHIÊN ĐĂNG NHẬP ĐÃ XÁC THỰC" FontWeight="Bold" Foreground="#15803D" FontSize="12" VerticalAlignment="Center" />
                                                 </StackPanel>
                                                 <TextBlock Text="Đã sẵn sàng ký số tài liệu chuẩn PAdES LTV theo Nghị định 30/2020/NĐ-CP." FontSize="11" Foreground="#166534" Margin="0,2,0,0" />
                                             </StackPanel>
-                                            <Button Grid.Column="1" Content="🚪 Đăng Xuất" Style="{StaticResource SecondaryButton}" 
-                                                    Background="#FEE2E2" BorderBrush="#FCA5A5" Foreground="#991B1B" FontWeight="Bold" 
-                                                    Padding="10,4" FontSize="11" VerticalAlignment="Center" Click="BtnVgcaLogout_Click" />
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Button Content="🔑 Đổi Mật Khẩu" Style="{StaticResource SecondaryButton}" 
+                                                        Background="#EEF2FF" BorderBrush="#C7D2FE" Foreground="#3730A3" FontWeight="Bold" 
+                                                        Padding="8,4" FontSize="11" Margin="0,0,6,0" Click="BtnChangePasswordLocal_Click" />
+                                                <Button Content="🚪 Đăng Xuất" Style="{StaticResource SecondaryButton}" 
+                                                        Background="#FEE2E2" BorderBrush="#FCA5A5" Foreground="#991B1B" FontWeight="Bold" 
+                                                        Padding="8,4" FontSize="11" Click="BtnVgcaLogout_Click" />
+                                            </StackPanel>
                                         </Grid>
                                     </Border>
 
@@ -439,6 +458,8 @@
                                     <Border Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="14" Margin="0,0,0,12">
                                         <Grid>
                                             <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto" />
+                                                <RowDefinition Height="Auto" />
                                                 <RowDefinition Height="Auto" />
                                                 <RowDefinition Height="Auto" />
                                                 <RowDefinition Height="Auto" />
@@ -457,33 +478,41 @@
                                             <TextBlock Grid.Row="0" Grid.Column="0" Text="Người Ký (Chủ sở hữu):" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
                                             <TextBlock Grid.Row="0" Grid.Column="1" x:Name="TxtDetailSignerName" Text="Hà Văn Tý" FontWeight="Bold" FontSize="14" Foreground="#1E3A8A" Margin="0,4" />
 
+                                            <!-- CHỨC VỤ VÀ PHÂN QUYỀN HỆ THỐNG -->
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Chức Vụ &amp; Phân Quyền:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="TxtDetailRoleAndSeal" Text="Giáo viên • 🔵 Ký số cá nhân" FontWeight="Bold" FontSize="12" Foreground="#0F172A" Margin="0,4" />
+
+                                            <!-- TRẠNG THÁI USB TOKEN / VGCA -->
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Kết Nối USB Token:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="2" Grid.Column="1" x:Name="TxtDetailUsbStatus" Text="ℹ️ Chưa cắm USB Token (Chỉ cần cắm khi bấm Ký hoặc Đóng dấu)" FontSize="11" FontWeight="SemiBold" Foreground="#D97706" TextWrapping="Wrap" Margin="0,4" />
+
                                             <!-- EMAIL -->
-                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Email Công Vụ:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="TxtDetailEmail" Text="hvty-dakha@quangngai.gov.vn" Foreground="#0F172A" Margin="0,4" />
+                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Email Công Vụ:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="TxtDetailEmail" Text="hvty-dakha@quangngai.gov.vn" Foreground="#0F172A" Margin="0,4" />
 
                                             <!-- ĐƠN VỊ -->
-                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Đơn Vị Công Tác:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="2" Grid.Column="1" x:Name="TxtDetailOrg" Text="TRƯỜNG THCS CHU VĂN AN - UBND XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI" TextWrapping="Wrap" Foreground="#0F172A" Margin="0,4" />
+                                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Đơn Vị Công Tác:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="TxtDetailOrg" Text="TRƯỜNG THCS CHU VĂN AN - UBND XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI" TextWrapping="Wrap" Foreground="#0F172A" Margin="0,4" />
 
                                             <!-- CƠ QUAN CẤP (CA) -->
-                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Cơ Quan Cấp Chứng Thư:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="TxtDetailIssuer" Text="CA phục vụ các cơ quan Nhà nước G2, Ban Cơ yếu Chính phủ" Foreground="#059669" FontWeight="SemiBold" Margin="0,4" />
+                                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Cơ Quan Cấp Chứng Thư:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="5" Grid.Column="1" x:Name="TxtDetailIssuer" Text="CA phục vụ các cơ quan Nhà nước G2, Ban Cơ yếu Chính phủ" Foreground="#059669" FontWeight="SemiBold" Margin="0,4" />
 
                                             <!-- SỐ SERIAL -->
-                                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Số Serial Chứng Thư:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="TxtDetailSerial" Text="7C4C44A8671300AE" FontFamily="Consolas" Foreground="#0F172A" Margin="0,4" />
+                                            <TextBlock Grid.Row="6" Grid.Column="0" Text="Số Serial Chứng Thư:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="6" Grid.Column="1" x:Name="TxtDetailSerial" Text="7C4C44A8671300AE" FontFamily="Consolas" Foreground="#0F172A" Margin="0,4" />
 
                                             <!-- HIỆU LỰC -->
-                                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Thời Hạn Hiệu Lực:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="5" Grid.Column="1" x:Name="TxtDetailValidity" Text="29/05/2026 đến 28/05/2031 (Đang hoạt động)" Foreground="#0F172A" Margin="0,4" />
+                                            <TextBlock Grid.Row="7" Grid.Column="0" Text="Thời Hạn Hiệu Lực:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="7" Grid.Column="1" x:Name="TxtDetailValidity" Text="29/05/2026 đến 28/05/2031 (Đang hoạt động)" Foreground="#0F172A" Margin="0,4" />
 
                                             <!-- THUẬT TOÁN KHÓA -->
-                                            <TextBlock Grid.Row="6" Grid.Column="0" Text="Thuật Toán Mật Mã:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="6" Grid.Column="1" x:Name="TxtDetailAlgorithm" Text="ECDSA 384-bit (ECC Curve P-384 / KSP)" Foreground="#D97706" FontWeight="SemiBold" Margin="0,4" />
+                                            <TextBlock Grid.Row="8" Grid.Column="0" Text="Thuật Toán Mật Mã:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="8" Grid.Column="1" x:Name="TxtDetailAlgorithm" Text="ECDSA 384-bit (ECC Curve P-384 / KSP)" Foreground="#D97706" FontWeight="SemiBold" Margin="0,4" />
 
                                             <!-- THUMBPRINT -->
-                                            <TextBlock Grid.Row="7" Grid.Column="0" Text="Mã Băm (Thumbprint):" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="7" Grid.Column="1" x:Name="TxtDetailThumbprint" Text="6398E3DC37E44EBBF976DFDE9F0143E1BDA5346D" FontFamily="Consolas" FontSize="10" Foreground="#64748B" TextWrapping="Wrap" Margin="0,4" />
+                                            <TextBlock Grid.Row="9" Grid.Column="0" Text="Mã Băm (Thumbprint):" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="9" Grid.Column="1" x:Name="TxtDetailThumbprint" Text="6398E3DC37E44EBBF976DFDE9F0143E1BDA5346D" FontFamily="Consolas" FontSize="10" Foreground="#64748B" TextWrapping="Wrap" Margin="0,4" />
                                         </Grid>
                                     </Border>
 

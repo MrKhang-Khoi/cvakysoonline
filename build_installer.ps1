@@ -46,10 +46,13 @@ foreach ($dll in $crtDlls) {
     }
 }
 
-# Ensure school_roster.json.hmac is available in dist if present in publish
-$sourceHmac = Join-Path $projectDir "publish\school_roster.json.hmac"
-if (Test-Path $sourceHmac) {
-    Copy-Item -Path $sourceHmac -Destination $distDir -Force
+# Ensure fresh school_roster.json is copied and no stale hmac interferes with first-run seal
+$sourceRoster = Join-Path $projectDir "school_roster.json"
+if (Test-Path $sourceRoster) {
+    Copy-Item -Path $sourceRoster -Destination $distDir -Force
+}
+if (Test-Path (Join-Path $distDir "school_roster.json.hmac")) {
+    Remove-Item -Path (Join-Path $distDir "school_roster.json.hmac") -Force
 }
 
 # 5. COMPILE INNO SETUP INSTALLER (.EXE)

@@ -53,7 +53,6 @@ Source: "{#MyAppSourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesub
 
 ; 2. TỆP DỮ LIỆU NHÀ TRƯỜNG: BẢO VỆ TUYỆT ĐỐI (Chỉ sao chép nếu chưa tồn tại)
 Source: "{#MyAppSourceDir}\school_roster.json"; DestDir: "{app}"; Flags: skipifsourcedoesntexist onlyifdoesntexist uninsneveruninstall
-Source: "{#MyAppSourceDir}\school_roster.json.hmac"; DestDir: "{app}"; Flags: skipifsourcedoesntexist onlyifdoesntexist uninsneveruninstall
 Source: "{#MyAppSourceDir}\workflow_config.json"; DestDir: "{app}"; Flags: skipifsourcedoesntexist onlyifdoesntexist uninsneveruninstall
 
 [Icons]
