@@ -223,19 +223,91 @@
             <Setter Property="Foreground" Value="#1E293B" />
         </Style>
 
-        <!-- Style TabItem với hiệu ứng Mờ / Khóa khi IsEnabled=False -->
+        <!-- STYLE TABCONTROL CHUẨN MICROSOFT FLUENT DESIGN (SEGMENTED NAVIGATION BAR) -->
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            
+                            <!-- THANH ĐIỀU HƯỚNG TABS TÁCH BIỆT (FLUENT SEGMENTED TRACK) -->
+                            <Border Grid.Row="0" Background="#E2E8F0" CornerRadius="8" Padding="5" Margin="0,0,0,10" HorizontalAlignment="Left">
+                                <TabPanel IsItemsHost="True" />
+                            </Border>
+                            
+                            <!-- VÙNG NỘI DUNG CHÍNH (CONTENT PRESENTER) -->
+                            <Border Grid.Row="1" Background="Transparent" BorderThickness="0">
+                                <ContentPresenter ContentSource="SelectedContent" />
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- STYLE TABITEM CHUẨN MICROSOFT FLUENT DESIGN (HIGH-CONTRAST ACCENT PILL) -->
         <Style TargetType="TabItem">
-            <Setter Property="Padding" Value="16,9" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Cursor" Value="Hand" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Style.Triggers>
-                <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Foreground" Value="#94A3B8" />
-                    <Setter Property="Opacity" Value="0.55" />
-                    <Setter Property="Cursor" Value="No" />
-                </Trigger>
-            </Style.Triggers>
+            <Setter Property="Foreground" Value="#475569" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="TabBorder" 
+                                Background="Transparent" 
+                                CornerRadius="6" 
+                                Padding="18,8"
+                                BorderThickness="0">
+                            <ContentPresenter x:Name="ContentSite"
+                                              VerticalAlignment="Center"
+                                              HorizontalAlignment="Center"
+                                              ContentSource="Header"
+                                              RecognizesAccessKey="True" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <!-- KHI DI CHUỘT QUA TAB CHƯA CHỌN (HOVER) -->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True" />
+                                    <Condition Property="IsSelected" Value="False" />
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="TabBorder" Property="Background" Value="#CBD5E1" />
+                                <Setter Property="Foreground" Value="#0F172A" />
+                            </MultiTrigger>
+                            
+                            <!-- KHI ĐƯỢC CHỌN (SELECTED - ĐỔI MÀU NỔI BẬT CHUẨN MICROSOFT FLUENT) -->
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="#2563EB" />
+                                <Setter Property="Foreground" Value="#FFFFFF" />
+                                <Setter Property="FontWeight" Value="Bold" />
+                                <Setter TargetName="TabBorder" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect BlurRadius="8" ShadowDepth="1" Direction="270" Color="#1E40AF" Opacity="0.35" />
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            
+                            <!-- KHI BỊ KHÓA (DISABLED) -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="TabBorder" Property="Background" Value="Transparent" />
+                                <Setter Property="Foreground" Value="#94A3B8" />
+                                <Setter Property="Opacity" Value="0.45" />
+                                <Setter Property="Cursor" Value="No" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
 
@@ -285,7 +357,7 @@
         <TabControl x:Name="MainTabControl" Grid.Row="1" Margin="14,10,14,10" Background="Transparent" BorderThickness="0">
 
             <!-- ================= TAB 1: THÔNG TIN CHỮ KÝ SỐ (VGCA & PROFILES) ================= -->
-            <TabItem Header="  1. 🪪 Tài Khoản Ký Số  " FontSize="13" FontWeight="SemiBold">
+            <TabItem Header="  1. 👤 Tài Khoản Ký Số  " FontSize="13" FontWeight="SemiBold">
                 <ScrollViewer Margin="0,10,0,0" VerticalScrollBarVisibility="Auto">
                     <Grid>
                         <Grid.ColumnDefinitions>
