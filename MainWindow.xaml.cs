@@ -298,7 +298,7 @@ namespace VGCASignToolPro
                     _ = RefreshWorkflowDataAsync();
 
                     // Mở khóa Tab 2
-                    TabItemSignWorkspace.Header = "  2. Soạn Thảo, Xem & Ký Số Trực Tiếp  ";
+                    TabItemSignWorkspace.Header = "  2. ✍️ Soạn Thảo & Ký Số  ";
                     TabItemSignWorkspace.IsEnabled = true;
                     OverlayTab2Locked.Visibility = Visibility.Collapsed;
                     if (PdfPreviewControl != null)
@@ -356,7 +356,7 @@ namespace VGCASignToolPro
                     TxtCountCompleted.Text = "0";
 
                     // Khóa Tab 2
-                    TabItemSignWorkspace.Header = "  2. Soạn Thảo, Xem & Ký Số Trực Tiếp ( 🔒 Khóa )  ";
+                    TabItemSignWorkspace.Header = "  2. ✍️ Soạn Thảo & Ký Số ( 🔒 Khóa )  ";
                     TabItemSignWorkspace.IsEnabled = false;
                     OverlayTab2Locked.Visibility = Visibility.Visible;
                     if (PdfPreviewControl != null)

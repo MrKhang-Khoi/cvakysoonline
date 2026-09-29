@@ -54,14 +54,119 @@
             </Style.Triggers>
         </Style>
 
-        <!-- Style Button Ký số (Đỏ Ban Cơ yếu) -->
+        <!-- Style Button Ký số Cá nhân (Xanh dương hoàng gia - Primary Action) -->
         <Style x:Key="SignButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
-            <Setter Property="Background" Value="#DC2626" />
-            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Background" Value="#2563EB" />
+            <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="Bold" />
-            <Setter Property="Padding" Value="20,10" />
+            <Setter Property="Padding" Value="16,8" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#1D4ED8" /></Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#CBD5E1" />
+                    <Setter Property="Foreground" Value="#64748B" />
+                    <Setter Property="Opacity" Value="0.55" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Style Button Đóng Dấu Pháp Nhân Cơ Quan (Đỏ Quốc Gia Ban Cơ Yếu) -->
+        <Style x:Key="OfficialSealButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+            <Setter Property="Background" Value="#DC2626" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Padding" Value="16,8" />
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#B91C1C" /></Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Background" Value="#CBD5E1" />
+                    <Setter Property="Foreground" Value="#64748B" />
+                    <Setter Property="Opacity" Value="0.55" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Style Button Mở File Word (Xanh dương nhẹ) -->
+        <Style x:Key="ToolbarWordButton" TargetType="Button">
+            <Setter Property="Background" Value="#EFF6FF" />
+            <Setter Property="BorderBrush" Value="#BFDBFE" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="#1E40AF" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="12,7" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#DBEAFE" />
+                    <Setter Property="BorderBrush" Value="#93C5FD" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Style Button Mở File Excel (Xanh lá cây nhẹ) -->
+        <Style x:Key="ToolbarExcelButton" TargetType="Button">
+            <Setter Property="Background" Value="#F0FDF4" />
+            <Setter Property="BorderBrush" Value="#BBF7D0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="#15803D" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="12,7" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#DCFCE7" />
+                    <Setter Property="BorderBrush" Value="#86EFAC" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Style Button Mở File PDF (Xám thanh lịch) -->
+        <Style x:Key="ToolbarPdfButton" TargetType="Button">
+            <Setter Property="Background" Value="#F8FAFC" />
+            <Setter Property="BorderBrush" Value="#CBD5E1" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Foreground" Value="#334155" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Padding" Value="12,7" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F1F5F9" />
+                    <Setter Property="BorderBrush" Value="#94A3B8" />
+                </Trigger>
             </Style.Triggers>
         </Style>
 
@@ -99,6 +204,8 @@
 
         <!-- Style Button Soạn thảo Mini -->
         <Style x:Key="FormatButton" TargetType="Button" BasedOn="{StaticResource SecondaryButton}">
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#E2E8F0" />
             <Setter Property="Padding" Value="8,4" />
             <Setter Property="FontSize" Value="12" />
             <Setter Property="FontWeight" Value="Bold" />
@@ -118,7 +225,9 @@
 
         <!-- Style TabItem với hiệu ứng Mờ / Khóa khi IsEnabled=False -->
         <Style TargetType="TabItem">
-            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="Padding" Value="16,9" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Cursor" Value="Hand" />
             <Style.Triggers>
                 <Trigger Property="IsEnabled" Value="False">
@@ -176,7 +285,7 @@
         <TabControl x:Name="MainTabControl" Grid.Row="1" Margin="14,10,14,10" Background="Transparent" BorderThickness="0">
 
             <!-- ================= TAB 1: THÔNG TIN CHỮ KÝ SỐ (VGCA & PROFILES) ================= -->
-            <TabItem Header="  1. Thông Tin Chữ Ký Số (VGCA)  " FontSize="14" FontWeight="SemiBold">
+            <TabItem Header="  1. 🪪 Tài Khoản Ký Số  " FontSize="13" FontWeight="SemiBold">
                 <ScrollViewer Margin="0,10,0,0" VerticalScrollBarVisibility="Auto">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -441,10 +550,10 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <Button Grid.Column="0" Content="💾 Lưu Mẫu Chữ Ký Này" 
+                                        <Button Grid.Column="0" Content="💾 Lưu Mẫu Chữ Ký" 
                                                 Style="{StaticResource SecondaryButton}" Padding="10,8" Margin="0,0,4,0" 
                                                 Click="BtnSaveProfile_Click" />
-                                        <Button Grid.Column="1" Content="👉 Đi Tới Soạn Thảo (Tab 2) ➡" 
+                                        <Button Grid.Column="1" Content="👉 Sang Soạn Thảo &amp; Ký Số ➡" 
                                                 Style="{StaticResource PrimaryButton}" Padding="10,8" Margin="4,0,0,0" 
                                                 Click="BtnGoToSignWorkspace_Click" />
                                     </Grid>
@@ -456,7 +565,7 @@
             </TabItem>
 
             <!-- ================= TAB 2: SOẠN THẢO & KÝ SỐ VĂN BẢN TRỰC TIẾP ================= -->
-            <TabItem x:Name="TabItemSignWorkspace" Header="  2. Soạn Thảo, Xem &amp; Ký Số Trực Tiếp ( 🔒 Khóa )  " IsEnabled="False" FontSize="14" FontWeight="SemiBold">
+            <TabItem x:Name="TabItemSignWorkspace" Header="  2. ✍️ Soạn Thảo &amp; Ký Số ( 🔒 Khóa )  " IsEnabled="False" FontSize="13" FontWeight="SemiBold">
                 <Grid x:Name="GridTab2Root" Margin="0,10,0,0">
                     <Grid.RowDefinitions>
                         <!-- HÀNG 0: THANH CÔNG CỤ ĐIỀU KHIỂN & SOẠN THẢO TRÊN CÙNG -->
@@ -490,31 +599,33 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
 
-                                <!-- NÚT 1: TẢI FILE WORD -->
-                                <Button Grid.Column="0" x:Name="BtnSelectWord" Content="📄 Tải File Word (.docx)" 
-                                        Style="{StaticResource PrimaryButton}" 
-                                        Click="BtnSelectWord_Click" Margin="0,0,8,0" />
+                                <!-- NÚT 1: MỞ FILE WORD -->
+                                <Button Grid.Column="0" x:Name="BtnSelectWord" Content="📄 Mở File Word" 
+                                        Style="{StaticResource ToolbarWordButton}" 
+                                        Click="BtnSelectWord_Click" Margin="0,0,6,0" 
+                                        ToolTip="Mở văn bản Microsoft Word (.docx) để xem, chỉnh sửa và ký số" />
 
-                                <!-- NÚT 2: TẢI BẢNG TÍNH EXCEL -->
-                                <Button Grid.Column="1" x:Name="BtnSelectExcel" Content="📊 Tải Bảng Tính Excel (.xlsx, .xls)" 
-                                        Style="{StaticResource PrimaryButton}" 
-                                        Background="#16A34A"
-                                        Click="BtnSelectExcel_Click" Margin="0,0,8,0" />
+                                <!-- NÚT 2: MỞ BẢNG TÍNH EXCEL -->
+                                <Button Grid.Column="1" x:Name="BtnSelectExcel" Content="📊 Mở File Excel" 
+                                        Style="{StaticResource ToolbarExcelButton}" 
+                                        Click="BtnSelectExcel_Click" Margin="0,0,6,0" 
+                                        ToolTip="Mở bảng tính Microsoft Excel (.xlsx, .xls) để xem, điều chỉnh và ký số" />
 
-                                <!-- NÚT 3: TẢI FILE PDF TRỰC TIẾP -->
-                                <Button Grid.Column="2" x:Name="BtnSelectPdf" Content="📑 Tải File PDF" 
-                                        Style="{StaticResource SecondaryButton}" 
-                                        Click="BtnSelectPdf_Click" Margin="0,0,12,0" />
+                                <!-- NÚT 3: MỞ FILE PDF TRỰC TIẾP -->
+                                <Button Grid.Column="2" x:Name="BtnSelectPdf" Content="📑 Mở File PDF" 
+                                        Style="{StaticResource ToolbarPdfButton}" 
+                                        Click="BtnSelectPdf_Click" Margin="0,0,10,0" 
+                                        ToolTip="Mở trực tiếp tài liệu PDF để ký số điện tử" />
 
                                 <!-- TÊN FILE & TRẠNG THÁI HIỆN TẠI KÈM NÚT ĐÓNG TỆP AN TOÀN -->
-                                <Grid Grid.Column="3" VerticalAlignment="Center" Margin="0,0,12,0">
+                                <Grid Grid.Column="3" VerticalAlignment="Center" Margin="0,0,10,0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                        <TextBlock x:Name="TxtCurrentFileName" Text="Chưa chọn tệp tin nào." FontWeight="Bold" FontSize="13" Foreground="#1E293B" TextTrimming="CharacterEllipsis" />
-                                        <TextBlock x:Name="TxtCurrentFileStatus" Text="Chọn file Word, Excel hoặc PDF để xem trực tiếp tại đây." FontSize="11" Foreground="#64748B" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock x:Name="TxtCurrentFileName" Text="Chưa chọn tệp tin nào." FontWeight="Bold" FontSize="12" Foreground="#1E293B" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock x:Name="TxtCurrentFileStatus" Text="Chọn file Word, Excel hoặc PDF để làm việc." FontSize="11" Foreground="#64748B" TextTrimming="CharacterEllipsis" />
                                     </StackPanel>
                                     <Button Grid.Column="1" x:Name="BtnCloseCurrentFile" Content="✕ Đóng Tệp" 
                                             Style="{StaticResource SecondaryButton}" 
@@ -527,34 +638,36 @@
 
                                 <!-- NÚT 4: CHUYỂN QUA PDF ĐỂ KÝ -->
                                 <Button Grid.Column="4" x:Name="BtnConvertToPdfAndReadySign" 
-                                        Content="⚡ Chuyển Qua PDF Để Ký" 
+                                        Content="⚡ Chuyển PDF Để Ký" 
                                         Style="{StaticResource ConvertButton}" 
-                                        IsEnabled="False" Margin="0,0,8,0" 
-                                        Click="BtnExecuteConvertDocument_Click" />
+                                        IsEnabled="False" Margin="0,0,6,0" 
+                                        Click="BtnExecuteConvertDocument_Click" 
+                                        ToolTip="Chuyển đổi văn bản sang định dạng chuẩn PDF để sẵn sàng ký số" />
 
                                 <!-- NÚT 5: CHÈN CHỮ KÝ (KÉO THẢ TRỰC TIẾP TRÊN TRANG VĂN BẢN) -->
                                 <Button Grid.Column="5" x:Name="BtnInsertSignatureStamp" 
-                                        Content="📍 Chèn Chữ Ký" 
+                                        Content="📍 Chèn Vị Trí Ký" 
                                         Style="{StaticResource SecondaryButton}" 
                                         Background="#FEF3C7" BorderBrush="#F59E0B" Foreground="#92400E" FontWeight="Bold" 
-                                        IsEnabled="False" Margin="0,0,8,0" 
-                                        Click="BtnInsertSignatureStamp_Click" />
+                                        IsEnabled="False" Margin="0,0,6,0" 
+                                        Click="BtnInsertSignatureStamp_Click" 
+                                        ToolTip="Nhấp chuột để chọn vị trí đóng dấu / ký tên trực tiếp trên trang tài liệu" />
 
-                                <!-- NÚT 6: TIẾN HÀNH KÝ SỐ TÀI LIỆU -->
+                                <!-- NÚT 6: KÝ CÁ NHÂN -->
                                 <Button Grid.Column="6" x:Name="BtnSignCurrentDocument" 
-                                        Content="✍ TIẾN HÀNH KÝ SỐ" 
+                                        Content="✍️ Ký Cá Nhân" 
                                         Style="{StaticResource SignButton}" 
                                         IsEnabled="False" 
-                                        Click="BtnSignDocument_Click" />
+                                        Click="BtnSignDocument_Click" 
+                                        ToolTip="Thực hiện ký số cá nhân giáo viên chuẩn PAdES theo Nghị định 30/2020/NĐ-CP" />
 
-                                <!-- NÚT 7: ĐÓNG DẤU CƠ QUAN (USB TOKEN BAN CƠ YẾU) -->
+                                <!-- NÚT 7: ĐÓNG DẤU (USB TOKEN BAN CƠ YẾU) -->
                                 <Button Grid.Column="7" x:Name="BtnStampOfficial" 
-                                        Content="🔴 ĐÓNG DẤU CƠ QUAN" 
-                                        Style="{StaticResource SignButton}" 
-                                        Background="#B91C1C" BorderBrush="#991B1B"
-                                        IsEnabled="False" Margin="8,0,0,0"
+                                        Content="🔴 Đóng dấu" 
+                                        Style="{StaticResource OfficialSealButton}" 
+                                        IsEnabled="False" Margin="6,0,0,0"
                                         Click="BtnStampOfficial_Click" 
-                                        ToolTip="Đóng con dấu đỏ pháp nhân nhà trường bằng USB Token Ban Cơ yếu (Dành cho Ban Giám hiệu / Văn thư)" />
+                                        ToolTip="Đóng dấu pháp nhân trường học bằng USB Token Ban Cơ yếu (Dành cho Ban Giám hiệu / Văn thư)" />
                             </Grid>
 
                             <!-- DÒNG 2: THANH CÔNG CỤ ĐIỀU CHỈNH VĂN BẢN TRỰC TIẾP (KHI MỞ FILE WORD HOẶC EXCEL) -->
@@ -568,7 +681,7 @@
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Border Background="#FEF3C7" CornerRadius="4" Padding="6,3" Margin="0,0,10,0">
-                                        <TextBlock x:Name="TxtEditorModeBadge" Text="✏ Chế độ xem &amp; chỉnh sửa trực tiếp Word / Excel" FontSize="11" FontWeight="Bold" Foreground="#92400E" />
+                                        <TextBlock x:Name="TxtEditorModeBadge" Text="✏ Soạn thảo &amp; Điều chỉnh trực tiếp" FontSize="11" FontWeight="Bold" Foreground="#92400E" />
                                     </Border>
                                     <Button Content="B" ToolTip="In đậm (Bold)" Style="{StaticResource FormatButton}" Click="BtnFormatBold_Click" />
                                     <Button Content="I" ToolTip="In nghiêng (Italic)" Style="{StaticResource FormatButton}" FontStyle="Italic" Click="BtnFormatItalic_Click" />
@@ -579,7 +692,7 @@
                                     <Button Content="⇥ Phải" ToolTip="Căn lề phải" Style="{StaticResource FormatButton}" Click="BtnAlignRight_Click" />
                                     <Button Content="⇿ Đều" ToolTip="Căn đều hai bên" Style="{StaticResource FormatButton}" Click="BtnAlignJustify_Click" />
                                     <Separator Width="1" Height="16" Margin="6,0" Background="#CBD5E1" />
-                                    <Button x:Name="BtnSaveWordCopy" Content="💾 Lưu bản sao Word..." ToolTip="Lưu nội dung đã chỉnh sửa thành một tệp Word mới (bảo toàn tuyệt đối tệp gốc)" Style="{StaticResource FormatButton}" Padding="8,2" Click="BtnSaveWordCopy_Click" />
+                                    <Button x:Name="BtnSaveWordCopy" Content="💾 Lưu Bản Sao Word..." ToolTip="Lưu nội dung đã chỉnh sửa thành một tệp Word mới (bảo toàn tuyệt đối tệp gốc)" Style="{StaticResource FormatButton}" Padding="8,2" Click="BtnSaveWordCopy_Click" />
 
                                     <!-- NÚT ĐỊNH DẠNG KHỔ IN EXCEL (HIỆN KHI MỞ FILE EXCEL) -->
                                     <StackPanel x:Name="PnlExcelToolbarControls" Orientation="Horizontal" Visibility="Collapsed" Margin="8,0,0,0">
@@ -599,7 +712,7 @@
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                             <Image x:Name="ImgTab2StampThumb" Width="18" Height="18" Stretch="Uniform" Margin="0,0,6,0" Visibility="Collapsed" />
                                             <TextBlock x:Name="TxtTab2StampStatus" Text="🔴 Con dấu: Chưa chọn" FontSize="11" FontWeight="Bold" Foreground="#15803D" VerticalAlignment="Center" />
-                                            <Button x:Name="BtnTab2SelectStamp" Content="🖼 Đổi ảnh..." Style="{StaticResource SecondaryButton}" Padding="5,1" Margin="6,0,0,0" FontSize="10" Click="BtnTab2ChangeStamp_Click" />
+                                            <Button x:Name="BtnTab2SelectStamp" Content="🖼 Đổi mẫu..." Style="{StaticResource SecondaryButton}" Padding="5,1" Margin="6,0,0,0" FontSize="10" Click="BtnTab2ChangeStamp_Click" />
                                         </StackPanel>
                                     </Border>
 
@@ -771,7 +884,7 @@
             </TabItem>
 
             <!-- ================= TAB 3: HỘP THƯ TRÌNH KÝ BÁO CÁO LIÊN THÔNG ================= -->
-            <TabItem x:Name="TabItemWorkflow" Header="  3. Hộp Thư Trình Ký Báo Cáo  " FontSize="14" FontWeight="SemiBold">
+            <TabItem x:Name="TabItemWorkflow" Header="  3. 📬 Hộp Thư Trình Ký  " FontSize="13" FontWeight="SemiBold">
                 <Grid Margin="0,10,0,0">
                     <Grid.RowDefinitions>
                         <!-- THANH ĐIỀU KHIỂN & CHỈ SỐ NHANH -->
@@ -829,7 +942,7 @@
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                 <Button x:Name="BtnRefreshWorkflow" Content="🔄 Làm Mới Dữ Liệu" Style="{StaticResource SecondaryButton}" 
                                         FontSize="12" FontWeight="SemiBold" Padding="12,6" Margin="0,0,8,0" Click="BtnRefreshWorkflow_Click" />
-                                <Button Content="➕ Soạn Báo Cáo Mới (Tab 2)" Style="{StaticResource PrimaryButton}" 
+                                <Button Content="➕ Soạn Báo Cáo Mới" Style="{StaticResource PrimaryButton}" 
                                         FontSize="12" FontWeight="Bold" Padding="14,6" Click="BtnNewReportFromTab3_Click" />
                             </StackPanel>
                         </Grid>
@@ -878,9 +991,9 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="💡 Mẹo: Nhấp đúp vào dòng báo cáo hoặc bấm nút bên phải để nạp văn bản sang Tab 2 ký số phê duyệt." 
+                                            <TextBlock Grid.Column="0" Text="💡 Gợi ý: Nhấp đúp chuột vào văn bản trong danh sách để mở và ký số ngay." 
                                                        FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
-                                            <Button Grid.Column="1" x:Name="BtnOpenForReview" Content="📥 Mở &amp; Ký Duyệt Báo Cáo (Tab 2) ➡" 
+                                            <Button Grid.Column="1" x:Name="BtnOpenForReview" Content="📥 Mở &amp; Ký Duyệt Báo Cáo ➡" 
                                                     Style="{StaticResource PrimaryButton}" 
                                                     FontSize="12" FontWeight="Bold" Padding="16,8" Click="BtnOpenForReview_Click" />
                                         </Grid>
@@ -889,7 +1002,7 @@
                             </TabItem>
 
                             <!-- SUB-TAB 2: BÁO CÁO TÔI ĐÃ GỬI (OUTBOX) -->
-                            <TabItem Header="  📤 Báo Cáo Tôi Đã Gửi  " FontSize="13" FontWeight="SemiBold">
+                            <TabItem Header="  📤 Báo Cáo Tôi ĐÃ Gửi  " FontSize="13" FontWeight="SemiBold">
                                 <Grid Margin="4,8,4,4">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="*" />
@@ -927,10 +1040,10 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="💡 Mẹo: Nhấp đúp vào dòng báo cáo hoặc bấm 'Xem Bản Đã Gửi' để xem nội dung (chỉ đọc, không xung đột khi người nhận đang ký)." 
+                                            <TextBlock Grid.Column="0" Text="💡 Gợi ý: Nhấp đúp chuột vào văn bản để xem lại nội dung đã trình ký." 
                                                        FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
                                             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                <Button x:Name="BtnViewOutboxReport" Content="👁 Xem Bản Đã Gửi (Tab 2)" 
+                                                <Button x:Name="BtnViewOutboxReport" Content="👁 Xem Lại Báo Cáo" 
                                                         Style="{StaticResource PrimaryButton}" 
                                                         Background="#4F46E5" BorderBrush="#4338CA"
                                                         FontSize="12" FontWeight="Bold" Padding="14,8" Margin="0,0,8,0" Click="BtnViewOutboxReport_Click" />
@@ -986,7 +1099,7 @@
                                             <TextBlock Grid.Column="0" Text="✅ Các văn bản tại đây đã có đầy đủ 2 chữ ký số PAdES LTV hợp lệ theo Nghị định 130/2018/NĐ-CP." 
                                                        FontSize="12" Foreground="#059669" FontWeight="SemiBold" VerticalAlignment="Center" />
                                             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                <Button x:Name="BtnViewArchiveReport" Content="👁 Xem Tệp Đầy Đủ (Tab 2)" Style="{StaticResource SecondaryButton}" 
+                                                <Button x:Name="BtnViewArchiveReport" Content="👁 Xem Tệp Đầy Đủ" Style="{StaticResource SecondaryButton}" 
                                                         FontSize="12" FontWeight="SemiBold" Padding="14,8" Margin="0,0,8,0" Click="BtnViewArchiveReport_Click" />
                                                 <Button x:Name="BtnDownloadArchiveReport" Content="💾 Tải Về Máy Tính" Style="{StaticResource SuccessButton}" 
                                                         FontSize="12" FontWeight="Bold" Padding="16,8" Click="BtnDownloadArchiveReport_Click" />
@@ -1001,21 +1114,21 @@
             </TabItem>
 
             <!-- ================= TAB 4: KIỂM TRA CHỮ KÝ ================= -->
-            <TabItem Header="  4. Kiểm Tra Chữ Ký (Verify)  " FontSize="14" FontWeight="SemiBold">
+            <TabItem Header="  4. 🔍 Tra Cứu &amp; Xác Thực  " FontSize="13" FontWeight="SemiBold">
                 <Grid Margin="0,10,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <GroupBox Grid.Row="0" Header="Chọn File PDF Cần Kiểm Tra Tính Toàn Vẹn &amp; Pháp Lý">
+                    <GroupBox Grid.Row="0" Header="Chọn File PDF Cần Tra Cứu &amp; Xác Minh Tính Toàn Vẹn">
                         <Grid Margin="6">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBox Grid.Column="0" x:Name="TxtVerifyPdfPath" Background="#F8FAFC" Padding="6" Text="Chọn file PDF để kiểm tra..." />
-                            <Button Grid.Column="1" Content="🔍 Mở File &amp; Xác Minh" Style="{StaticResource PrimaryButton}" 
+                            <Button Grid.Column="1" Content="🔍 Mở File &amp; Xác Thực" Style="{StaticResource PrimaryButton}" 
                                     Margin="8,0,0,0" Click="BtnVerifyPdf_Click" />
                         </Grid>
                     </GroupBox>
@@ -1046,7 +1159,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="VGCA Sign Tool Pro • Tích hợp Chứng thực số Ban Cơ yếu Chính phủ" FontSize="11" Foreground="#475569" />
-                <TextBlock Grid.Column="1" Text="Phiên bản 3.6.0 Pro • .NET 8 x64" FontSize="11" Foreground="#64748B" />
+                <TextBlock Grid.Column="1" Text="Phiên bản v2.1.0 • .NET 8 x64" FontSize="11" Foreground="#64748B" />
             </Grid>
         </Border>
     </Grid>
