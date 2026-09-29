@@ -891,9 +891,10 @@
                             <!-- 1. WebView2 dành riêng cho PDF (Ký số & con dấu) và bảng tính Excel -->
                             <wv2:WebView2 x:Name="PdfPreviewControl" Visibility="Visible" />
 
-                            <!-- 2. Điều khiển Native A4 Paged Word Editor của Syncfusion dành riêng cho file Word (.docx, .doc) -->
+                            <!-- 2. Điều khiển Native A4 Paged Word Editor của Syncfusion (giữ lại để tương thích mã cũ, ẩn hoàn toàn không ảnh hưởng WebView2) -->
                             <syncfusion:SfRichTextBoxAdv x:Name="WordEditorControl" 
                                                          Visibility="Collapsed" 
+                                                         Width="0" Height="0"
                                                          LayoutType="Pages"
                                                          Background="#F1F5F9"
                                                          AllowDrop="False" />

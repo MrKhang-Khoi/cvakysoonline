@@ -1558,7 +1558,7 @@ namespace VGCASignToolPro
                 return;
             }
 
-            SetProcessingBusyState(true, $"Đang nạp cấu trúc tài liệu Word: {Path.GetFileName(wordPath)}...");
+            SetProcessingBusyState(true, $"Đang nạp và tối ưu tài liệu Word: {Path.GetFileName(wordPath)}...");
 
             _originalWordFilePath = wordPath;
             _originalExcelFilePath = null;
@@ -1567,50 +1567,52 @@ namespace VGCASignToolPro
             BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
 
             TxtCurrentFileName.Text = Path.GetFileName(wordPath);
-            PnlEditingToolbar.Visibility = Visibility.Visible;
+            PnlEditingToolbar.Visibility = Visibility.Collapsed;
             PnlExcelToolbarControls.Visibility = Visibility.Collapsed;
-            TxtEditorModeBadge.Text = "✏ Chế độ xem & chỉnh sửa Word (A4 Paged View)";
-            BtnConvertToPdfAndReadySign.IsEnabled = false;
-            BtnInsertSignatureStamp.IsEnabled = false;
-            BtnSignCurrentDocument.IsEnabled = false;
             BtnCloseCurrentFile.Visibility = Visibility.Visible;
 
             try
             {
                 long fileSizeKb = new FileInfo(wordPath).Length / 1024;
-                TxtCurrentFileStatus.Text = $"Đang tải cấu trúc tài liệu ({fileSizeKb:N0} KB)...";
+                TxtCurrentFileStatus.Text = $"Đang tối ưu cấu trúc tài liệu ({fileSizeKb:N0} KB) sang bản PDF A4 chuẩn ký số...";
 
-                // Nạp trực tiếp vào điều khiển Native A4 Paged Word Editor của Syncfusion (hoàn toàn không cần Microsoft Word)
-                var (docStream, formatType) = await Task.Run(() => _wordConverter.LoadWordToEditorStream(wordPath));
-                using (docStream)
+                // Tự động chuyển đổi Word sang bản PDF vector chuẩn Nghị định 30/2020/NĐ-CP (Động cơ kép: Native Word / DocIO)
+                string pdfPath = await _wordConverter.ConvertWordToPdfAsync(wordPath);
+                if (string.IsNullOrWhiteSpace(pdfPath) || !File.Exists(pdfPath))
                 {
-                    WordEditorControl.Load(docStream, formatType);
+                    throw new InvalidOperationException("Không thể tạo bản PDF chuẩn từ tệp Word đã chọn.");
                 }
 
-                WordEditorControl.LayoutType = Syncfusion.Windows.Controls.RichTextBoxAdv.LayoutType.Pages;
+                _currentWorkingPdfPath = pdfPath;
 
+                // Đảm bảo ẩn WordEditorControl và kích hoạt WebView2 PDF Viewer sắc nét 100%
+                if (WordEditorControl != null) WordEditorControl.Visibility = Visibility.Collapsed;
+                if (PdfPreviewControl != null) PdfPreviewControl.Visibility = Visibility.Visible;
                 PnlPreviewPlaceholder.Visibility = Visibility.Collapsed;
-                PdfPreviewControl.Visibility = Visibility.Collapsed;
-                WordEditorControl.Visibility = Visibility.Visible;
 
-                _isWordModified = false;
-                WordEditorControl.ContentChanged -= WordEditorControl_ContentChanged;
-                WordEditorControl.ContentChanged += WordEditorControl_ContentChanged;
+                // Nạp file PDF chuẩn vào WebView2 bằng Engine tương tác
+                await DisplayPdfInInteractiveViewerAsync(pdfPath);
 
-                TxtCurrentFileStatus.Text = "Đang ở chế độ xem & điều chỉnh trực tiếp (khổ A4). Bạn có thể sửa văn bản ngay bên dưới, sau đó bấm 'Chuyển Qua PDF Để Ký'.";
-                BtnConvertToPdfAndReadySign.IsEnabled = true;
-                UpdateStatus($"Đã nạp văn bản Word: {Path.GetFileName(wordPath)}. Sẵn sàng xem và điều chỉnh.");
+                TxtCurrentFileName.Text = Path.GetFileName(wordPath);
+                TxtCurrentFileStatus.Text = "Tài liệu Word đã được nạp thành công dưới dạng PDF A4 chuẩn in ấn. Bạn có thể kéo thả con dấu và ký ngay.";
+                BtnConvertToPdfAndReadySign.IsEnabled = false;
+                BtnCloseCurrentFile.Visibility = Visibility.Visible;
+
+                // Mở khóa toàn bộ các nút Ký Cá Nhân, Đóng Dấu, Chèn Vị Trí Ký tức thì
+                UpdateSignAndSealButtonsState(true);
+                UpdateStatus($"Đã nạp văn bản Word: {Path.GetFileName(wordPath)} (Sẵn sàng ký số).");
             }
             catch (Exception ex)
             {
                 TxtCurrentFileStatus.Text = "Nạp tài liệu thất bại.";
                 _originalWordFilePath = null;
-                _isWordModified = false;
-                WordEditorControl.Visibility = Visibility.Collapsed;
-                PdfPreviewControl.Visibility = Visibility.Visible;
+                _currentWorkingPdfPath = null;
+                if (WordEditorControl != null) WordEditorControl.Visibility = Visibility.Collapsed;
+                if (PdfPreviewControl != null) PdfPreviewControl.Visibility = Visibility.Visible;
                 BtnCloseCurrentFile.Visibility = Visibility.Collapsed;
                 System.Diagnostics.Trace.TraceError($"Lỗi nạp tài liệu Word: {ex}");
-                MessageBox.Show($"Không thể hiển thị tài liệu Word:\n{ex.Message}", "Lỗi Nạp Tài Liệu", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Không thể nạp tài liệu Word:\n\n{ex.Message}\n\nVui lòng kiểm tra tệp tin có đang bị khóa bởi ứng dụng khác không.", 
+                    "Lỗi Nạp Tài Liệu", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -1971,6 +1973,13 @@ namespace VGCASignToolPro
                 return;
             }
 
+            if (!string.IsNullOrWhiteSpace(_currentWorkingPdfPath) && File.Exists(_currentWorkingPdfPath))
+            {
+                MessageBox.Show("Tài liệu đã ở định dạng PDF chuẩn sẵn sàng ký số.\n\nBạn có thể bấm '📍 Chèn Vị Trí Ký' để kéo thả con dấu, sau đó bấm '✍️ Ký Cá Nhân' hoặc '🔴 Đóng dấu'.",
+                    "Đã Sẵn Sàng Ký Số", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(_originalWordFilePath) || !File.Exists(_originalWordFilePath))
             {
                 MessageBox.Show("Vui lòng tải tệp Word lên trước khi chuyển đổi.", "Chưa có file", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -1990,8 +1999,7 @@ namespace VGCASignToolPro
 
                 // NGUYÊN TẮC BẢO VỆ TÀI LIỆU GỐC (ZERO DATA LOSS / READ-ONLY INVARIANT):
                 // Tuyệt đối không bao giờ ghi đè lên tệp Word gốc trên máy người dùng.
-                // Mọi nội dung chỉnh sửa trên trình soạn thảo sẽ được chuyển trực tiếp từ luồng RAM (docStream) sang PDF để phục vụ ký số.
-                if (isModified)
+                if (isModified && WordEditorControl != null && WordEditorControl.Visibility == Visibility.Visible)
                 {
                     using MemoryStream docStream = new MemoryStream();
                     WordEditorControl.Save(docStream, Syncfusion.Windows.Controls.RichTextBoxAdv.FormatType.Docx);
@@ -2000,25 +2008,24 @@ namespace VGCASignToolPro
                 }
                 else
                 {
-                    // Văn bản chưa bị chỉnh sửa: Chuyển đổi trực tiếp từ file Word gốc bằng Syncfusion DocIO độc lập
+                    // Chuyển đổi trực tiếp từ file Word gốc bằng động cơ kép (Word Native / Syncfusion DocIO)
                     pdfPath = await _wordConverter.ConvertWordToPdfAsync(_originalWordFilePath);
                 }
 
                 string originalWordFileName = Path.GetFileName(_originalWordFilePath);
                 _currentWorkingPdfPath = pdfPath;
-                _originalWordFilePath = null;
                 _isWordModified = false;
                 PnlEditingToolbar.Visibility = Visibility.Collapsed;
 
                 // Chuyển chế độ hiển thị từ WordEditorControl sang WebView2 PDF Viewer
-                WordEditorControl.Visibility = Visibility.Collapsed;
-                PdfPreviewControl.Visibility = Visibility.Visible;
+                if (WordEditorControl != null) WordEditorControl.Visibility = Visibility.Collapsed;
+                if (PdfPreviewControl != null) PdfPreviewControl.Visibility = Visibility.Visible;
 
                 // Nạp file PDF chuẩn vào WebView2 bằng Engine tương tác
                 await DisplayPdfInInteractiveViewerAsync(pdfPath);
 
-                TxtCurrentFileName.Text = Path.GetFileName(pdfPath);
-                TxtCurrentFileStatus.Text = "Tài liệu PDF chuẩn đã được tạo và nạp sẵn sàng ký số.";
+                TxtCurrentFileName.Text = originalWordFileName;
+                TxtCurrentFileStatus.Text = "Tài liệu Word đã được nạp thành công dưới dạng PDF A4 chuẩn in ấn. Sẵn sàng ký số.";
                 BtnConvertToPdfAndReadySign.IsEnabled = false;
                 UpdateSignAndSealButtonsState(true);
                 BtnCloseCurrentFile.Visibility = Visibility.Visible;
@@ -2463,7 +2470,13 @@ namespace VGCASignToolPro
                 dir = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             }
 
-            string baseName = Path.GetFileNameWithoutExtension(_currentWorkingPdfPath);
+            string baseName = !string.IsNullOrWhiteSpace(_originalWordFilePath)
+                ? Path.GetFileNameWithoutExtension(_originalWordFilePath)
+                : Path.GetFileNameWithoutExtension(_currentWorkingPdfPath);
+            if (baseName.EndsWith("_converted", StringComparison.OrdinalIgnoreCase))
+            {
+                baseName = baseName.Substring(0, baseName.Length - "_converted".Length);
+            }
             string outputPath = Path.Combine(dir, $"{baseName}_SIGNED.pdf");
 
             SigningRequest request = new SigningRequest
@@ -2819,7 +2832,13 @@ namespace VGCASignToolPro
                 dir = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             }
 
-            string baseName = Path.GetFileNameWithoutExtension(_currentWorkingPdfPath);
+            string baseName = !string.IsNullOrWhiteSpace(_originalWordFilePath)
+                ? Path.GetFileNameWithoutExtension(_originalWordFilePath)
+                : Path.GetFileNameWithoutExtension(_currentWorkingPdfPath);
+            if (baseName.EndsWith("_converted", StringComparison.OrdinalIgnoreCase))
+            {
+                baseName = baseName.Substring(0, baseName.Length - "_converted".Length);
+            }
             string outputPath = Path.Combine(dir, $"{baseName}_SEALED.pdf");
 
             SigningRequest request = new SigningRequest
