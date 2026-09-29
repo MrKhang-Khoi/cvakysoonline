@@ -18,7 +18,7 @@ namespace VGCASignToolPro.Services
     {
         private static readonly HttpClient _httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
         private readonly string _configFilePath;
-        public string CurrentVersionString { get; } = "2.0.0";
+        public string CurrentVersionString { get; private set; } = "2.1.0";
 
         public UpdateService()
         {
@@ -26,7 +26,7 @@ namespace VGCASignToolPro.Services
             try
             {
                 Version? asmVer = Assembly.GetExecutingAssembly().GetName().Version;
-                if (asmVer != null)
+                if (asmVer != null && asmVer.Major > 0)
                 {
                     CurrentVersionString = $"{asmVer.Major}.{asmVer.Minor}.{asmVer.Build}";
                 }

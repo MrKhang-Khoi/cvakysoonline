@@ -1,8 +1,48 @@
 {
-  "schoolName": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
-  "description": "Danh mục phân quyền tài khoản Giáo viên toàn trường kết nối ký số Ban Cơ Yếu Chính Phủ",
+  "schoolName": "TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN",
+  "description": "Danh bạ cán bộ, giáo viên liên thông ký số Ban Cơ Yếu Chính Phủ",
   "updatedAt": "2026-09-29T00:30:00Z",
   "roster": [
+    {
+      "cccd": "042084002100",
+      "fullName": "Hà Văn Tý",
+      "title": "Giáo viên",
+      "phone": "0818810007",
+      "department": "Tổ Khoa học Tự nhiên",
+      "organization": "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI",
+      "email": "hvty-dakha@quangngai.gov.vn",
+      "canSeal": false,
+      "status": "ACTIVE",
+      "certificates": [
+        {
+          "serialNumber": "7C4C44A8671300AE",
+          "subject": "Hà Văn Tý",
+          "issuer": "CA phục vụ các cơ quan Nhà nước G2 - Ban Cơ yếu Chính phủ"
+        }
+      ]
+    },
+    {
+      "cccd": "062187000641",
+      "fullName": "Trần Thị Thúy Loan",
+      "title": "Tổ trưởng Chuyên môn",
+      "phone": "0819810007",
+      "department": "Tổ Khoa học Tự nhiên",
+      "organization": "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI",
+      "email": "tttloan-dakmar@quangngai.gov.vn",
+      "canSeal": false,
+      "status": "ACTIVE"
+    },
+    {
+      "cccd": "062185001053",
+      "fullName": "Nguyễn Văn Tuấn",
+      "title": "Hiệu trưởng",
+      "phone": "0819000105",
+      "department": "Ban Giám hiệu",
+      "organization": "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI",
+      "email": "nvtuan-chuvanan@quangngai.gov.vn",
+      "canSeal": true,
+      "status": "ACTIVE"
+    },
     {
       "cccd": "062189002154",
       "fullName": "Lê Thị Hồng",
@@ -11,72 +51,6 @@
       "department": "Ban Giám hiệu",
       "organization": "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI",
       "email": "lthong-chuvanan@quangngai.gov.vn",
-      "canSeal": true,
-      "status": "ACTIVE"
-    },
-    {
-      "cccd": "062185001053",
-      "fullName": "Nguyễn Thị Mai (CCCD 062185001053)",
-      "title": "Tổ trưởng",
-      "phone": "0819000105",
-      "department": "Tổ Ngữ Văn - Trường THCS Nguyễn Huệ",
-      "organization": "ỦY BAN NHÂN DÂN XÃ ĐAK MAR - TỈNH QUẢNG NGÃI",
-      "email": "gv062185001053@quangngai.gov.vn",
-      "canSeal": false,
-      "status": "ACTIVE"
-    },
-    {
-      "cccd": "042084002100",
-      "fullName": "Hà Văn Tý",
-      "title": "Giáo viên",
-      "phone": "0818810007",
-      "department": "ỦY BAN NHÂN DÂN XÃ ĐĂK HÀ",
-      "organization": "ỦY BAN NHÂN DÂN TỈNH QUẢNG NGÃI",
-      "email": "hvty-dakha@quangngai.gov.vn",
-      "canSeal": false,
-      "status": "ACTIVE"
-    },
-    {
-      "cccd": "lvlam-dakha@quangngai.gov.vn",
-      "fullName": "Lê Văn Lâm",
-      "title": "Cán bộ / Giáo viên",
-      "phone": "",
-      "department": "TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN - ỦY BAN NHÂN DÂN XÃ ĐĂK HÀ",
-      "organization": "ỦY BAN NHÂN DÂN TỈNH QUẢNG NGÃI",
-      "email": "lvlam-dakha@quangngai.gov.vn",
-      "canSeal": false,
-      "status": "ACTIVE"
-    },
-    {
-      "cccd": "062187000641",
-      "fullName": "Trần Thị Thúy Loan",
-      "title": "Giáo viên",
-      "phone": "0819810007",
-      "department": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
-      "organization": "ỦY BAN NHÂN DÂN XÃ ĐAK MAR - TỈNH QUẢNG NGÃI",
-      "email": "tttloan-dakmar@quangngai.gov.vn",
-      "canSeal": false,
-      "status": "ACTIVE"
-    },
-    {
-      "cccd": "062180000001",
-      "fullName": "Lê Văn Hùng",
-      "title": "Hiệu trưởng",
-      "phone": "0905123456",
-      "department": "Ban Giám hiệu",
-      "organization": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
-      "email": "lvhung@quangngai.gov.vn",
-      "canSeal": true,
-      "status": "ACTIVE"
-    },
-    {
-      "cccd": "062182000002",
-      "fullName": "Phạm Thị Lan",
-      "title": "Phó hiệu trưởng",
-      "phone": "0905654321",
-      "department": "Ban Giám hiệu",
-      "organization": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
-      "email": "ptlan@quangngai.gov.vn",
       "canSeal": true,
       "status": "ACTIVE"
     }
