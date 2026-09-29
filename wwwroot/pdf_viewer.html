@@ -302,9 +302,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: #525659;
-            color: white;
-            display: flex;
+            background: #f8fafc;
+            color: #1e293b;
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -313,8 +313,8 @@
         .spinner {
             width: 40px;
             height: 40px;
-            border: 4px solid rgba(255,255,255,0.2);
-            border-top-color: #38bdf8;
+            border: 4px solid #e2e8f0;
+            border-top-color: #2563eb;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
             margin-bottom: 12px;
@@ -325,9 +325,9 @@
     </style>
 </head>
 <body>
-    <div id="loading-overlay">
+    <div id="loading-overlay" style="display: none;">
         <div class="spinner"></div>
-        <div id="loading-text" style="font-size: 14px; font-weight: 500;">Đang nạp tài liệu PDF...</div>
+        <div id="loading-text" style="font-size: 14px; font-weight: 500; color: #334155;">Đang nạp tài liệu PDF...</div>
     </div>
 
     <!-- KHUNG XEM VÀ CHỈNH SỬA BẢNG TÍNH EXCEL TRỰC TIẾP -->

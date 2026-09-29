@@ -142,6 +142,7 @@ namespace VGCASignToolPro
 
                 var env = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, webView2CacheDir);
                 await PdfPreviewControl.EnsureCoreWebView2Async(env);
+                PdfPreviewControl.DefaultBackgroundColor = System.Drawing.Color.FromArgb(248, 250, 252);
 
                 // Tìm thư mục wwwroot một cách linh hoạt (hỗ trợ cả Development, Publish, và Installed mode trên mọi máy)
                 string wwwroot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wwwroot");
@@ -1471,6 +1472,7 @@ namespace VGCASignToolPro
                 }
 
                 PnlPreviewPlaceholder.Visibility = Visibility.Visible;
+                HideLoadingOverlay();
 
                 // 5. Thu hồi rác dọn dẹp RAM
                 GC.Collect();
@@ -1482,6 +1484,39 @@ namespace VGCASignToolPro
             {
                 System.Diagnostics.Trace.TraceError($"Lỗi khi đóng tệp: {ex}");
             }
+        }
+
+        /// <summary>
+        /// Hiển thị hộp thoại trung tâm Loading Dialog với hiệu ứng vòng xoay Fluent và thanh tiến trình.
+        /// Đồng thời giữ Placeholder nền sáng (#F8FAFC) để triệt tiêu 100% hiện tượng chớp đen khi WebView2 nạp file lớn.
+        /// </summary>
+        private void ShowLoadingOverlay(string title, string message, string icon = "📄")
+        {
+            if (OverlayLoadingModal == null) return;
+
+            if (TxtLoadingTitle != null) TxtLoadingTitle.Text = title;
+            if (TxtLoadingMessage != null) TxtLoadingMessage.Text = message;
+            if (TxtLoadingIcon != null) TxtLoadingIcon.Text = icon;
+
+            // Giữ Placeholder màu xám nhạt (#F8FAFC) để che chắn nền đen của WebView2 trong suốt lúc tải
+            if (PnlPreviewPlaceholder != null)
+            {
+                PnlPreviewPlaceholder.Visibility = Visibility.Visible;
+            }
+
+            OverlayLoadingModal.Visibility = Visibility.Visible;
+
+            // Bắt buộc WPF flush render queue để giao diện hiển thị ngay lập tức không bị trễ
+            Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Render);
+        }
+
+        /// <summary>
+        /// Ẩn hộp thoại Loading Dialog sau khi tài liệu đã được nạp/kết xuất hoàn tất.
+        /// </summary>
+        private void HideLoadingOverlay()
+        {
+            if (OverlayLoadingModal == null) return;
+            OverlayLoadingModal.Visibility = Visibility.Collapsed;
         }
 
         /// <summary>
@@ -1558,6 +1593,7 @@ namespace VGCASignToolPro
                 return;
             }
 
+            ShowLoadingOverlay("Đang mở file, vui lòng chờ...", $"Đang nạp và tối ưu tài liệu Word: {Path.GetFileName(wordPath)}...", "📄");
             SetProcessingBusyState(true, $"Đang nạp và tối ưu tài liệu Word: {Path.GetFileName(wordPath)}...");
 
             _originalWordFilePath = wordPath;
@@ -1588,7 +1624,6 @@ namespace VGCASignToolPro
                 // Đảm bảo ẩn WordEditorControl và kích hoạt WebView2 PDF Viewer sắc nét 100%
                 if (WordEditorControl != null) WordEditorControl.Visibility = Visibility.Collapsed;
                 if (PdfPreviewControl != null) PdfPreviewControl.Visibility = Visibility.Visible;
-                PnlPreviewPlaceholder.Visibility = Visibility.Collapsed;
 
                 // Nạp file PDF chuẩn vào WebView2 bằng Engine tương tác
                 await DisplayPdfInInteractiveViewerAsync(pdfPath);
@@ -1616,6 +1651,7 @@ namespace VGCASignToolPro
             }
             finally
             {
+                HideLoadingOverlay();
                 SetProcessingBusyState(false);
             }
         }
@@ -1662,6 +1698,7 @@ namespace VGCASignToolPro
                 return;
             }
 
+            ShowLoadingOverlay("Đang mở file, vui lòng chờ...", $"Đang phân tích cấu trúc bảng tính Excel: {Path.GetFileName(excelPath)}...", "📊");
             SetProcessingBusyState(true, $"Đang nạp bảng tính Excel: {Path.GetFileName(excelPath)}...");
 
             _originalExcelFilePath = excelPath;
@@ -1689,8 +1726,6 @@ namespace VGCASignToolPro
 
                 if (_isWebViewInitialized && PdfPreviewControl?.CoreWebView2 != null)
                 {
-                    PnlPreviewPlaceholder.Visibility = Visibility.Collapsed;
-
                     // Đảm bảo pdf_viewer.html đã được nạp
                     string viewerUrl = PdfPreviewControl.Source?.ToString() ?? "";
                     if (!viewerUrl.Contains("pdf_viewer.html", StringComparison.OrdinalIgnoreCase))
@@ -1738,6 +1773,7 @@ namespace VGCASignToolPro
                     {
                         await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync(script);
                     }
+                    PnlPreviewPlaceholder.Visibility = Visibility.Collapsed;
                 }
 
                 TxtCurrentFileStatus.Text = "Đang ở chế độ xem & điều chỉnh bảng tính. Bạn có thể click đúp vào ô để sửa dữ liệu, sau đó bấm 'Chuyển Qua PDF Để Ký'.";
@@ -1754,6 +1790,7 @@ namespace VGCASignToolPro
             }
             finally
             {
+                HideLoadingOverlay();
                 SetProcessingBusyState(false);
             }
         }
@@ -1815,10 +1852,11 @@ namespace VGCASignToolPro
                 return;
             }
 
+            ShowLoadingOverlay("Đang mở file, vui lòng chờ...", $"Đang nạp và kết xuất trang tài liệu PDF: {Path.GetFileName(pdfPath)}...", "📑");
+            SetProcessingBusyState(true, $"Đang nạp tệp PDF: {Path.GetFileName(pdfPath)}...");
+
             // Tự động làm sạch hoàn toàn watermark bản quyền dùng thử nếu tệp chứa vết Syncfusion
             WordConverterService.SanitizeSyncfusionWatermark(pdfPath);
-
-            SetProcessingBusyState(true, $"Đang nạp tệp PDF: {Path.GetFileName(pdfPath)}...");
 
             _originalWordFilePath = null;
             _originalExcelFilePath = null;
@@ -1854,6 +1892,7 @@ namespace VGCASignToolPro
             }
             finally
             {
+                HideLoadingOverlay();
                 SetProcessingBusyState(false);
             }
         }
@@ -1901,6 +1940,7 @@ namespace VGCASignToolPro
                 return;
             }
 
+            ShowLoadingOverlay("Đang chuyển Excel thành PDF, vui lòng chờ...", "Đang xuất bảng tính Excel sang PDF chuẩn vector in ấn A4...", "⚡");
             SetProcessingBusyState(true, "Bắt đầu chuyển đổi bảng tính Excel sang PDF...");
             PrgConvertLoading.Visibility = Visibility.Visible;
             TxtCurrentFileStatus.Text = "Đang xuất bảng tính Excel sang PDF chuẩn vector in ấn A4...";
@@ -1940,6 +1980,7 @@ namespace VGCASignToolPro
                 BtnCloseCurrentFile.Visibility = Visibility.Visible;
                 UpdateStatus($"Đã xuất tệp PDF bảng tính hoàn chỉnh: {Path.GetFileName(outputPdfPath)}");
 
+                HideLoadingOverlay();
                 MessageBox.Show(
                     $"Chuyển đổi bảng tính sang PDF thành công!\n\nTệp tin đã lưu tại:\n{outputPdfPath}\n\nNội dung bảng tính chuẩn đã được hiển thị trên màn hình. Bạn có thể bấm '📍 Chèn Chữ Ký' để kéo thả con dấu đến đúng vị trí cần ký, sau đó bấm '✍ TIẾN HÀNH KÝ SỐ'.",
                     "Chuyển Đổi Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1955,6 +1996,7 @@ namespace VGCASignToolPro
             }
             finally
             {
+                HideLoadingOverlay();
                 PrgConvertLoading.Visibility = Visibility.Collapsed;
                 SetProcessingBusyState(false);
             }
@@ -1989,6 +2031,7 @@ namespace VGCASignToolPro
             // Kiểm tra xem người dùng có thực hiện chỉnh sửa nội dung văn bản trên WordEditorControl hay không
             bool isModified = _isWordModified;
 
+            ShowLoadingOverlay("Đang chuyển Word thành PDF, vui lòng chờ...", "Đang trích xuất nội dung văn bản và xuất sang PDF chuẩn Nghị định 30/2020/NĐ-CP...", "⚡");
             SetProcessingBusyState(true, "Bắt đầu chuyển đổi Word sang PDF...");
             PrgConvertLoading.Visibility = Visibility.Visible;
             TxtCurrentFileStatus.Text = "Đang trích xuất nội dung văn bản và xuất sang PDF chuẩn Nghị định 30/2020/NĐ-CP...";
@@ -2035,6 +2078,7 @@ namespace VGCASignToolPro
                     ? $"• Tệp Word gốc ({originalWordFileName}) được bảo toàn nguyên vẹn 100% trên máy tính.\n• Toàn bộ nội dung đã điều chỉnh được chuyển trực tiếp vào tệp PDF phục vụ ký số.\n"
                     : $"• Tệp PDF được tạo trực tiếp từ bản Word gốc chuẩn xác 100% không xê dịch nét kẻ.\n";
 
+                HideLoadingOverlay();
                 MessageBox.Show(
                     $"Chuyển đổi sang PDF thành công!\n\n" +
                     saveNotice +
@@ -2053,6 +2097,7 @@ namespace VGCASignToolPro
             }
             finally
             {
+                HideLoadingOverlay();
                 PrgConvertLoading.Visibility = Visibility.Collapsed;
                 SetProcessingBusyState(false);
             }
@@ -2497,6 +2542,7 @@ namespace VGCASignToolPro
                 TSAUrl = "http://ca.gov.vn/tsa"
             };
 
+            ShowLoadingOverlay("Đang tiến hành ký số...", "Đang kết nối chứng thư số và nhúng chữ ký điện tử chuẩn PAdES LTV...", "✍️");
             SetProcessingBusyState(true, "Đang tiến hành ký số văn bản chuẩn PAdES LTV...");
 
             try
@@ -2506,6 +2552,7 @@ namespace VGCASignToolPro
 
                 // Nạp file đã ký vào Interactive Viewer để người dùng thẩm định kết quả trực quan
                 await DisplayPdfInInteractiveViewerAsync(signedPath);
+                HideLoadingOverlay();
 
                 TxtCurrentFileName.Text = Path.GetFileName(signedPath);
                 TxtCurrentFileStatus.Text = "✅ VĂN BẢN ĐÃ ĐƯỢC KÝ SỐ THÀNH CÔNG VỚI CHỨNG THƯ BAN CƠ YẾU CHÍNH PHỦ.";
@@ -2553,6 +2600,7 @@ namespace VGCASignToolPro
             }
             finally
             {
+                HideLoadingOverlay();
                 SetProcessingBusyState(false);
                 UpdateSignAndSealButtonsState(true);
             }
@@ -2859,6 +2907,7 @@ namespace VGCASignToolPro
                 TSAUrl = "http://ca.gov.vn/tsa"
             };
 
+            ShowLoadingOverlay("Đang đóng dấu pháp nhân...", $"Đang kết nối USB Token và đóng dấu pháp nhân {orgCert.CommonName}...", "🔴");
             SetProcessingBusyState(true, $"Đang kết nối USB Token và đóng dấu pháp nhân {orgCert.CommonName}...");
 
             try
@@ -2868,6 +2917,7 @@ namespace VGCASignToolPro
 
                 // Nạp file đã đóng dấu vào Interactive Viewer
                 await DisplayPdfInInteractiveViewerAsync(signedPath);
+                HideLoadingOverlay();
 
                 TxtCurrentFileName.Text = Path.GetFileName(signedPath);
                 TxtCurrentFileStatus.Text = $"✅ VĂN BẢN ĐÃ ĐƯỢC ĐÓNG DẤU PHÁP NHÂN THÀNH CÔNG VỚI USB TOKEN: {orgCert.CommonName}";
@@ -2895,6 +2945,7 @@ namespace VGCASignToolPro
             }
             finally
             {
+                HideLoadingOverlay();
                 SetProcessingBusyState(false);
                 UpdateSignAndSealButtonsState(true);
             }
