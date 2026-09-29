@@ -31,6 +31,7 @@ namespace VGCASignToolPro.Services
         public string Organization { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
+        public bool CanSeal { get; set; } = false;
         public string Status { get; internal set; } = "ACTIVE";
         public int RemainingCounter { get; internal set; } = MaxAttempts;
         public int FailedAttempts
@@ -246,6 +247,9 @@ namespace VGCASignToolPro.Services
                                 Organization = item["organization"]?.ToString() ?? string.Empty,
                                 Email = item["email"]?.ToString() ?? string.Empty,
                                 Phone = item["phone"]?.ToString() ?? string.Empty,
+                                CanSeal = item["canSeal"] != null
+                                    ? item["canSeal"]!.Value<bool>()
+                                    : (item["title"]?.ToString() == "Hiệu trưởng" || item["title"]?.ToString() == "Phó hiệu trưởng" || item["title"]?.ToString() == "Văn thư"),
                                 Status = item["status"]?.ToString() ?? "ACTIVE",
                                 RemainingCounter = item["remainingCounter"]?.Type == JTokenType.Integer
                                     ? item["remainingCounter"]!.Value<int>()
@@ -358,6 +362,9 @@ namespace VGCASignToolPro.Services
                     string phone = item["phone"]?.ToString()?.Trim() ?? string.Empty;
                     string email = item["email"]?.ToString()?.Trim() ?? string.Empty;
                     string org = item["organization"]?.ToString()?.Trim() ?? string.Empty;
+                    bool canSeal = item["canSeal"] != null
+                        ? item["canSeal"]!.Value<bool>()
+                        : (title == "Hiệu trưởng" || title == "Phó hiệu trưởng" || title == "Văn thư");
 
                     if (_roster.TryGetValue(cccd, out var existing))
                     {
@@ -367,6 +374,7 @@ namespace VGCASignToolPro.Services
                         if (!string.IsNullOrEmpty(phone)) existing.Phone = phone;
                         if (!string.IsNullOrEmpty(email)) existing.Email = email;
                         if (!string.IsNullOrEmpty(org)) existing.Organization = org;
+                        existing.CanSeal = canSeal;
                     }
                     else
                     {
@@ -379,6 +387,7 @@ namespace VGCASignToolPro.Services
                             Phone = phone,
                             Email = email,
                             Organization = !string.IsNullOrEmpty(org) ? org : "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+                            CanSeal = canSeal,
                             Status = "ACTIVE",
                             RemainingCounter = VgcaTeacherModel.MaxAttempts,
                             FailedAttempts = 0
@@ -405,6 +414,7 @@ namespace VGCASignToolPro.Services
                             department = t.Department,
                             organization = t.Organization,
                             email = t.Email,
+                            canSeal = t.CanSeal,
                             status = t.Status
                         }))
                     };

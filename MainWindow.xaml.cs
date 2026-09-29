@@ -331,6 +331,8 @@ namespace VGCASignToolPro
                         ? $"Serial: {teacher.SerialNumber}"
                         : (!string.IsNullOrEmpty(teacher.Email) ? teacher.Email : (teacher.Cccd?.Length > 4 ? $"***{teacher.Cccd[^4..]}" : "***"));
                     UpdateStatus($"Phiên làm việc VGCA Virtual CSP đã kích hoạt: {teacher.FullName} ({maskedId})");
+
+                    UpdateSignAndSealButtonsState(!string.IsNullOrWhiteSpace(_currentWorkingPdfPath) && File.Exists(_currentWorkingPdfPath));
                 }
                 else
                 {
@@ -361,6 +363,7 @@ namespace VGCASignToolPro
                     {
                         PdfPreviewControl.Visibility = Visibility.Hidden;
                     }
+                    UpdateSignAndSealButtonsState(false);
                     if (MainTabControl.SelectedIndex == 1)
                     {
                         MainTabControl.SelectedIndex = 0;
@@ -676,36 +679,35 @@ namespace VGCASignToolPro
                     };
                 }
 
-                if (!string.IsNullOrWhiteSpace(profile.ImagePath) && File.Exists(profile.ImagePath))
+                // Nếu mẫu ở chế độ chỉ chữ (Mode == 0) hoặc profile dạng chèn số/ngày tháng, xóa ảnh con dấu
+                if (profile.Mode == 0 || profile.ProfileType == 1 || profile.ProfileType == 2)
                 {
-                    SetAndPersistStampImage(profile.ImagePath);
+                    ClearStampImage();
                 }
-                else
+                else if (!string.IsNullOrWhiteSpace(profile.ImagePath) && File.Exists(profile.ImagePath))
                 {
-                    // Tự động kiểm tra file quyen.png trên Desktop người dùng nếu có
-                    string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                    if (!string.IsNullOrEmpty(desktopPath))
+                    SetAndPersistStampImage(profile.ImagePath, persistToVault: false);
+                }
+                else if (!string.IsNullOrWhiteSpace(profile.Image))
+                {
+                    _profileManager.EnsureProfileImagesRestored(new List<SignatureProfile> { profile });
+                    if (!string.IsNullOrWhiteSpace(profile.ImagePath) && File.Exists(profile.ImagePath))
                     {
-                        string defaultDesktopStamp = Path.Combine(desktopPath, "quyen.png");
-                        if (File.Exists(defaultDesktopStamp))
-                        {
-                            SetAndPersistStampImage(defaultDesktopStamp);
-                            UpdateStatus($"Tự động nạp ảnh con dấu từ: {defaultDesktopStamp}");
-                        }
-                        else
-                        {
-                            ClearStampImage();
-                        }
+                        SetAndPersistStampImage(profile.ImagePath, persistToVault: false);
                     }
                     else
                     {
                         ClearStampImage();
                     }
                 }
+                else
+                {
+                    ClearStampImage();
+                }
             }
         }
 
-        private void SetAndPersistStampImage(string filePath)
+        private void SetAndPersistStampImage(string filePath, bool persistToVault = true)
         {
             if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
             {
@@ -749,14 +751,24 @@ namespace VGCASignToolPro
                 TxtTab2StampStatus.Text = $"🔴 Con dấu: {Path.GetFileName(filePath)}";
                 BtnTab2SelectStamp.Content = "Đổi ảnh";
 
-                // Tự động gán vào Profile đang chọn và lưu ngay xuống ổ đĩa
+                // Tự động lưu trữ an toàn vào App Vault và Base64 trong Profile
                 if (CmbProfiles.SelectedItem is SignatureProfile profile)
                 {
-                    profile.ImagePath = filePath;
+                    if (persistToVault)
+                    {
+                        string vaultedPath = _profileManager.PersistStampImageToVault(profile, filePath);
+                        profile.ImagePath = vaultedPath;
+                        TxtStampImagePath.Text = vaultedPath;
+                        TxtStampFullPath.Text = vaultedPath;
+                    }
+                    else
+                    {
+                        profile.ImagePath = filePath;
+                    }
                     _profileManager.SaveProfiles(_profiles);
                 }
 
-                UpdateStatus($"Đã nạp và lưu ảnh con dấu: {Path.GetFileName(filePath)}");
+                UpdateStatus($"Đã nạp và lưu trữ an toàn ảnh con dấu: {Path.GetFileName(filePath)}");
             }
             catch (Exception ex)
             {
@@ -863,6 +875,152 @@ namespace VGCASignToolPro
                     System.Diagnostics.Trace.TraceError($"Lỗi lưu profile: {ex}");
                     UpdateStatus($"Lỗi lưu profile: {ex.Message}");
                 }
+            }
+        }
+
+        private void BtnAddNewProfile_Click(object sender, RoutedEventArgs e)
+        {
+            var inputWindow = new Window
+            {
+                Title = "Tạo Mẫu Chữ Ký / Con Dấu Mới",
+                Width = 440,
+                Height = 240,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = this,
+                ResizeMode = ResizeMode.NoResize,
+                Background = new SolidColorBrush(Color.FromRgb(248, 250, 252))
+            };
+
+            var stack = new StackPanel { Margin = new Thickness(20) };
+            stack.Children.Add(new TextBlock
+            {
+                Text = "Tên mẫu chữ ký / con dấu:",
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 0, 0, 6)
+            });
+
+            var txtName = new TextBox
+            {
+                Text = $"Mẫu chữ ký {_profiles.Count + 1}",
+                Padding = new Thickness(6),
+                FontSize = 13,
+                Margin = new Thickness(0, 0, 0, 12)
+            };
+            stack.Children.Add(txtName);
+
+            stack.Children.Add(new TextBlock
+            {
+                Text = "Loại mẫu:",
+                FontWeight = FontWeights.Bold,
+                Margin = new Thickness(0, 0, 0, 6)
+            });
+
+            var cmbType = new ComboBox { Padding = new Thickness(6), Margin = new Thickness(0, 0, 0, 16) };
+            cmbType.Items.Add(new ComboBoxItem { Content = "Ký Cá Nhân / Giáo Viên", Tag = 3, IsSelected = true });
+            cmbType.Items.Add(new ComboBoxItem { Content = "Ký Phát Hành Cơ Quan (Con Dấu Đỏ)", Tag = 4 });
+            cmbType.Items.Add(new ComboBoxItem { Content = "Ký Nháy / Ký Duyệt", Tag = 3 });
+            cmbType.Items.Add(new ComboBoxItem { Content = "Chèn Số Văn Bản", Tag = 1 });
+            cmbType.Items.Add(new ComboBoxItem { Content = "Chèn Ngày Tháng", Tag = 2 });
+            stack.Children.Add(cmbType);
+
+            var btnPanel = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+            var btnCancel = new Button
+            {
+                Content = "Hủy Bỏ",
+                Padding = new Thickness(14, 6, 14, 6),
+                Margin = new Thickness(0, 0, 10, 0),
+                Background = Brushes.White,
+                BorderBrush = new SolidColorBrush(Color.FromRgb(203, 213, 225))
+            };
+            btnCancel.Click += (_, _) => inputWindow.Close();
+
+            var btnOk = new Button
+            {
+                Content = "Tạo Mẫu",
+                Padding = new Thickness(16, 6, 16, 6),
+                Background = new SolidColorBrush(Color.FromRgb(2, 132, 199)),
+                Foreground = Brushes.White,
+                FontWeight = FontWeights.Bold
+            };
+            btnOk.Click += (_, _) =>
+            {
+                string name = txtName.Text.Trim();
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    MessageBox.Show("Vui lòng nhập tên cho mẫu chữ ký!", "Thông Báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                int profileType = 3;
+                if (cmbType.SelectedItem is ComboBoxItem item && item.Tag is int tagVal)
+                {
+                    profileType = tagVal;
+                }
+
+                int w = profileType == 4 ? 120 : (profileType == 3 ? 140 : 100);
+                int h = profileType == 4 ? 120 : (profileType == 3 ? 70 : 40);
+                int mode = profileType == 1 || profileType == 2 ? 0 : 1;
+
+                var newProfile = new SignatureProfile
+                {
+                    Name = name,
+                    ProfileType = profileType,
+                    Mode = mode,
+                    SignatureWidth = w,
+                    SignatureHeight = h,
+                    FontSize = 10,
+                    ShowDate = profileType != 1,
+                    ShowOrg = profileType != 1 && profileType != 2,
+                    ShowLabel = profileType == 3 || profileType == 4
+                };
+
+                _profiles.Add(newProfile);
+                _profileManager.SaveProfiles(_profiles);
+
+                CmbProfiles.ItemsSource = null;
+                CmbProfiles.ItemsSource = _profiles;
+                CmbProfiles.SelectedItem = newProfile;
+
+                inputWindow.Close();
+                UpdateStatus($"Đã tạo mới mẫu chữ ký: {name}");
+            };
+
+            btnPanel.Children.Add(btnCancel);
+            btnPanel.Children.Add(btnOk);
+            stack.Children.Add(btnPanel);
+
+            inputWindow.Content = stack;
+            inputWindow.ShowDialog();
+        }
+
+        private void BtnDeleteProfile_Click(object sender, RoutedEventArgs e)
+        {
+            if (CmbProfiles.SelectedItem is not SignatureProfile profile)
+            {
+                return;
+            }
+
+            if (_profiles.Count <= 1)
+            {
+                MessageBox.Show("Hệ thống yêu cầu phải duy trì ít nhất 01 mẫu chữ ký chuẩn!",
+                    "Không Thể Xóa", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"Bạn có chắc chắn muốn xóa mẫu chữ ký '{profile.Name}' không?",
+                "Xác Nhận Xóa Mẫu Chữ Ký", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                _profiles.Remove(profile);
+                _profileManager.SaveProfiles(_profiles);
+
+                CmbProfiles.ItemsSource = null;
+                CmbProfiles.ItemsSource = _profiles;
+                CmbProfiles.SelectedIndex = 0;
+
+                UpdateStatus($"Đã xóa mẫu chữ ký: {profile.Name}");
             }
         }
 
@@ -1006,8 +1164,7 @@ namespace VGCASignToolPro
                 PnlExcelToolbarControls.Visibility = Visibility.Collapsed;
                 BorderSignSuccessBanner.Visibility = Visibility.Collapsed;
                 BtnConvertToPdfAndReadySign.IsEnabled = false;
-                BtnInsertSignatureStamp.IsEnabled = false;
-                BtnSignCurrentDocument.IsEnabled = false;
+                UpdateSignAndSealButtonsState(false);
                 if (BtnCloseCurrentFile != null)
                 {
                     BtnCloseCurrentFile.Visibility = Visibility.Collapsed;
@@ -1058,6 +1215,7 @@ namespace VGCASignToolPro
                 BtnConvertToPdfAndReadySign.IsEnabled = false;
                 BtnInsertSignatureStamp.IsEnabled = false;
                 BtnSignCurrentDocument.IsEnabled = false;
+                if (BtnStampOfficial != null) BtnStampOfficial.IsEnabled = false;
                 if (!string.IsNullOrWhiteSpace(busyMessage))
                 {
                     UpdateStatus(busyMessage);
@@ -1390,8 +1548,7 @@ namespace VGCASignToolPro
                 PnlEditingToolbar.Visibility = Visibility.Collapsed;
                 PnlExcelToolbarControls.Visibility = Visibility.Collapsed;
                 BtnConvertToPdfAndReadySign.IsEnabled = false;
-                BtnSignCurrentDocument.IsEnabled = _vgcaAuth.IsLoggedIn;
-                BtnInsertSignatureStamp.IsEnabled = _vgcaAuth.IsLoggedIn;
+                UpdateSignAndSealButtonsState(true);
                 BtnCloseCurrentFile.Visibility = Visibility.Visible;
 
                 await DisplayPdfInInteractiveViewerAsync(pdfPath);
@@ -1490,8 +1647,7 @@ namespace VGCASignToolPro
                 TxtCurrentFileName.Text = Path.GetFileName(outputPdfPath);
                 TxtCurrentFileStatus.Text = "Tài liệu PDF bảng tính chuẩn in ấn đã sẵn sàng để ký số.";
                 BtnConvertToPdfAndReadySign.IsEnabled = false;
-                BtnSignCurrentDocument.IsEnabled = _vgcaAuth.IsLoggedIn;
-                BtnInsertSignatureStamp.IsEnabled = _vgcaAuth.IsLoggedIn;
+                UpdateSignAndSealButtonsState(true);
                 BtnCloseCurrentFile.Visibility = Visibility.Visible;
                 UpdateStatus($"Đã xuất tệp PDF bảng tính hoàn chỉnh: {Path.GetFileName(outputPdfPath)}");
 
@@ -1577,8 +1733,7 @@ namespace VGCASignToolPro
                 TxtCurrentFileName.Text = Path.GetFileName(pdfPath);
                 TxtCurrentFileStatus.Text = "Tài liệu PDF chuẩn đã được tạo và nạp sẵn sàng ký số.";
                 BtnConvertToPdfAndReadySign.IsEnabled = false;
-                BtnSignCurrentDocument.IsEnabled = _vgcaAuth.IsLoggedIn;
-                BtnInsertSignatureStamp.IsEnabled = _vgcaAuth.IsLoggedIn;
+                UpdateSignAndSealButtonsState(true);
                 BtnCloseCurrentFile.Visibility = Visibility.Visible;
                 UpdateStatus($"Đã xuất tệp PDF hoàn chỉnh: {Path.GetFileName(pdfPath)}");
 
@@ -1914,29 +2069,27 @@ namespace VGCASignToolPro
                 }
             }
 
-            // Xác định tệp hình ảnh con dấu (từ ô nhập, từ Profile đã lưu, hoặc từ Desktop quyen.png)
+            // Xác định tệp hình ảnh con dấu (từ ô nhập hoặc từ Profile đã lưu)
             string? stampPath = TxtStampImagePath.Text.Trim();
-            if (string.IsNullOrWhiteSpace(stampPath) || stampPath.StartsWith("Ảnh con dấu") || !File.Exists(stampPath))
+            SignatureProfile? selectedProfile = CmbProfiles.SelectedItem as SignatureProfile;
+
+            // Nếu người dùng chọn chế độ chỉ chữ (Mode == 0) hoặc profile không dùng ảnh, không dùng ảnh con dấu
+            if (CmbDisplayMode != null && CmbDisplayMode.SelectedIndex == 2)
             {
-                if (CmbProfiles.SelectedItem is SignatureProfile p && !string.IsNullOrWhiteSpace(p.ImagePath) && File.Exists(p.ImagePath))
+                stampPath = null;
+            }
+            else if (string.IsNullOrWhiteSpace(stampPath) || stampPath.StartsWith("Ảnh con dấu") || !File.Exists(stampPath))
+            {
+                if (selectedProfile != null && !string.IsNullOrWhiteSpace(selectedProfile.ImagePath) && File.Exists(selectedProfile.ImagePath))
                 {
-                    stampPath = p.ImagePath;
+                    stampPath = selectedProfile.ImagePath;
                 }
                 else
                 {
-                    string defaultDesktopStamp = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "quyen.png");
-                    if (File.Exists(defaultDesktopStamp))
-                    {
-                        stampPath = defaultDesktopStamp;
-                    }
-                    else
-                    {
-                        stampPath = null;
-                    }
+                    stampPath = null;
                 }
             }
 
-            SignatureProfile? selectedProfile = CmbProfiles.SelectedItem as SignatureProfile;
             if (selectedProfile != null)
             {
                 if (!string.IsNullOrWhiteSpace(stampPath))
@@ -2045,8 +2198,259 @@ namespace VGCASignToolPro
             finally
             {
                 SetProcessingBusyState(false);
-                BtnSignCurrentDocument.IsEnabled = _vgcaAuth.IsLoggedIn;
-                BtnInsertSignatureStamp.IsEnabled = _vgcaAuth.IsLoggedIn;
+                UpdateSignAndSealButtonsState(true);
+            }
+        }
+
+        private void UpdateSignAndSealButtonsState(bool isPdfReady)
+        {
+            bool isLoggedIn = _vgcaAuth.IsLoggedIn;
+            bool canSign = isPdfReady && isLoggedIn;
+            bool canSeal = isPdfReady && isLoggedIn && (_vgcaAuth.CurrentTeacher?.CanSeal == true);
+
+            if (BtnSignCurrentDocument != null) BtnSignCurrentDocument.IsEnabled = canSign;
+            if (BtnInsertSignatureStamp != null) BtnInsertSignatureStamp.IsEnabled = canSign;
+
+            if (BtnStampOfficial != null)
+            {
+                BtnStampOfficial.IsEnabled = canSeal;
+
+                if (!isLoggedIn)
+                {
+                    BtnStampOfficial.ToolTip = "Vui lòng đăng nhập tài khoản để sử dụng tính năng đóng dấu cơ quan.";
+                }
+                else if (!isPdfReady)
+                {
+                    BtnStampOfficial.ToolTip = "Vui lòng mở hoặc chuyển đổi tệp PDF trước khi đóng dấu.";
+                }
+                else if (_vgcaAuth.CurrentTeacher?.CanSeal != true)
+                {
+                    BtnStampOfficial.ToolTip = "Tài khoản của bạn chưa được cấp quyền đóng dấu pháp nhân cơ quan. Vui lòng liên hệ Ban Giám hiệu / Quản trị viên để cấp quyền.";
+                }
+                else
+                {
+                    BtnStampOfficial.ToolTip = "Đóng dấu pháp nhân nhà trường bằng USB Token Ban Cơ yếu (Dành cho Ban Giám hiệu / Văn thư)";
+                }
+            }
+        }
+
+        private async void BtnStampOfficial_Click(object sender, RoutedEventArgs e)
+        {
+            if (_isBusyProcessing)
+            {
+                MessageBox.Show("Hệ thống đang xử lý tác vụ khác, vui lòng chờ trong giây lát...",
+                    "Hệ Thống Đang Bận", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_currentWorkingPdfPath) || !File.Exists(_currentWorkingPdfPath))
+            {
+                MessageBox.Show("Vui lòng tải file PDF hoặc thực hiện chuyển đổi Word/Excel sang PDF trước khi đóng dấu.",
+                    "Chưa Có Tệp Tin PDF", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // 1. Kiểm tra phân quyền giáo viên
+            if (_vgcaAuth.CurrentTeacher == null || !_vgcaAuth.CurrentTeacher.CanSeal)
+            {
+                MessageBox.Show(
+                    "Tài khoản của bạn chưa được phân quyền 'Đóng Dấu Cơ Quan'.\n\n" +
+                    "Theo quy chế quản lý con dấu và văn thư (Nghị định 30/2020/NĐ-CP), chỉ Ban Giám hiệu, Văn thư hoặc người được phân quyền quản trị thiết bị USB Token mới được phép thực hiện chức năng này.\n\n" +
+                    "Vui lòng liên hệ BGH / Quản trị viên để được cấp quyền.",
+                    "Chưa Cấp Quyền Đóng Dấu Cơ Quan", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // 2. Quét tìm chứng thư số tổ chức trong thiết bị USB Token Ban Cơ yếu
+            CertificateModel? orgCert = _certService.GetOrganizationTokenCertificate();
+            if (orgCert == null || !orgCert.HasPrivateKey)
+            {
+                MessageBox.Show(
+                    "Không tìm thấy thiết bị USB Token Ban Cơ yếu chứa chứng thư số con dấu của Nhà trường!\n\n" +
+                    "Vui lòng kiểm tra lại:\n" +
+                    "1. Thiết bị USB Token (chứa chứng thư pháp nhân Trường học) đã được cắm chắc chắn vào cổng USB máy tính.\n" +
+                    "2. Đèn tín hiệu trên USB Token đã sáng.\n" +
+                    "3. Đã cài đặt driver Token Manager của Ban Cơ yếu Chính phủ (bit4id TokenME EVO).",
+                    "Chưa Phát Hiện USB Token Ký Số Nhà Trường", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // 3. Hộp thoại xác nhận đóng dấu pháp nhân
+            MessageBoxResult confirm = MessageBox.Show(
+                $"XÁC NHẬN ĐÓNG DẤU PHÁP NHÂN NHÀ TRƯỜNG:\n\n" +
+                $"• Đơn vị phát hành: {orgCert.CommonName}\n" +
+                $"• Nhà cấp chứng thư: {orgCert.IssuerCommonName}\n" +
+                $"• Số Serial Token: {orgCert.SerialNumber}\n" +
+                $"• Người thực hiện: {_vgcaAuth.CurrentTeacher.FullName} ({_vgcaAuth.CurrentTeacher.Title})\n\n" +
+                $"Hệ thống sẽ tiến hành đóng dấu đỏ pháp nhân cơ quan lên tài liệu bằng thiết bị USB Token.\n" +
+                $"Bạn có chắc chắn muốn thực hiện không?",
+                "Xác Nhận Đóng Dấu Cơ Quan (USB Token)", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            // 4. Tìm kiếm mẫu Profile con dấu đỏ nhà trường (ưu tiên ProfileType == 4 hoặc tên có 'Dấu Đỏ' / 'Cơ Quan')
+            SignatureProfile? sealProfile = _profiles.FirstOrDefault(p => p.ProfileType == 4)
+                ?? _profiles.FirstOrDefault(p => p.Name.Contains("Dấu Đỏ", StringComparison.OrdinalIgnoreCase) || p.Name.Contains("Cơ Quan", StringComparison.OrdinalIgnoreCase));
+
+            if (sealProfile == null)
+            {
+                sealProfile = new SignatureProfile
+                {
+                    Name = "Ký Phát Hành Cơ Quan (Dấu Đỏ)",
+                    ProfileType = 4,
+                    Mode = 1,
+                    SignatureWidth = 120,
+                    SignatureHeight = 120,
+                    FontSize = 9,
+                    ShowDate = true,
+                    ShowOrg = true,
+                    ShowLabel = true
+                };
+                _profiles.Add(sealProfile);
+                _profileManager.SaveProfiles(_profiles);
+            }
+
+            // Kiểm tra ảnh con dấu đỏ
+            string? sealImagePath = sealProfile.ImagePath;
+            if (string.IsNullOrWhiteSpace(sealImagePath) || !File.Exists(sealImagePath))
+            {
+                if (!string.IsNullOrWhiteSpace(sealProfile.Image))
+                {
+                    _profileManager.EnsureProfileImagesRestored(new List<SignatureProfile> { sealProfile });
+                    sealImagePath = sealProfile.ImagePath;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(sealImagePath) || !File.Exists(sealImagePath))
+            {
+                var pickImageChoice = MessageBox.Show(
+                    "Mẫu 'Ký Phát Hành Cơ Quan (Dấu Đỏ)' hiện chưa có hình ảnh con dấu đỏ.\n\n" +
+                    "Bạn có muốn chọn tệp hình ảnh con dấu đỏ (.png) ngay bây giờ không?",
+                    "Chưa Chọn Ảnh Con Dấu Đỏ", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                if (pickImageChoice == MessageBoxResult.Yes)
+                {
+                    var dlg = new OpenFileDialog
+                    {
+                        Title = "Chọn hình ảnh con dấu đỏ nhà trường (.png, .jpg)",
+                        Filter = "Hình ảnh (*.png;*.jpg;*.jpeg)|*.png;*.jpg;*.jpeg|Tất cả tệp (*.*)|*.*",
+                        InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+                    };
+                    if (dlg.ShowDialog() == true)
+                    {
+                        sealImagePath = _profileManager.PersistStampImageToVault(sealProfile, dlg.FileName);
+                        sealProfile.ImagePath = sealImagePath;
+                        _profileManager.SaveProfiles(_profiles);
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            // 5. Xác định tọa độ đóng dấu (ưu tiên vị trí người dùng kéo thả trên Tab 2)
+            int pageNumber = -1;
+            float coordX = 380;
+            float coordY = 120;
+            float width = 120;
+            float height = 120;
+
+            if (_hasUserPlacedStamp)
+            {
+                pageNumber = _userStampPage;
+                coordX = _userStampX;
+                coordY = _userStampY;
+                width = _userStampWidth;
+                height = _userStampHeight;
+            }
+            else
+            {
+                int.TryParse(TxtPageNumber.Text.Trim(), out pageNumber);
+                float.TryParse(TxtCoordX.Text.Trim(), out coordX);
+                float.TryParse(TxtCoordY.Text.Trim(), out coordY);
+                width = sealProfile.SignatureWidth > 0 ? sealProfile.SignatureWidth : 120;
+                height = sealProfile.SignatureHeight > 0 ? sealProfile.SignatureHeight : 120;
+            }
+
+            string dir = Path.GetDirectoryName(_currentWorkingPdfPath) ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            try
+            {
+                string testFile = Path.Combine(dir, $".vgca_perm_test_{Guid.NewGuid():N}.tmp");
+                File.WriteAllText(testFile, "test");
+                File.Delete(testFile);
+            }
+            catch
+            {
+                dir = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            }
+
+            string baseName = Path.GetFileNameWithoutExtension(_currentWorkingPdfPath);
+            string outputPath = Path.Combine(dir, $"{baseName}_SEALED.pdf");
+
+            SigningRequest request = new SigningRequest
+            {
+                SourcePdfPath = _currentWorkingPdfPath,
+                OutputPdfPath = outputPath,
+                Certificate = orgCert,
+                PageNumber = pageNumber,
+                X = coordX,
+                Y = coordY,
+                Width = width,
+                Height = height,
+                Reason = "Ký phát hành văn bản cơ quan (Nghị định 30/2020/NĐ-CP)",
+                SignerDisplayName = orgCert.CommonName,
+                StampImagePath = sealImagePath,
+                Profile = sealProfile,
+                UseTSA = ChkUseTSA.IsChecked == true,
+                TSAUrl = "http://ca.gov.vn/tsa"
+            };
+
+            SetProcessingBusyState(true, $"Đang kết nối USB Token và đóng dấu pháp nhân {orgCert.CommonName}...");
+
+            try
+            {
+                string signedPath = await _pdfSigner.SignPdfAsync(request);
+                _lastSignedPdfPath = signedPath;
+
+                // Nạp file đã đóng dấu vào Interactive Viewer
+                await DisplayPdfInInteractiveViewerAsync(signedPath);
+
+                TxtCurrentFileName.Text = Path.GetFileName(signedPath);
+                TxtCurrentFileStatus.Text = $"✅ VĂN BẢN ĐÃ ĐƯỢC ĐÓNG DẤU PHÁP NHÂN THÀNH CÔNG VỚI USB TOKEN: {orgCert.CommonName}";
+
+                BorderSignSuccessBanner.Visibility = Visibility.Visible;
+                BtnCloseCurrentFile.Visibility = Visibility.Visible;
+                TxtSignedSummaryNotice.Text = $"Tệp đã đóng dấu: {Path.GetFileName(signedPath)} • Đã nhúng con dấu pháp nhân cơ quan và chứng thư số Ban Cơ yếu.";
+
+                MessageBox.Show(
+                    $"Đóng dấu pháp nhân cơ quan thành công!\n\n" +
+                    $"• Đơn vị: {orgCert.CommonName}\n" +
+                    $"• Số Serial Token: {orgCert.SerialNumber}\n" +
+                    $"• Tệp tin đã lưu tại: {signedPath}\n\n" +
+                    $"Văn bản đã được bảo toàn tính toàn vẹn và có giá trị pháp lý phát hành theo Nghị định 30/2020/NĐ-CP.",
+                    "Đóng Dấu Cơ Quan Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError($"Lỗi đóng dấu cơ quan bằng USB Token: {ex}");
+                MessageBox.Show(
+                    $"Không thể hoàn tất đóng dấu cơ quan:\n\n{ex.Message}\n\n" +
+                    $"Gợi ý: Kiểm tra mã PIN của USB Token hoặc kết nối phần cứng thiết bị.",
+                    "Lỗi Đóng Dấu USB Token", MessageBoxButton.OK, MessageBoxImage.Error);
+                UpdateStatus($"Lỗi đóng dấu USB Token: {ex.Message}");
+            }
+            finally
+            {
+                SetProcessingBusyState(false);
+                UpdateSignAndSealButtonsState(true);
             }
         }
 

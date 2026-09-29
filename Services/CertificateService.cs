@@ -80,11 +80,52 @@ namespace VGCASignToolPro.Services
         /// <summary>
         /// Lấy chứng thư số chuyên dùng Ban Cơ yếu Chính phủ đang hoạt động của người dùng
         /// </summary>
-        public CertificateModel? GetActiveVGCACertificate()
+        public CertificateModel? GetActiveVGCACertificate(string? preferredNameOrEmail = null)
         {
             var certs = LoadCertificates(onlyWithPrivateKey: true);
+
+            if (!string.IsNullOrWhiteSpace(preferredNameOrEmail))
+            {
+                var matched = certs.FirstOrDefault(c => c.IsVGCACertificate && (
+                    string.Equals(c.CommonName, preferredNameOrEmail, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(c.Email, preferredNameOrEmail, StringComparison.OrdinalIgnoreCase) ||
+                    c.Subject.Contains(preferredNameOrEmail, StringComparison.OrdinalIgnoreCase)));
+                if (matched != null) return matched;
+            }
+
+            // Ưu tiên chứng thư cá nhân giáo viên (không phải con dấu pháp nhân cơ quan)
+            var personalCert = certs.FirstOrDefault(c => c.IsVGCACertificate && c.IsValidNow && !c.IsOrganizationCertificate);
+            if (personalCert != null) return personalCert;
+
             return certs.FirstOrDefault(c => c.IsVGCACertificate && c.IsValidNow)
                 ?? certs.FirstOrDefault(c => c.IsVGCACertificate);
+        }
+
+        /// <summary>
+        /// Quét tìm chứng thư số tổ chức / nhà trường trong thiết bị USB Token Ban Cơ yếu
+        /// </summary>
+        public CertificateModel? GetOrganizationTokenCertificate()
+        {
+            var certs = LoadCertificates(onlyWithPrivateKey: true);
+            // 1. Ưu tiên chứng thư VGCA có khóa riêng, còn hạn và là chứng thư tổ chức
+            var orgCert = certs.FirstOrDefault(c => c.IsVGCACertificate && c.IsValidNow && c.IsOrganizationCertificate);
+            if (orgCert != null) return orgCert;
+
+            // 2. Chứng thư VGCA tổ chức
+            orgCert = certs.FirstOrDefault(c => c.IsVGCACertificate && c.IsOrganizationCertificate);
+            if (orgCert != null) return orgCert;
+
+            // 3. Fallback: chứng thư tổ chức bất kỳ có khóa riêng
+            return certs.FirstOrDefault(c => c.IsOrganizationCertificate && c.HasPrivateKey);
+        }
+
+        /// <summary>
+        /// Kiểm tra xem thiết bị USB Token chứa chứng thư con dấu tổ chức có đang cắm vào máy hay không
+        /// </summary>
+        public bool IsUsbTokenPluggedIn()
+        {
+            var cert = GetOrganizationTokenCertificate();
+            return cert != null && cert.HasPrivateKey;
         }
 
         /// <summary>

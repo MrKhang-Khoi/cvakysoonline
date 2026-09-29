@@ -21,6 +21,26 @@ namespace VGCASignToolPro.Models
         public bool HasPrivateKey { get; }
         public bool IsValidNow { get; }
         public bool IsVGCACertificate { get; }
+        public bool IsOrganizationCertificate
+        {
+            get
+            {
+                string cnUpper = (CommonName ?? string.Empty).ToUpperInvariant();
+                string subjectUpper = (Subject ?? string.Empty).ToUpperInvariant();
+                return cnUpper.Contains("TRƯỜNG") ||
+                       cnUpper.Contains("TRUONG") ||
+                       cnUpper.Contains("ỦY BAN") ||
+                       cnUpper.Contains("UY BAN") ||
+                       cnUpper.Contains("PHÒNG") ||
+                       cnUpper.Contains("PHONG") ||
+                       cnUpper.Contains("SỞ") ||
+                       cnUpper.Contains("SO ") ||
+                       cnUpper.Contains("BAN ") ||
+                       subjectUpper.Contains("MST:") ||
+                       subjectUpper.Contains("MNS:") ||
+                       subjectUpper.Contains("OID.0.9.2342.19200300.100.1.1");
+            }
+        }
         public string KeyAlgorithm { get; }
         public string DisplayText { get; }
 

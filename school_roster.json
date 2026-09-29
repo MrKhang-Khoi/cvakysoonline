@@ -1,7 +1,7 @@
 {
   "schoolName": "TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN",
   "description": "Danh bạ cán bộ, giáo viên liên thông ký số Ban Cơ Yếu Chính Phủ",
-  "updatedAt": "2026-09-28T22:50:00Z",
+  "updatedAt": "2026-09-29T00:30:00Z",
   "roster": [
     {
       "cccd": "042084002100",
@@ -11,6 +11,7 @@
       "department": "Tổ Khoa học Tự nhiên",
       "organization": "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI",
       "email": "hvty-dakha@quangngai.gov.vn",
+      "canSeal": false,
       "status": "ACTIVE",
       "certificates": [
         {
@@ -28,6 +29,7 @@
       "department": "Tổ Khoa học Tự nhiên",
       "organization": "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI",
       "email": "tttloan-dakmar@quangngai.gov.vn",
+      "canSeal": false,
       "status": "ACTIVE"
     },
     {
@@ -38,6 +40,7 @@
       "department": "Ban Giám hiệu",
       "organization": "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI",
       "email": "nvtuan-chuvanan@quangngai.gov.vn",
+      "canSeal": true,
       "status": "ACTIVE"
     },
     {
@@ -48,6 +51,7 @@
       "department": "Ban Giám hiệu",
       "organization": "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI",
       "email": "lthong-chuvanan@quangngai.gov.vn",
+      "canSeal": true,
       "status": "ACTIVE"
     }
   ]

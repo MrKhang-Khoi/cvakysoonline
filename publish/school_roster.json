@@ -1,7 +1,7 @@
-﻿{
+{
   "schoolName": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
   "description": "Danh mục phân quyền tài khoản Giáo viên toàn trường kết nối ký số Ban Cơ Yếu Chính Phủ",
-  "updatedAt": "2026-09-28T16:42:00.6381914Z",
+  "updatedAt": "2026-09-29T00:30:00Z",
   "roster": [
     {
       "cccd": "062189002154",
@@ -11,6 +11,7 @@
       "department": "Ban Giám hiệu",
       "organization": "ỦY BAN NHÂN DÂN XÃ ĐẮK HÀ - TỈNH QUẢNG NGÃI",
       "email": "lthong-chuvanan@quangngai.gov.vn",
+      "canSeal": true,
       "status": "ACTIVE"
     },
     {
@@ -21,6 +22,7 @@
       "department": "Tổ Ngữ Văn - Trường THCS Nguyễn Huệ",
       "organization": "ỦY BAN NHÂN DÂN XÃ ĐAK MAR - TỈNH QUẢNG NGÃI",
       "email": "gv062185001053@quangngai.gov.vn",
+      "canSeal": false,
       "status": "ACTIVE"
     },
     {
@@ -31,6 +33,18 @@
       "department": "ỦY BAN NHÂN DÂN XÃ ĐĂK HÀ",
       "organization": "ỦY BAN NHÂN DÂN TỈNH QUẢNG NGÃI",
       "email": "hvty-dakha@quangngai.gov.vn",
+      "canSeal": false,
+      "status": "ACTIVE"
+    },
+    {
+      "cccd": "lvlam-dakha@quangngai.gov.vn",
+      "fullName": "Lê Văn Lâm",
+      "title": "Cán bộ / Giáo viên",
+      "phone": "",
+      "department": "TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN - ỦY BAN NHÂN DÂN XÃ ĐĂK HÀ",
+      "organization": "ỦY BAN NHÂN DÂN TỈNH QUẢNG NGÃI",
+      "email": "lvlam-dakha@quangngai.gov.vn",
+      "canSeal": false,
       "status": "ACTIVE"
     },
     {
@@ -41,6 +55,7 @@
       "department": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
       "organization": "ỦY BAN NHÂN DÂN XÃ ĐAK MAR - TỈNH QUẢNG NGÃI",
       "email": "tttloan-dakmar@quangngai.gov.vn",
+      "canSeal": false,
       "status": "ACTIVE"
     },
     {
@@ -51,6 +66,7 @@
       "department": "Ban Giám hiệu",
       "organization": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
       "email": "lvhung@quangngai.gov.vn",
+      "canSeal": true,
       "status": "ACTIVE"
     },
     {
@@ -61,6 +77,7 @@
       "department": "Ban Giám hiệu",
       "organization": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
       "email": "ptlan@quangngai.gov.vn",
+      "canSeal": true,
       "status": "ACTIVE"
     }
   ]

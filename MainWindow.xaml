@@ -330,7 +330,20 @@
                             <GroupBox Header="Cấu Hình Mẫu Chữ Ký &amp; Vị Trí Mặc Định">
                                 <StackPanel Margin="4">
                                     <TextBlock Text="Chọn mẫu chữ ký chuẩn:" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
-                                    <ComboBox x:Name="CmbProfiles" Margin="0,0,0,8" Padding="6" SelectionChanged="CmbProfiles_SelectionChanged" />
+                                    <Grid Margin="0,0,0,8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0" x:Name="CmbProfiles" Padding="6" SelectionChanged="CmbProfiles_SelectionChanged" />
+                                        <Button Grid.Column="1" x:Name="BtnAddNewProfile" Content="➕ Thêm Mới" Style="{StaticResource PrimaryButton}" 
+                                                Background="#0284C7" BorderBrush="#0369A1" Padding="8,4" FontSize="11" Margin="6,0,0,0" 
+                                                Click="BtnAddNewProfile_Click" ToolTip="Tạo thêm mẫu chữ ký mới (ví dụ: Dấu đỏ cơ quan, Ký nháy, Ký duyệt...)" />
+                                        <Button Grid.Column="2" x:Name="BtnDeleteProfile" Content="🗑️ Xóa" Style="{StaticResource SecondaryButton}" 
+                                                Foreground="#DC2626" BorderBrush="#FCA5A5" Background="#FEF2F2" Padding="8,4" FontSize="11" Margin="6,0,0,0" 
+                                                Click="BtnDeleteProfile_Click" ToolTip="Xóa mẫu chữ ký đang chọn" />
+                                    </Grid>
 
                                     <!-- KHUNG CHỌN & XEM TRƯỚC HÌNH ẢNH CON DẤU / CHỮ KÝ TAY -->
                                     <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="10" Margin="0,0,0,10">
@@ -474,6 +487,7 @@
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
 
                                 <!-- NÚT 1: TẢI FILE WORD -->
@@ -532,6 +546,15 @@
                                         Style="{StaticResource SignButton}" 
                                         IsEnabled="False" 
                                         Click="BtnSignDocument_Click" />
+
+                                <!-- NÚT 7: ĐÓNG DẤU CƠ QUAN (USB TOKEN BAN CƠ YẾU) -->
+                                <Button Grid.Column="7" x:Name="BtnStampOfficial" 
+                                        Content="🔴 ĐÓNG DẤU CƠ QUAN" 
+                                        Style="{StaticResource SignButton}" 
+                                        Background="#B91C1C" BorderBrush="#991B1B"
+                                        IsEnabled="False" Margin="8,0,0,0"
+                                        Click="BtnStampOfficial_Click" 
+                                        ToolTip="Đóng con dấu đỏ pháp nhân nhà trường bằng USB Token Ban Cơ yếu (Dành cho Ban Giám hiệu / Văn thư)" />
                             </Grid>
 
                             <!-- DÒNG 2: THANH CÔNG CỤ ĐIỀU CHỈNH VĂN BẢN TRỰC TIẾP (KHI MỞ FILE WORD HOẶC EXCEL) -->

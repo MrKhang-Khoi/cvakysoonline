@@ -226,6 +226,7 @@
           <th>Tổ Chuyên Môn</th>
           <th>Số Điện Thoại</th>
           <th>Email Công Vụ</th>
+          <th style="width: 140px; text-align: center;">Đóng Dấu Cơ Quan</th>
           <th style="width: 140px; text-align: center;">Thao Tác</th>
         </tr>
       </thead>
@@ -295,6 +296,16 @@
         <div class="form-group" style="grid-column: span 2;">
           <label for="inpOrg">Đơn Vị Trực Thuộc:</label>
           <input type="text" id="inpOrg" class="form-control" value="TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ">
+        </div>
+
+        <div class="form-group" style="grid-column: span 2; background: #F8FAFC; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border);">
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; color: #1E293B; margin: 0;">
+            <input type="checkbox" id="inpCanSeal" style="width: 18px; height: 18px; cursor: pointer; accent-color: #B91C1C;">
+            <span>🔴 Phân quyền Đóng Dấu Cơ Quan (USB Token Nhà Trường)</span>
+          </label>
+          <p style="font-size: 11px; color: #64748B; margin: 6px 0 0 28px;">
+            Khi được tích chọn, phần mềm sẽ kích hoạt nút "Đóng Dấu Cơ Quan (USB Token)" cho tài khoản này. Chỉ cấp cho Ban Giám hiệu, Văn thư hoặc người quản lý con dấu.
+          </p>
         </div>
       </div>
       <div class="modal-footer">
@@ -383,7 +394,8 @@
       phone: "0819810007",
       department: "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
       organization: "ỦY BAN NHÂN DÂN XÃ ĐAK MAR - TỈNH QUẢNG NGÃI",
-      email: "tttloan-dakmar@quangngai.gov.vn"
+      email: "tttloan-dakmar@quangngai.gov.vn",
+      canSeal: false
     },
     {
       cccd: "042084002100",
@@ -392,7 +404,8 @@
       phone: "0818810007",
       department: "ỦY BAN NHÂN DÂN XÃ ĐĂK HÀ",
       organization: "ỦY BAN NHÂN DÂN TỈNH QUẢNG NGÃI",
-      email: "hvty-dakha@quangngai.gov.vn"
+      email: "hvty-dakha@quangngai.gov.vn",
+      canSeal: false
     },
     {
       cccd: "062185001053",
@@ -401,7 +414,8 @@
       phone: "0819000105",
       department: "Tổ Ngữ Văn - Trường THCS Nguyễn Huệ",
       organization: "ỦY BAN NHÂN DÂN XÃ ĐAK MAR - TỈNH QUẢNG NGÃI",
-      email: "gv062185001053@quangngai.gov.vn"
+      email: "gv062185001053@quangngai.gov.vn",
+      canSeal: false
     },
     {
       cccd: "062180000001",
@@ -410,7 +424,8 @@
       phone: "0905123456",
       department: "Ban Giám hiệu",
       organization: "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
-      email: "lvhung@quangngai.gov.vn"
+      email: "lvhung@quangngai.gov.vn",
+      canSeal: true
     },
     {
       cccd: "062182000002",
@@ -419,7 +434,8 @@
       phone: "0905654321",
       department: "Ban Giám hiệu",
       organization: "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
-      email: "ptlan@quangngai.gov.vn"
+      email: "ptlan@quangngai.gov.vn",
+      canSeal: true
     }
   ];
 
@@ -431,6 +447,13 @@
     loadTeachersFromStorage();
     renderTable();
     updateStats();
+
+    document.getElementById("inpTitle")?.addEventListener("change", (e) => {
+      const title = e.target.value;
+      if (title === "Hiệu trưởng" || title === "Phó hiệu trưởng") {
+        document.getElementById("inpCanSeal").checked = true;
+      }
+    });
   });
 
   function loadSavedSettings() {
@@ -474,7 +497,7 @@
     if (list.length === 0) {
       const emptyTr = document.createElement("tr");
       const emptyTd = document.createElement("td");
-      emptyTd.colSpan = 8;
+      emptyTd.colSpan = 9;
       emptyTd.style.textAlign = "center";
       emptyTd.style.padding = "24px";
       emptyTd.style.color = "var(--text-muted)";
@@ -545,7 +568,30 @@
       }
       tr.appendChild(tdEmail);
 
-      // 8. Thao tác
+      // 8. Quyền Đóng Dấu Cơ Quan (USB Token)
+      const tdSeal = document.createElement("td");
+      tdSeal.style.textAlign = "center";
+      const spanSeal = document.createElement("span");
+      if (t.canSeal) {
+        spanSeal.className = "badge-role";
+        spanSeal.style.background = "#FEF2F2";
+        spanSeal.style.color = "#B91C1C";
+        spanSeal.style.border = "1px solid #FECACA";
+        spanSeal.style.fontWeight = "bold";
+        spanSeal.textContent = "🔴 Có quyền";
+        spanSeal.title = "Được phép sử dụng USB Token để đóng con dấu đỏ pháp nhân nhà trường";
+      } else {
+        spanSeal.className = "badge-role";
+        spanSeal.style.background = "#F1F5F9";
+        spanSeal.style.color = "#94A3B8";
+        spanSeal.style.border = "1px solid #E2E8F0";
+        spanSeal.textContent = "⚪ Không";
+        spanSeal.title = "Chỉ được ký số cá nhân giáo viên, không được đóng dấu cơ quan";
+      }
+      tdSeal.appendChild(spanSeal);
+      tr.appendChild(tdSeal);
+
+      // 9. Thao tác
       const tdAction = document.createElement("td");
       tdAction.style.textAlign = "center";
 
@@ -607,6 +653,7 @@
     document.getElementById("inpPhone").value = "";
     document.getElementById("inpEmail").value = "";
     document.getElementById("inpOrg").value = "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ";
+    document.getElementById("inpCanSeal").checked = false;
     document.getElementById("teacherModal").classList.add("active");
   }
 
@@ -624,6 +671,7 @@
     document.getElementById("inpPhone").value = teacher.phone || "";
     document.getElementById("inpEmail").value = teacher.email || "";
     document.getElementById("inpOrg").value = teacher.organization || "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ";
+    document.getElementById("inpCanSeal").checked = Boolean(teacher.canSeal);
     document.getElementById("teacherModal").classList.add("active");
   }
 
@@ -641,6 +689,7 @@
     const phone = document.getElementById("inpPhone").value.trim();
     const email = document.getElementById("inpEmail").value.trim();
     const organization = document.getElementById("inpOrg").value.trim();
+    const canSeal = document.getElementById("inpCanSeal").checked;
 
     if (!/^[0-9]{12}$/.test(cccd)) {
       alert("Số CCCD bắt buộc phải gồm đúng 12 chữ số!");
@@ -653,7 +702,7 @@
         alert("Số CCCD này đã tồn tại trong danh sách! Vui lòng kiểm tra lại.");
         return;
       }
-      teachers.push({ cccd, fullName, title, department, phone, email, organization, status: "ACTIVE" });
+      teachers.push({ cccd, fullName, title, department, phone, email, organization, canSeal, status: "ACTIVE" });
       showToast(`Đã thêm thầy/cô ${fullName} thành công!`, "success");
     } else {
       // Chỉnh sửa
@@ -676,6 +725,7 @@
         teachers[idx].phone = phone;
         teachers[idx].email = email;
         teachers[idx].organization = organization;
+        teachers[idx].canSeal = canSeal;
         showToast(`Đã cập nhật thông tin thầy/cô ${fullName}!`, "success");
       }
     }

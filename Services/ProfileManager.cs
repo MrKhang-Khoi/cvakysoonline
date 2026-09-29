@@ -17,29 +17,25 @@ namespace VGCASignToolPro.Services
         private static readonly string OriginalVgcaProfilesPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "VGCA", "SignTool", "signerprofiles.json");
+        private static readonly string SignaturesVaultFolder = Path.Combine(AppDataFolder, "Signatures");
 
         public List<SignatureProfile> LoadProfiles()
         {
+            List<SignatureProfile>? list = null;
             try
             {
                 // 1. Ưu tiên đọc cấu hình lưu riêng của VGCASignToolPro
                 if (File.Exists(ProfilesFilePath))
                 {
                     string json = File.ReadAllText(ProfilesFilePath);
-                    var list = JsonConvert.DeserializeObject<List<SignatureProfile>>(json);
-                    if (list != null && list.Count > 0) return list;
+                    list = JsonConvert.DeserializeObject<List<SignatureProfile>>(json);
                 }
 
                 // 2. Kế thừa cấu hình từ VGCA Sign Tool gốc nếu có
-                if (File.Exists(OriginalVgcaProfilesPath))
+                if ((list == null || list.Count == 0) && File.Exists(OriginalVgcaProfilesPath))
                 {
                     string json = File.ReadAllText(OriginalVgcaProfilesPath);
-                    var list = JsonConvert.DeserializeObject<List<SignatureProfile>>(json);
-                    if (list != null && list.Count > 0)
-                    {
-                        SaveProfiles(list);
-                        return list;
-                    }
+                    list = JsonConvert.DeserializeObject<List<SignatureProfile>>(json);
                 }
             }
             catch (Exception ex)
@@ -59,10 +55,16 @@ namespace VGCASignToolPro.Services
                 }
             }
 
-            // 3. Khởi tạo danh sách mẫu mặc định chuẩn Ban Cơ yếu & Văn bản hành chính
-            var defaults = GetDefaultProfiles();
-            SaveProfiles(defaults);
-            return defaults;
+            if (list == null || list.Count == 0)
+            {
+                // 3. Khởi tạo danh sách mẫu mặc định chuẩn Ban Cơ yếu & Văn bản hành chính
+                list = GetDefaultProfiles();
+            }
+
+            // Tự động khôi phục ảnh con dấu/chữ ký từ Base64 hoặc đồng bộ sang App Vault
+            EnsureProfileImagesRestored(list);
+            SaveProfiles(list);
+            return list;
         }
 
         public void SaveProfiles(List<SignatureProfile> profiles)
@@ -73,6 +75,31 @@ namespace VGCASignToolPro.Services
                 {
                     Directory.CreateDirectory(AppDataFolder);
                 }
+                if (!Directory.Exists(SignaturesVaultFolder))
+                {
+                    Directory.CreateDirectory(SignaturesVaultFolder);
+                }
+
+                // Đảm bảo tất cả các profile có ảnh đều đã được mã hóa Base64 vào JSON
+                foreach (var p in profiles)
+                {
+                    if (!string.IsNullOrWhiteSpace(p.ImagePath) && File.Exists(p.ImagePath))
+                    {
+                        if (string.IsNullOrWhiteSpace(p.Image))
+                        {
+                            try
+                            {
+                                byte[] bytes = File.ReadAllBytes(p.ImagePath);
+                                p.Image = Convert.ToBase64String(bytes);
+                            }
+                            catch (Exception imgEx)
+                            {
+                                System.Diagnostics.Trace.TraceWarning($"Không thể mã hóa Base64 ảnh con dấu cho mẫu {p.Name}: {imgEx.Message}");
+                            }
+                        }
+                    }
+                }
+
                 string json = JsonConvert.SerializeObject(profiles, Formatting.Indented);
                 File.WriteAllText(ProfilesFilePath, json);
             }
@@ -80,6 +107,110 @@ namespace VGCASignToolPro.Services
             {
                 System.Diagnostics.Trace.TraceError($"Lỗi lưu cấu hình chữ ký vào file: {ex}");
             }
+        }
+
+        /// <summary>
+        /// Tự động phục hồi ảnh con dấu / chữ ký từ Base64 nếu file ảnh vật lý trên ổ đĩa bị mất hoặc xóa nhầm
+        /// </summary>
+        public void EnsureProfileImagesRestored(List<SignatureProfile> profiles)
+        {
+            try
+            {
+                if (!Directory.Exists(SignaturesVaultFolder))
+                {
+                    Directory.CreateDirectory(SignaturesVaultFolder);
+                }
+
+                foreach (var p in profiles)
+                {
+                    string safeName = SanitizeFileName(string.IsNullOrWhiteSpace(p.Name) ? "Signature" : p.Name);
+                    string vaultPath = Path.Combine(SignaturesVaultFolder, $"{safeName}.png");
+
+                    // Trường hợp 1: Có Base64 nhưng file ảnh trên máy bị mất
+                    if (!string.IsNullOrWhiteSpace(p.Image) && (string.IsNullOrWhiteSpace(p.ImagePath) || !File.Exists(p.ImagePath)))
+                    {
+                        try
+                        {
+                            string base64Data = p.Image;
+                            if (base64Data.Contains(","))
+                            {
+                                base64Data = base64Data.Substring(base64Data.IndexOf(',') + 1);
+                            }
+                            byte[] bytes = Convert.FromBase64String(base64Data.Trim());
+                            File.WriteAllBytes(vaultPath, bytes);
+                            p.ImagePath = vaultPath;
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Trace.TraceWarning($"Lỗi khôi phục ảnh từ Base64 cho mẫu {p.Name}: {ex.Message}");
+                        }
+                    }
+                    // Trường hợp 2: Có file ảnh hợp lệ nhưng chưa lưu Base64 hoặc chưa copy vào Vault
+                    else if (!string.IsNullOrWhiteSpace(p.ImagePath) && File.Exists(p.ImagePath))
+                    {
+                        if (string.IsNullOrWhiteSpace(p.Image))
+                        {
+                            try
+                            {
+                                byte[] bytes = File.ReadAllBytes(p.ImagePath);
+                                p.Image = Convert.ToBase64String(bytes);
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Trace.TraceWarning($"Lỗi đọc file ảnh mẫu {p.Name}: {ex.Message}");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError($"Lỗi trong EnsureProfileImagesRestored: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Lưu trữ an toàn hình ảnh con dấu / chữ ký vào kho App Vault và nhúng Base64 vào Profile
+        /// </summary>
+        public string PersistStampImageToVault(SignatureProfile profile, string sourceFilePath)
+        {
+            if (string.IsNullOrWhiteSpace(sourceFilePath) || !File.Exists(sourceFilePath))
+            {
+                return string.Empty;
+            }
+
+            if (!Directory.Exists(SignaturesVaultFolder))
+            {
+                Directory.CreateDirectory(SignaturesVaultFolder);
+            }
+
+            string safeName = SanitizeFileName(string.IsNullOrWhiteSpace(profile.Name) ? "Stamp" : profile.Name);
+            string ext = Path.GetExtension(sourceFilePath);
+            if (string.IsNullOrEmpty(ext)) ext = ".png";
+            string targetPath = Path.Combine(SignaturesVaultFolder, $"{safeName}{ext}");
+
+            try
+            {
+                File.Copy(sourceFilePath, targetPath, overwrite: true);
+                byte[] bytes = File.ReadAllBytes(targetPath);
+                profile.Image = Convert.ToBase64String(bytes);
+                profile.ImagePath = targetPath;
+                return targetPath;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError($"Lỗi sao chép ảnh vào App Vault: {ex.Message}");
+                return sourceFilePath;
+            }
+        }
+
+        private static string SanitizeFileName(string name)
+        {
+            foreach (char c in Path.GetInvalidFileNameChars())
+            {
+                name = name.Replace(c, '_');
+            }
+            return name.Trim();
         }
 
         public static List<SignatureProfile> GetDefaultProfiles()
