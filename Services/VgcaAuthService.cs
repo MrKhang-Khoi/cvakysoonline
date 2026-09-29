@@ -110,11 +110,90 @@ namespace VGCASignToolPro.Services
 
         public event Action<bool, VgcaTeacherModel?>? LoginStateChanged;
 
+        private FileSystemWatcher? _rosterWatcher;
+        private DateTime _lastWatcherEventTime = DateTime.MinValue;
+
         public VgcaAuthService()
         {
             string baseDir = AppDomain.CurrentDomain.BaseDirectory;
             _rosterFilePath = Path.Combine(baseDir, "school_roster.json");
             LoadRoster();
+            InitializeFileWatcher();
+        }
+
+        private void InitializeFileWatcher()
+        {
+            try
+            {
+                string? dir = Path.GetDirectoryName(_rosterFilePath);
+                string fileName = Path.GetFileName(_rosterFilePath);
+                if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
+                {
+                    _rosterWatcher = new FileSystemWatcher(dir, fileName)
+                    {
+                        NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName,
+                        EnableRaisingEvents = true
+                    };
+                    _rosterWatcher.Changed += OnRosterFileChanged;
+                    _rosterWatcher.Created += OnRosterFileChanged;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceWarning($"Không thể khởi tạo FileSystemWatcher cho roster: {ex.Message}");
+            }
+        }
+
+        private void OnRosterFileChanged(object sender, FileSystemEventArgs e)
+        {
+            if ((DateTime.UtcNow - _lastWatcherEventTime).TotalMilliseconds < 500) return;
+            _lastWatcherEventTime = DateTime.UtcNow;
+
+            Task.Delay(300).ContinueWith(_ =>
+            {
+                try
+                {
+                    ReloadRosterFromDisk();
+                }
+                catch { }
+            });
+        }
+
+        public void ReloadRosterFromDisk()
+        {
+            lock (_authLock)
+            {
+                _roster.Clear();
+                LoadRoster();
+                if (IsLoggedIn && CurrentTeacher != null)
+                {
+                    VgcaTeacherModel? matchedTeacher = null;
+                    if (!string.IsNullOrEmpty(CurrentTeacher.Cccd) && _roster.TryGetValue(CurrentTeacher.Cccd, out var byCccd))
+                    {
+                        matchedTeacher = byCccd;
+                    }
+                    else
+                    {
+                        foreach (var t in _roster.Values)
+                        {
+                            if ((!string.IsNullOrEmpty(CurrentTeacher.Cccd) && string.Equals(t.Cccd, CurrentTeacher.Cccd, StringComparison.OrdinalIgnoreCase)) ||
+                                (!string.IsNullOrEmpty(CurrentTeacher.SerialNumber) && string.Equals(t.SerialNumber, CurrentTeacher.SerialNumber, StringComparison.OrdinalIgnoreCase)) ||
+                                (!string.IsNullOrEmpty(CurrentTeacher.Email) && string.Equals(t.Email, CurrentTeacher.Email, StringComparison.OrdinalIgnoreCase)) ||
+                                (!string.IsNullOrEmpty(CurrentTeacher.FullName) && string.Equals(t.FullName, CurrentTeacher.FullName, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                matchedTeacher = t;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (matchedTeacher != null)
+                    {
+                        CurrentTeacher = matchedTeacher;
+                        LoginStateChanged?.Invoke(true, CurrentTeacher);
+                    }
+                }
+            }
         }
 
         private static byte[] GetRosterHmacKey()
@@ -431,15 +510,30 @@ namespace VGCASignToolPro.Services
                 // Nếu đang có phiên làm việc đăng nhập, tự động liên kết lại với CCCD và chức vụ mới nhất từ danh bạ vừa đồng bộ
                 if (IsLoggedIn && CurrentTeacher != null)
                 {
-                    foreach (var t in _roster.Values)
+                    VgcaTeacherModel? matchedTeacher = null;
+                    if (!string.IsNullOrEmpty(CurrentTeacher.Cccd) && _roster.TryGetValue(CurrentTeacher.Cccd, out var byCccd))
                     {
-                        if ((!string.IsNullOrEmpty(CurrentTeacher.SerialNumber) && string.Equals(t.SerialNumber, CurrentTeacher.SerialNumber, StringComparison.OrdinalIgnoreCase)) ||
-                            (!string.IsNullOrEmpty(CurrentTeacher.Email) && string.Equals(t.Email, CurrentTeacher.Email, StringComparison.OrdinalIgnoreCase)) ||
-                            (!string.IsNullOrEmpty(CurrentTeacher.FullName) && string.Equals(t.FullName, CurrentTeacher.FullName, StringComparison.OrdinalIgnoreCase)))
+                        matchedTeacher = byCccd;
+                    }
+                    else
+                    {
+                        foreach (var t in _roster.Values)
                         {
-                            CurrentTeacher = t;
-                            break;
+                            if ((!string.IsNullOrEmpty(CurrentTeacher.Cccd) && string.Equals(t.Cccd, CurrentTeacher.Cccd, StringComparison.OrdinalIgnoreCase)) ||
+                                (!string.IsNullOrEmpty(CurrentTeacher.SerialNumber) && string.Equals(t.SerialNumber, CurrentTeacher.SerialNumber, StringComparison.OrdinalIgnoreCase)) ||
+                                (!string.IsNullOrEmpty(CurrentTeacher.Email) && string.Equals(t.Email, CurrentTeacher.Email, StringComparison.OrdinalIgnoreCase)) ||
+                                (!string.IsNullOrEmpty(CurrentTeacher.FullName) && string.Equals(t.FullName, CurrentTeacher.FullName, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                matchedTeacher = t;
+                                break;
+                            }
                         }
+                    }
+
+                    if (matchedTeacher != null)
+                    {
+                        CurrentTeacher = matchedTeacher;
+                        LoginStateChanged?.Invoke(true, CurrentTeacher);
                     }
                 }
 

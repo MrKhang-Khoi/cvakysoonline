@@ -780,6 +780,7 @@
     renderTable();
     updateStats();
     closeModal();
+    syncToFirebase(true);
   }
 
   function deleteTeacher(cccd) {
@@ -791,15 +792,16 @@
       renderTable();
       updateStats();
       showToast(`Đã xóa giáo viên ${teacher.fullName}`, "info");
+      syncToFirebase(true);
     }
   }
 
   // ĐỒNG BỘ LÊN FIREBASE REALTIME DATABASE
-  async function syncToFirebase() {
+  async function syncToFirebase(silent = false) {
     const url = document.getElementById("cfgFirebaseUrl").value.trim().replace(/\/$/, "");
     const sec = document.getElementById("cfgDbSecret").value.trim();
     if (!url) {
-      alert("Vui lòng nhập Firebase Realtime Database URL!");
+      if (!silent) alert("Vui lòng nhập Firebase Realtime Database URL!");
       return;
     }
 
@@ -812,7 +814,7 @@
 
     const targetUrl = sec ? `${url}/school_roster.json?auth=${sec}` : `${url}/school_roster.json`;
 
-    showToast("Đang đồng bộ dữ liệu lên Firebase...", "info");
+    if (!silent) showToast("Đang đồng bộ dữ liệu lên Firebase...", "info");
     try {
       const res = await fetch(targetUrl, {
         method: "PUT",
@@ -821,13 +823,13 @@
       });
 
       if (res.ok) {
-        showToast("Đồng bộ danh sách giáo viên lên Firebase THÀNH CÔNG! Toàn trường đã nhận được bản mới.", "success");
+        showToast("Đã tự động đồng bộ lên Firebase! Ứng dụng Desktop sẽ cập nhật ngay.", "success");
         document.getElementById("badgeCloudStatus").textContent = "☁️ Đã đồng bộ lên Firebase lúc " + new Date().toLocaleTimeString();
       } else {
-        showToast(`Lỗi đồng bộ: Mã phản hồi ${res.status}`, "error");
+        if (!silent) showToast(`Lỗi đồng bộ: Mã phản hồi ${res.status}`, "error");
       }
     } catch (err) {
-      showToast(`Lỗi kết nối Firebase: ${err.message}`, "error");
+      if (!silent) showToast(`Lỗi kết nối Firebase: ${err.message}`, "error");
     }
   }
 

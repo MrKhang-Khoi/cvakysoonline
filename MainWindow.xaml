@@ -444,6 +444,10 @@
                                                 <TextBlock Text="Đã sẵn sàng ký số tài liệu chuẩn PAdES LTV theo Nghị định 30/2020/NĐ-CP." FontSize="11" Foreground="#166534" Margin="0,2,0,0" />
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Button Content="☁️ Đồng Bộ Phân Quyền" Style="{StaticResource SecondaryButton}" 
+                                                        Background="#ECFDF5" BorderBrush="#A7F3D0" Foreground="#047857" FontWeight="Bold" 
+                                                        Padding="8,4" FontSize="11" Margin="0,0,6,0" Click="BtnSyncRosterCloud_Click"
+                                                        ToolTip="Tải lại ngay danh bạ và phân quyền đóng dấu mới nhất từ máy chủ đám mây Firebase / Cổng Web" />
                                                 <Button Content="🔑 Đổi Mật Khẩu" Style="{StaticResource SecondaryButton}" 
                                                         Background="#EEF2FF" BorderBrush="#C7D2FE" Foreground="#3730A3" FontWeight="Bold" 
                                                         Padding="8,4" FontSize="11" Margin="0,0,6,0" Click="BtnChangePasswordLocal_Click" />

@@ -88,6 +88,31 @@ namespace VGCASignToolPro
                         await CheckUpdateSilentAsync();
                     });
                 });
+
+                // Tự động đồng bộ danh bạ và phân quyền từ đám mây (Firebase) khi khởi động
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await Task.Delay(1000);
+                        var syncRes = await _vgcaAuth.SyncRosterFromCloudAsync();
+                        if (syncRes.Success)
+                        {
+                            Dispatcher.Invoke(() =>
+                            {
+                                if (_vgcaAuth.IsLoggedIn && _vgcaAuth.CurrentTeacher != null)
+                                {
+                                    OnVgcaLoginStateChanged(true, _vgcaAuth.CurrentTeacher);
+                                }
+                                UpdateStatus($"Đã đồng bộ phân quyền từ máy chủ đám mây ({syncRes.Count} nhân sự).");
+                            });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Trace.TraceWarning($"Bỏ qua lỗi tự động đồng bộ roster khởi động: {ex.Message}");
+                    }
+                });
             }
             catch (Exception ex)
             {
@@ -533,6 +558,26 @@ namespace VGCASignToolPro
                 {
                     LoadCertificatesAndVerifyVGCALogin();
                 }
+
+                // Khi chuyển từ trình duyệt quản trị về app, tự động đồng bộ phân quyền từ đám mây (nếu có thay đổi)
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var syncRes = await _vgcaAuth.SyncRosterFromCloudAsync();
+                        if (syncRes.Success)
+                        {
+                            Dispatcher.Invoke(() =>
+                            {
+                                if (_vgcaAuth.IsLoggedIn && _vgcaAuth.CurrentTeacher != null)
+                                {
+                                    OnVgcaLoginStateChanged(true, _vgcaAuth.CurrentTeacher);
+                                }
+                            });
+                        }
+                    }
+                    catch { }
+                });
             }
             catch (Exception ex)
             {
@@ -747,6 +792,45 @@ namespace VGCASignToolPro
 
             dlg.Content = stack;
             dlg.ShowDialog();
+        }
+
+        private async void BtnSyncRosterCloud_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                UpdateStatus("Đang đồng bộ danh bạ và phân quyền từ máy chủ đám mây Firebase...");
+                var res = await _vgcaAuth.SyncRosterFromCloudAsync();
+                if (res.Success)
+                {
+                    if (_vgcaAuth.IsLoggedIn && _vgcaAuth.CurrentTeacher != null)
+                    {
+                        OnVgcaLoginStateChanged(true, _vgcaAuth.CurrentTeacher);
+                        MessageBox.Show(
+                            $"Đã đồng bộ thành công dữ liệu từ máy chủ đám mây!\n\n" +
+                            $"• Thầy/Cô: {_vgcaAuth.CurrentTeacher.FullName}\n" +
+                            $"• Chức vụ: {_vgcaAuth.CurrentTeacher.Title}\n" +
+                            $"• Phân quyền đóng dấu: {(_vgcaAuth.CurrentTeacher.CanSeal ? "🔴 ĐƯỢC PHÂN QUYỀN ĐÓNG DẤU" : "🔵 Ký số cá nhân")}\n\n" +
+                            $"Toàn bộ giao diện phân quyền Soạn thảo & Ký số (Tab 2) đã được cập nhật.",
+                            "Đồng Bộ Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
+                        UpdateStatus($"Đã đồng bộ thành công phân quyền cho {_vgcaAuth.CurrentTeacher.FullName}.");
+                    }
+                    else
+                    {
+                        MessageBox.Show($"Đã đồng bộ {res.Count} bản ghi giáo viên từ máy chủ đám mây.", "Đồng Bộ Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
+                        UpdateStatus($"Đã đồng bộ {res.Count} bản ghi giáo viên từ đám mây.");
+                    }
+                }
+                else
+                {
+                    MessageBox.Show($"Không thể đồng bộ từ máy chủ:\n{res.Message}", "Lỗi Đồng Bộ", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    UpdateStatus($"Đồng bộ thất bại: {res.Message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi trong quá trình đồng bộ:\n{ex.Message}", "Lỗi Hệ Thống", MessageBoxButton.OK, MessageBoxImage.Error);
+                UpdateStatus($"Lỗi đồng bộ: {ex.Message}");
+            }
         }
 
         #region AUTO-UPDATE VÀ ĐỒNG BỘ PHIÊN BẢN (FIREBASE + GITHUB)
@@ -2209,9 +2293,54 @@ namespace VGCASignToolPro
 
             if (string.IsNullOrWhiteSpace(_currentWorkingPdfPath) || !File.Exists(_currentWorkingPdfPath))
             {
-                MessageBox.Show("Vui lòng tải file PDF hoặc thực hiện chuyển đổi Word/Excel sang PDF trước khi ký.",
-                    "Chưa có tệp tin PDF", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                if (!string.IsNullOrWhiteSpace(_originalWordFilePath) && File.Exists(_originalWordFilePath))
+                {
+                    var confirmConvert = MessageBox.Show(
+                        "Văn bản đang ở định dạng Word (.docx).\n\n" +
+                        "Để thực hiện ký số chuẩn PAdES theo quy chuẩn Ban Cơ yếu Chính phủ, hệ thống cần xuất sang bản PDF A4 hoàn chỉnh.\n\n" +
+                        "Bạn có muốn tự động chuyển đổi sang PDF và tiếp tục ký ngay không?",
+                        "Tự Động Xuất PDF Để Ký Số", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                    if (confirmConvert == MessageBoxResult.Yes)
+                    {
+                        await ConvertWordToPdfAsync();
+                        if (string.IsNullOrWhiteSpace(_currentWorkingPdfPath) || !File.Exists(_currentWorkingPdfPath))
+                        {
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(_originalExcelFilePath) && File.Exists(_originalExcelFilePath))
+                {
+                    var confirmConvert = MessageBox.Show(
+                        "Bảng tính đang ở định dạng Excel (.xlsx).\n\n" +
+                        "Để thực hiện ký số chuẩn PAdES, hệ thống cần xuất sang bản PDF hoàn chỉnh.\n\n" +
+                        "Bạn có muốn tự động chuyển đổi sang PDF và tiếp tục ký ngay không?",
+                        "Tự Động Xuất PDF Để Ký Số", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                    if (confirmConvert == MessageBoxResult.Yes)
+                    {
+                        await ConvertExcelToPdfAsync();
+                        if (string.IsNullOrWhiteSpace(_currentWorkingPdfPath) || !File.Exists(_currentWorkingPdfPath))
+                        {
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Vui lòng mở file Word, Excel hoặc nạp file PDF trước khi ký.",
+                        "Chưa Có Tài Liệu", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
             }
 
             // CHỐT CHẶN AN TOÀN TRƯỚC KHI KÝ (Pre-Sign Identity Guard):
@@ -2419,11 +2548,34 @@ namespace VGCASignToolPro
         private void UpdateSignAndSealButtonsState(bool isPdfReady)
         {
             bool isLoggedIn = _vgcaAuth.IsLoggedIn;
-            bool canSign = isPdfReady && isLoggedIn;
-            bool canSeal = isPdfReady && isLoggedIn && (_vgcaAuth.CurrentTeacher?.CanSeal == true);
+            bool isAnyDocLoaded = isPdfReady || !string.IsNullOrWhiteSpace(_originalWordFilePath) || !string.IsNullOrWhiteSpace(_originalExcelFilePath);
+            bool hasSealRight = _vgcaAuth.CurrentTeacher?.CanSeal == true;
 
-            if (BtnSignCurrentDocument != null) BtnSignCurrentDocument.IsEnabled = canSign;
-            if (BtnInsertSignatureStamp != null) BtnInsertSignatureStamp.IsEnabled = canSign;
+            bool canSign = isAnyDocLoaded && isLoggedIn;
+            bool canSeal = isAnyDocLoaded && isLoggedIn && hasSealRight;
+
+            if (BtnSignCurrentDocument != null)
+            {
+                BtnSignCurrentDocument.IsEnabled = canSign;
+                if (!isLoggedIn)
+                {
+                    BtnSignCurrentDocument.ToolTip = "Vui lòng đăng nhập tài khoản để ký tài liệu.";
+                }
+                else if (!isAnyDocLoaded)
+                {
+                    BtnSignCurrentDocument.ToolTip = "Vui lòng mở tệp Word, Excel hoặc PDF trước khi ký.";
+                }
+                else if (!isPdfReady)
+                {
+                    BtnSignCurrentDocument.ToolTip = "Ký số văn bản (Hệ thống sẽ tự động chuyển đổi Word/Excel sang PDF để ký số chuẩn PAdES).";
+                }
+                else
+                {
+                    BtnSignCurrentDocument.ToolTip = "Tiến hành ký số văn bản PDF chuẩn PAdES Ban Cơ yếu Chính phủ.";
+                }
+            }
+
+            if (BtnInsertSignatureStamp != null) BtnInsertSignatureStamp.IsEnabled = isPdfReady && isLoggedIn;
 
             if (BtnStampOfficial != null)
             {
@@ -2433,13 +2585,17 @@ namespace VGCASignToolPro
                 {
                     BtnStampOfficial.ToolTip = "Vui lòng đăng nhập tài khoản để sử dụng tính năng đóng dấu cơ quan.";
                 }
-                else if (!isPdfReady)
-                {
-                    BtnStampOfficial.ToolTip = "Vui lòng mở hoặc chuyển đổi tệp PDF trước khi đóng dấu.";
-                }
-                else if (_vgcaAuth.CurrentTeacher?.CanSeal != true)
+                else if (!hasSealRight)
                 {
                     BtnStampOfficial.ToolTip = "Tài khoản của bạn chưa được cấp quyền đóng dấu pháp nhân cơ quan. Vui lòng liên hệ Ban Giám hiệu / Quản trị viên để cấp quyền.";
+                }
+                else if (!isAnyDocLoaded)
+                {
+                    BtnStampOfficial.ToolTip = "Vui lòng mở tệp Word, Excel hoặc PDF trước khi đóng dấu.";
+                }
+                else if (!isPdfReady)
+                {
+                    BtnStampOfficial.ToolTip = "Đóng dấu cơ quan (Hệ thống sẽ tự động chuyển đổi sang PDF và đóng dấu pháp nhân USB Token).";
                 }
                 else
                 {
@@ -2459,9 +2615,54 @@ namespace VGCASignToolPro
 
             if (string.IsNullOrWhiteSpace(_currentWorkingPdfPath) || !File.Exists(_currentWorkingPdfPath))
             {
-                MessageBox.Show("Vui lòng tải file PDF hoặc thực hiện chuyển đổi Word/Excel sang PDF trước khi đóng dấu.",
-                    "Chưa Có Tệp Tin PDF", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                if (!string.IsNullOrWhiteSpace(_originalWordFilePath) && File.Exists(_originalWordFilePath))
+                {
+                    var confirmConvert = MessageBox.Show(
+                        "Văn bản đang ở định dạng Word (.docx).\n\n" +
+                        "Để thực hiện đóng dấu cơ quan chuẩn PAdES theo quy chuẩn Ban Cơ yếu Chính phủ, hệ thống cần xuất sang bản PDF A4 hoàn chỉnh.\n\n" +
+                        "Bạn có muốn tự động chuyển đổi sang PDF và tiếp tục đóng dấu ngay không?",
+                        "Tự Động Xuất PDF Để Đóng Dấu", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                    if (confirmConvert == MessageBoxResult.Yes)
+                    {
+                        await ConvertWordToPdfAsync();
+                        if (string.IsNullOrWhiteSpace(_currentWorkingPdfPath) || !File.Exists(_currentWorkingPdfPath))
+                        {
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(_originalExcelFilePath) && File.Exists(_originalExcelFilePath))
+                {
+                    var confirmConvert = MessageBox.Show(
+                        "Bảng tính đang ở định dạng Excel (.xlsx).\n\n" +
+                        "Để thực hiện đóng dấu cơ quan chuẩn PAdES theo quy định, hệ thống cần xuất sang bản PDF hoàn chỉnh.\n\n" +
+                        "Bạn có muốn tự động chuyển đổi sang PDF và tiếp tục đóng dấu ngay không?",
+                        "Tự Động Xuất PDF Để Đóng Dấu", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                    if (confirmConvert == MessageBoxResult.Yes)
+                    {
+                        await ConvertExcelToPdfAsync();
+                        if (string.IsNullOrWhiteSpace(_currentWorkingPdfPath) || !File.Exists(_currentWorkingPdfPath))
+                        {
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Vui lòng mở file Word, Excel hoặc nạp file PDF trước khi đóng dấu.",
+                        "Chưa Có Tài Liệu", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
             }
 
             // 1. Kiểm tra phân quyền giáo viên
