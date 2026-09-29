@@ -679,8 +679,6 @@
                         <RowDefinition Height="Auto" />
                         <!-- HÀNG 2: KHUNG HIỂN THỊ TÀI LIỆU TRỰC TIẾP TOÀN MÀN HÌNH -->
                         <RowDefinition Height="*" />
-                        <!-- HÀNG 3: NHẬT KÝ TIẾN TRÌNH RÚT GỌN CHÂN TRANG -->
-                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
                     <!-- THANH CÔNG CỤ ĐIỀU HÀNH VĂN BẢN (TOOLBAR) -->
@@ -910,20 +908,8 @@
                         </Grid>
                     </Border>
 
-                    <!-- NHẬT KÝ HOẠT ĐỘNG RÚT GỌN -->
-                    <Border Grid.Row="3" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="1" CornerRadius="6" Padding="8,5" Margin="0,6,0,0">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="TIẾN TRÌNH: " FontSize="10" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,8,0" />
-                            <TextBlock Grid.Column="1" x:Name="TxtStatusBar" Text="Sẵn sàng." FontSize="11" Foreground="#E2E8F0" FontFamily="Consolas" VerticalAlignment="Center" />
-                        </Grid>
-                    </Border>
-
                     <!-- OVERLAY KHI CHƯA ĐĂNG NHẬP VGCA (KHÓA TOÀN BỘ TAB 2 KHI CHƯA XÁC THỰC) -->
-                    <Border x:Name="OverlayTab2Locked" Grid.RowSpan="4" Background="#F1F5F9" Visibility="Visible" Panel.ZIndex="100">
+                    <Border x:Name="OverlayTab2Locked" Grid.RowSpan="3" Background="#F1F5F9" Visibility="Visible" Panel.ZIndex="100">
                         <Border Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="12" 
                                 MaxWidth="580" MaxHeight="350" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="32">
                             <Border.Effect>
@@ -988,7 +974,7 @@
                     </Border>
 
                     <!-- OVERLAY LOADING BACKDROP (LÀM TỐI NỀN WPF KHI POPUP NỔI LÊN) -->
-                    <Border x:Name="OverlayLoadingModal" Grid.RowSpan="4" Background="#660F172A" Visibility="Collapsed" Panel.ZIndex="1000" IsHitTestVisible="True" />
+                    <Border x:Name="OverlayLoadingModal" Grid.RowSpan="3" Background="#660F172A" Visibility="Collapsed" Panel.ZIndex="1000" IsHitTestVisible="True" />
                 </Grid>
             </TabItem>
 
@@ -1260,15 +1246,17 @@
             </TabItem>
         </TabControl>
 
-        <!-- FOOTER STATUS BAR -->
-        <Border Grid.Row="2" Background="#E2E8F0" BorderBrush="#CBD5E1" BorderThickness="0,1,0,0" Padding="12,5">
+        <!-- FOOTER STATUS BAR VÀ TIẾN TRÌNH HỆ THỐNG TOÀN CỤC (THAY THẾ HÌNH 2 BẰNG HÌNH 1 VÀ BỔ SUNG PHIÊN BẢN GÓC PHẢI) -->
+        <Border Grid.Row="2" Background="#0F172A" BorderBrush="#1E293B" BorderThickness="0,1,0,0" Padding="14,6">
             <Grid>
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="VGCA Sign Tool Pro • Tích hợp Chứng thực số Ban Cơ yếu Chính phủ" FontSize="11" Foreground="#475569" />
-                <TextBlock Grid.Column="1" Text="Phiên bản v2.1.0 • .NET 8 x64" FontSize="11" Foreground="#64748B" />
+                <TextBlock Grid.Column="0" Text="TIẾN TRÌNH: " FontSize="10" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,8,0" />
+                <TextBlock Grid.Column="1" x:Name="TxtStatusBar" Text="Sẵn sàng." FontSize="11" Foreground="#E2E8F0" FontFamily="Segoe UI" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="2" Text="Phiên bản v2.1.0 • .NET 8 x64" FontSize="11" Foreground="#94A3B8" VerticalAlignment="Center" Margin="16,0,0,0" />
             </Grid>
         </Border>
 
