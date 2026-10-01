@@ -1646,6 +1646,12 @@ namespace VGCASignToolPro
                 OverlayLoadingPopup.HorizontalOffset = offset + 0.001;
                 OverlayLoadingPopup.HorizontalOffset = offset;
             }
+            if (OverlaySubmitWorkflowPopup != null && OverlaySubmitWorkflowPopup.IsOpen)
+            {
+                double offset = OverlaySubmitWorkflowPopup.HorizontalOffset;
+                OverlaySubmitWorkflowPopup.HorizontalOffset = offset + 0.001;
+                OverlaySubmitWorkflowPopup.HorizontalOffset = offset;
+            }
         }
 
         /// <summary>
@@ -3610,19 +3616,43 @@ namespace VGCASignToolPro
             TxtWorkflowSubmitSender.Text = $"{_vgcaAuth.CurrentTeacher.FullName} (CCCD: {_vgcaAuth.CurrentTeacher.Cccd})";
             TxtWorkflowSubmitNotes.Text = string.Empty;
 
-            if (PdfPreviewControl != null)
+            // Luôn đồng bộ và nạp danh sách người nhận phê duyệt mới nhất
+            PopulateWorkflowApprovers(_vgcaAuth.CurrentTeacher.Cccd);
+
+            BtnConfirmSubmitWorkflow.IsEnabled = true;
+
+            // Hiển thị backdrop làm tối và mở Popup độc lập HWND nổi hoàn toàn lên trên WebView2
+            if (OverlayLoadingModal != null)
             {
-                PdfPreviewControl.Visibility = Visibility.Hidden;
+                OverlayLoadingModal.Visibility = Visibility.Visible;
             }
-            OverlaySubmitWorkflow.Visibility = Visibility.Visible;
+
+            if (OverlaySubmitWorkflowPopup != null)
+            {
+                if (MainRootGrid != null)
+                {
+                    OverlaySubmitWorkflowPopup.PlacementTarget = MainRootGrid;
+                }
+                OverlaySubmitWorkflowPopup.IsOpen = true;
+                RepositionLoadingPopup();
+
+                Dispatcher.InvokeAsync(() =>
+                {
+                    TxtWorkflowSubmitTitle.Focus();
+                    TxtWorkflowSubmitTitle.SelectAll();
+                }, System.Windows.Threading.DispatcherPriority.Input);
+            }
         }
 
         private void BtnCancelSubmitWorkflow_Click(object sender, RoutedEventArgs e)
         {
-            OverlaySubmitWorkflow.Visibility = Visibility.Collapsed;
-            if (PdfPreviewControl != null)
+            if (OverlaySubmitWorkflowPopup != null)
             {
-                PdfPreviewControl.Visibility = Visibility.Visible;
+                OverlaySubmitWorkflowPopup.IsOpen = false;
+            }
+            if (OverlayLoadingModal != null)
+            {
+                OverlayLoadingModal.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -3664,10 +3694,13 @@ namespace VGCASignToolPro
 
                 if (result.Success)
                 {
-                    OverlaySubmitWorkflow.Visibility = Visibility.Collapsed;
-                    if (PdfPreviewControl != null)
+                    if (OverlaySubmitWorkflowPopup != null)
                     {
-                        PdfPreviewControl.Visibility = Visibility.Visible;
+                        OverlaySubmitWorkflowPopup.IsOpen = false;
+                    }
+                    if (OverlayLoadingModal != null)
+                    {
+                        OverlayLoadingModal.Visibility = Visibility.Collapsed;
                     }
 
                     MessageBox.Show(
@@ -3693,10 +3726,6 @@ namespace VGCASignToolPro
             finally
             {
                 BtnConfirmSubmitWorkflow.IsEnabled = true;
-                if (OverlaySubmitWorkflow.Visibility != Visibility.Visible && PdfPreviewControl != null)
-                {
-                    PdfPreviewControl.Visibility = Visibility.Visible;
-                }
             }
         }
 

@@ -1032,48 +1032,6 @@
                         </Border>
                     </Border>
 
-                    <!-- OVERLAY TRÌNH KÝ BÁO CÁO LIÊN THÔNG (POPUP KHI BẤM NÚT TRÌNH KÝ TẠI TAB 2) -->
-                    <Border x:Name="OverlaySubmitWorkflow" Grid.RowSpan="4" Background="#990F172A" Visibility="Collapsed" Panel.ZIndex="999">
-                        <Border Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="12" 
-                                MaxWidth="620" Width="600" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="28">
-                            <Border.Effect>
-                                <DropShadowEffect BlurRadius="25" ShadowDepth="6" Opacity="0.25" />
-                            </Border.Effect>
-                            <StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                                    <Border Background="#CCFBF1" CornerRadius="8" Padding="10" Margin="0,0,12,0">
-                                        <TextBlock Text="📤" FontSize="26" />
-                                    </Border>
-                                    <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="TRÌNH KÝ BÁO CÁO LIÊN THÔNG" FontWeight="Bold" FontSize="16" Foreground="#0F766E" />
-                                        <TextBlock Text="Gửi báo cáo lên hệ thống để Tổ trưởng / Ban Giám hiệu phê duyệt tiếp theo" FontSize="12" Foreground="#64748B" />
-                                    </StackPanel>
-                                </StackPanel>
-
-                                <TextBlock Text="Tiêu đề báo cáo:" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
-                                <TextBox x:Name="TxtWorkflowSubmitTitle" Padding="8,6" FontSize="13" Margin="0,0,0,12" Background="#F8FAFC" />
-
-                                <TextBlock Text="Người lập báo cáo:" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
-                                <Border Background="#F1F5F9" CornerRadius="6" Padding="10,6" Margin="0,0,0,12">
-                                    <TextBlock x:Name="TxtWorkflowSubmitSender" Text="Giáo viên (Đang đăng nhập)" FontSize="12" Foreground="#1E293B" FontWeight="Medium" />
-                                </Border>
-
-                                <TextBlock Text="Chọn Người nhận phê duyệt (Tổ trưởng / Ban Giám hiệu):" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
-                                <ComboBox x:Name="CboWorkflowApprover" Padding="8,6" FontSize="13" Margin="0,0,0,12" />
-
-                                <TextBlock Text="Ghi chú kèm theo (tùy chọn):" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
-                                <TextBox x:Name="TxtWorkflowSubmitNotes" Padding="8,6" FontSize="12" Height="50" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,20" Background="#F8FAFC" />
-
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                    <Button Content="✕ Hủy Bỏ" Style="{StaticResource SecondaryButton}" 
-                                            Padding="16,8" FontSize="13" Margin="0,0,10,0" Click="BtnCancelSubmitWorkflow_Click" />
-                                    <Button x:Name="BtnConfirmSubmitWorkflow" Content="🚀 Xác Nhận Gửi Trình Ký" Style="{StaticResource SuccessButton}" 
-                                            Background="#0D9488" BorderBrush="#0F766E"
-                                            Padding="20,8" FontSize="13" FontWeight="Bold" Click="BtnConfirmSubmitWorkflow_Click" />
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
-                    </Border>
 
                     <!-- OVERLAY LOADING BACKDROP (LÀM TỐI NỀN WPF KHI POPUP NỔI LÊN) -->
                     <Border x:Name="OverlayLoadingModal" Grid.RowSpan="3" Background="#660F172A" Visibility="Collapsed" Panel.ZIndex="1000" IsHitTestVisible="True" />
@@ -1473,6 +1431,58 @@
                                 <TextBlock Text="Động cơ hiển thị chuẩn VGCA &amp; Nghị định 30/2020/NĐ-CP" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" />
                             </StackPanel>
                         </Border>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Popup>
+
+        <!-- POPUP TRÌNH KÝ BÁO CÁO LIÊN THÔNG (KHẮC PHỤC TRIỆT ĐỂ LỖI AIRSPACE CỦA WEBVIEW2) -->
+        <Popup x:Name="OverlaySubmitWorkflowPopup" 
+               IsOpen="False" 
+               Placement="Center" 
+               PlacementTarget="{Binding ElementName=MainRootGrid}" 
+               AllowsTransparency="True" 
+               PopupAnimation="Fade" 
+               StaysOpen="True"
+               Focusable="True">
+            <Grid Margin="24">
+                <Border Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="14" 
+                        MaxWidth="620" Width="600" Padding="28">
+                    <Border.Effect>
+                        <DropShadowEffect BlurRadius="28" ShadowDepth="8" Direction="270" Opacity="0.25" Color="#0F172A" />
+                    </Border.Effect>
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <Border Background="#CCFBF1" CornerRadius="8" Padding="10" Margin="0,0,12,0">
+                                <TextBlock Text="📤" FontSize="26" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="TRÌNH KÝ BÁO CÁO LIÊN THÔNG" FontWeight="Bold" FontSize="16" Foreground="#0F766E" />
+                                <TextBlock Text="Gửi báo cáo lên hệ thống để Tổ trưởng / Ban Giám hiệu phê duyệt tiếp theo" FontSize="12" Foreground="#64748B" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <TextBlock Text="Tiêu đề báo cáo:" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
+                        <TextBox x:Name="TxtWorkflowSubmitTitle" Padding="8,6" FontSize="13" Margin="0,0,0,12" Background="#F8FAFC" />
+
+                        <TextBlock Text="Người lập báo cáo:" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
+                        <Border Background="#F1F5F9" CornerRadius="6" Padding="10,6" Margin="0,0,0,12">
+                            <TextBlock x:Name="TxtWorkflowSubmitSender" Text="Giáo viên (Đang đăng nhập)" FontSize="12" Foreground="#1E293B" FontWeight="Medium" />
+                        </Border>
+
+                        <TextBlock Text="Chọn Người nhận phê duyệt (Tổ trưởng / Ban Giám hiệu):" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
+                        <ComboBox x:Name="CboWorkflowApprover" Padding="8,6" FontSize="13" Margin="0,0,0,12" />
+
+                        <TextBlock Text="Ghi chú kèm theo (tùy chọn):" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
+                        <TextBox x:Name="TxtWorkflowSubmitNotes" Padding="8,6" FontSize="12" Height="50" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,20" Background="#F8FAFC" />
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="✕ Hủy Bỏ" Style="{StaticResource SecondaryButton}" 
+                                    Padding="16,8" FontSize="13" Margin="0,0,10,0" Click="BtnCancelSubmitWorkflow_Click" />
+                            <Button x:Name="BtnConfirmSubmitWorkflow" Content="🚀 Xác Nhận Gửi Trình Ký" Style="{StaticResource SuccessButton}" 
+                                    Background="#0D9488" BorderBrush="#0F766E"
+                                    Padding="20,8" FontSize="13" FontWeight="Bold" Click="BtnConfirmSubmitWorkflow_Click" />
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>
