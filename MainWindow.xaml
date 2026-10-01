@@ -353,7 +353,7 @@
             </Setter>
         </Style>
 
-        <!-- STYLE DÒNG DANH SÁCH (LISTVIEWITEM) CHỐNG CHỚP GIẬT MÀU - CHUẨN MICROSOFT FLUENT UI -->
+        <!-- STYLE DÒNG DANH SÁCH (LISTVIEWITEM) CHUẨN MICROSOFT FLUENT UI - CHỐNG NHẤP NHÁY VÀ GIẬT LAG TUYỆT ĐỐI -->
         <Style TargetType="ListViewItem">
             <Setter Property="SnapsToDevicePixels" Value="True" />
             <Setter Property="UseLayoutRounding" Value="True" />
@@ -361,39 +361,45 @@
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="MinHeight" Value="38" />
+            <Setter Property="MinHeight" Value="40" />
             <Setter Property="Margin" Value="0,0" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListViewItem">
-                        <Border x:Name="ItemRowBorder"
-                                Background="#FFFFFF"
-                                BorderBrush="#E2E8F0"
-                                BorderThickness="0,0,0,1"
-                                CornerRadius="0"
-                                Padding="8,5"
-                                SnapsToDevicePixels="True">
-                            <GridViewRowPresenter VerticalAlignment="Center" SnapsToDevicePixels="True" />
-                        </Border>
+                        <Grid SnapsToDevicePixels="True">
+                            <Border x:Name="ItemRowBorder"
+                                    Background="#FFFFFF"
+                                    BorderBrush="#F1F5F9"
+                                    BorderThickness="0,0,0,1"
+                                    Padding="10,6"
+                                    SnapsToDevicePixels="True">
+                                <GridViewRowPresenter VerticalAlignment="Center" SnapsToDevicePixels="True" />
+                            </Border>
+                            <!-- Dải định vị Accent mép trái chuẩn Windows 11 Fluent UI -->
+                            <Border x:Name="AccentIndicator"
+                                    Width="3.5"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Stretch"
+                                    Background="Transparent"
+                                    CornerRadius="0,2,2,0"
+                                    SnapsToDevicePixels="True" />
+                        </Grid>
                         <ControlTemplate.Triggers>
-                            <!-- KHI RÊ CHUỘT (HOVER): MÀU DỊU MẮT NHẸ NHÀNG, KHÔNG ĐỔI VIỀN ĐỘT NGỘT TRIỆT TIÊU CHỚP GIẬT MÀU -->
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ItemRowBorder" Property="Background" Value="#F1F5F9" />
-                            </Trigger>
-                            <!-- KHI ĐƯỢC CHỌN (SELECTED): NỔI BẬT RÕ RÀNG -->
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="ItemRowBorder" Property="Background" Value="#E0E7FF" />
-                                <Setter TargetName="ItemRowBorder" Property="BorderBrush" Value="#C7D2FE" />
-                            </Trigger>
-                            <!-- KHI VỪA ĐƯỢC CHỌN VỪA RÊ CHUỘT -->
+                            <!-- KHI RÊ CHUỘT (CHỈ KHI CHƯA CHỌN): NỀN XÁM NHẸ MỊN MÀNG -->
                             <MultiTrigger>
                                 <MultiTrigger.Conditions>
-                                    <Condition Property="IsSelected" Value="True" />
                                     <Condition Property="IsMouseOver" Value="True" />
+                                    <Condition Property="IsSelected" Value="False" />
                                 </MultiTrigger.Conditions>
-                                <Setter TargetName="ItemRowBorder" Property="Background" Value="#C7D2FE" />
+                                <Setter TargetName="ItemRowBorder" Property="Background" Value="#F8FAFC" />
                             </MultiTrigger>
+                            <!-- KHI ĐƯỢC CHỌN (SELECTED): NỀN XANH NHẠT CAO CẤP + THANH ACCENT MẼP TRÁI, CỐ ĐỊNH 1 MÀU DUY NHẤT TRIỆT TIÊU CHỚP MÀU -->
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ItemRowBorder" Property="Background" Value="#EFF6FF" />
+                                <Setter TargetName="ItemRowBorder" Property="BorderBrush" Value="#DBEAFE" />
+                                <Setter TargetName="AccentIndicator" Property="Background" Value="#2563EB" />
+                            </Trigger>
                             <!-- KHI VÔ HIỆU HÓA -->
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="ItemRowBorder" Property="Opacity" Value="0.45" />
@@ -1118,6 +1124,7 @@
                                         <ListView x:Name="LvInboxReports" BorderThickness="0" Background="Transparent" 
                                                   ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                                                  VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.CacheLength="2" VirtualizingPanel.CacheLengthUnit="Page"
                                                   SelectionMode="Single" MouseDoubleClick="LvInboxReports_MouseDoubleClick">
                                             <ListView.View>
                                                 <GridView>
@@ -1129,7 +1136,7 @@
                                                     <GridViewColumn Header="Trạng Thái" Width="155">
                                                         <GridViewColumn.CellTemplate>
                                                             <DataTemplate>
-                                                                <Border Background="{Binding StatusBadgeColor}" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left">
+                                                                <Border Background="{Binding StatusBadgeColor}" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left" IsHitTestVisible="False">
                                                                     <TextBlock Text="{Binding StatusText}" Foreground="White" FontSize="11" FontWeight="Bold" />
                                                                 </Border>
                                                             </DataTemplate>
@@ -1138,7 +1145,7 @@
                                                     <GridViewColumn Header="Nội Dung H2" Width="150">
                                                         <GridViewColumn.CellTemplate>
                                                             <DataTemplate>
-                                                                <Border Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" ToolTip="{Binding SignedHashTooltip}">
+                                                                <Border Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" ToolTip="{Binding SignedHashTooltip}" IsHitTestVisible="False">
                                                                     <TextBlock Text="{Binding SignedHashDisplay}" Foreground="{Binding SignedHashColor}" FontFamily="Consolas" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
                                                                 </Border>
                                                             </DataTemplate>
@@ -1179,6 +1186,7 @@
                                         <ListView x:Name="LvOutboxReports" BorderThickness="0" Background="Transparent" SelectionMode="Single"
                                                   ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                                                  VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.CacheLength="2" VirtualizingPanel.CacheLengthUnit="Page"
                                                   MouseDoubleClick="LvOutboxReports_MouseDoubleClick">
                                             <ListView.View>
                                                 <GridView>
@@ -1189,7 +1197,7 @@
                                                     <GridViewColumn Header="Trạng Thái" Width="155">
                                                         <GridViewColumn.CellTemplate>
                                                             <DataTemplate>
-                                                                <Border Background="{Binding StatusBadgeColor}" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left">
+                                                                <Border Background="{Binding StatusBadgeColor}" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left" IsHitTestVisible="False">
                                                                     <TextBlock Text="{Binding StatusText}" Foreground="White" FontSize="11" FontWeight="Bold" />
                                                                 </Border>
                                                             </DataTemplate>
@@ -1198,7 +1206,7 @@
                                                     <GridViewColumn Header="Nội Dung H2" Width="150">
                                                         <GridViewColumn.CellTemplate>
                                                             <DataTemplate>
-                                                                <Border Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" ToolTip="{Binding SignedHashTooltip}">
+                                                                <Border Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" ToolTip="{Binding SignedHashTooltip}" IsHitTestVisible="False">
                                                                     <TextBlock Text="{Binding SignedHashDisplay}" Foreground="{Binding SignedHashColor}" FontFamily="Consolas" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
                                                                 </Border>
                                                             </DataTemplate>
@@ -1246,6 +1254,7 @@
                                         <ListView x:Name="LvArchiveReports" BorderThickness="0" Background="Transparent" SelectionMode="Single"
                                                   ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                                                  VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.CacheLength="2" VirtualizingPanel.CacheLengthUnit="Page"
                                                   MouseDoubleClick="LvArchiveReports_MouseDoubleClick">
                                             <ListView.View>
                                                 <GridView>
@@ -1257,7 +1266,7 @@
                                                     <GridViewColumn Header="Trạng Thái" Width="145">
                                                         <GridViewColumn.CellTemplate>
                                                             <DataTemplate>
-                                                                <Border Background="#16A34A" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left">
+                                                                <Border Background="#16A34A" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left" IsHitTestVisible="False">
                                                                     <TextBlock Text="Đã duyệt &amp; Ký 2 cấp" Foreground="White" FontSize="11" FontWeight="Bold" />
                                                                 </Border>
                                                             </DataTemplate>
@@ -1266,7 +1275,7 @@
                                                     <GridViewColumn Header="Nội Dung H2" Width="150">
                                                         <GridViewColumn.CellTemplate>
                                                             <DataTemplate>
-                                                                <Border Background="#ECFDF5" BorderBrush="#A7F3D0" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" ToolTip="{Binding SignedHashTooltip}">
+                                                                <Border Background="#ECFDF5" BorderBrush="#A7F3D0" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" ToolTip="{Binding SignedHashTooltip}" IsHitTestVisible="False">
                                                                     <TextBlock Text="{Binding SignedHashDisplay}" Foreground="#047857" FontFamily="Consolas" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
                                                                 </Border>
                                                             </DataTemplate>
@@ -1276,6 +1285,7 @@
                                             </ListView.View>
                                         </ListView>
                                     </Border>
+
 
                                     <!-- THANH THAO TÁC XEM / TẢI VỀ -->
                                     <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,8,0,0">
