@@ -3873,6 +3873,11 @@ namespace VGCASignToolPro
 
         private async Task OpenSelectedInboxReportForReviewAsync()
         {
+            if (_isBusyProcessing)
+            {
+                return;
+            }
+
             if (LvInboxReports.SelectedItem is not ReportModel report)
             {
                 MessageBox.Show("Vui lòng chọn một báo cáo trong danh sách để mở ký duyệt.",
@@ -3895,6 +3900,8 @@ namespace VGCASignToolPro
 
             UpdateStatus($"Đang tải tệp báo cáo '{report.ReportId}' và chiếm quyền xử lý...");
             BtnOpenForReview.IsEnabled = false;
+            ShowLoadingOverlay("Đang nạp báo cáo...", $"Đang khóa phiên và nạp văn bản: {report.Title}...", "📑");
+            SetProcessingBusyState(true);
 
             try
             {
@@ -3927,6 +3934,8 @@ namespace VGCASignToolPro
             }
             finally
             {
+                await HideLoadingOverlayAsync(50);
+                SetProcessingBusyState(false);
                 BtnOpenForReview.IsEnabled = true;
             }
         }
@@ -4078,6 +4087,11 @@ namespace VGCASignToolPro
 
         private async Task OpenSelectedOutboxReportForViewingAsync()
         {
+            if (_isBusyProcessing)
+            {
+                return;
+            }
+
             if (LvOutboxReports.SelectedItem is not ReportModel report)
             {
                 MessageBox.Show("Vui lòng chọn một báo cáo trong danh sách đã gửi để xem.",
@@ -4087,16 +4101,33 @@ namespace VGCASignToolPro
 
             UpdateStatus($"Đang tải bản sao báo cáo '{report.ReportId}' để hiển thị...");
             BtnViewOutboxReport.IsEnabled = false;
+            ShowLoadingOverlay("Đang mở văn bản...", $"Đang nạp tệp báo cáo: {report.Title}...", "📥");
+            SetProcessingBusyState(true);
 
             try
             {
                 string tempDir = Path.Combine(Path.GetTempPath(), "VGCASignToolPro_Reports");
                 Directory.CreateDirectory(tempDir);
-                // Tạo tên file Snapshot ngẫu nhiên GUID để triệt tiêu hoàn toàn xung đột handle file trên ổ đĩa
-                string destPath = Path.Combine(tempDir, $"{report.ReportId}_OutboxView_{Guid.NewGuid():N}.pdf");
 
-                bool downloaded = await _workflowService.DownloadFileAsync(report.DriveFileId, destPath);
-                if (downloaded && File.Exists(destPath))
+                string cacheKey = !string.IsNullOrWhiteSpace(report.SignedHash)
+                    ? report.SignedHash
+                    : (!string.IsNullOrWhiteSpace(report.BaseHash) ? report.BaseHash : report.DriveFileId);
+
+                foreach (char c in Path.GetInvalidFileNameChars())
+                {
+                    cacheKey = cacheKey.Replace(c, '_');
+                }
+
+                string destPath = Path.Combine(tempDir, $"{report.ReportId}_{cacheKey}.pdf");
+
+                bool fileReady = File.Exists(destPath) && new FileInfo(destPath).Length > 0;
+                if (!fileReady)
+                {
+                    UpdateLoadingOverlay($"Đang tải tệp báo cáo từ máy chủ: {report.Title}...");
+                    fileReady = await _workflowService.DownloadFileAsync(report.DriveFileId, destPath);
+                }
+
+                if (fileReady && File.Exists(destPath))
                 {
                     _isOutboxViewMode = true;
                     _activeWorkflowReportId = null; // Cấm không gán ID phiên duyệt để tránh commit nhầm
@@ -4124,6 +4155,8 @@ namespace VGCASignToolPro
             }
             finally
             {
+                await HideLoadingOverlayAsync(50);
+                SetProcessingBusyState(false);
                 BtnViewOutboxReport.IsEnabled = true;
             }
         }
@@ -4135,6 +4168,11 @@ namespace VGCASignToolPro
 
         private async void BtnViewArchiveReport_Click(object sender, RoutedEventArgs e)
         {
+            if (_isBusyProcessing)
+            {
+                return;
+            }
+
             if (LvArchiveReports.SelectedItem is not ReportModel report)
             {
                 MessageBox.Show("Vui lòng chọn một báo cáo hoàn tất trong danh sách để xem.", "Chưa Chọn Báo Cáo", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -4142,14 +4180,33 @@ namespace VGCASignToolPro
             }
 
             UpdateStatus($"Đang tải tệp hoàn tất '{report.ReportId}' để hiển thị...");
+            ShowLoadingOverlay("Đang mở văn bản...", $"Đang nạp báo cáo hoàn tất: {report.Title}...", "📥");
+            SetProcessingBusyState(true);
+
             try
             {
                 string tempDir = Path.Combine(Path.GetTempPath(), "VGCASignToolPro_Reports");
                 Directory.CreateDirectory(tempDir);
-                string destPath = Path.Combine(tempDir, $"{report.ReportId}_Completed.pdf");
 
-                bool downloaded = await _workflowService.DownloadFileAsync(report.DriveFileId, destPath);
-                if (downloaded && File.Exists(destPath))
+                string cacheKey = !string.IsNullOrWhiteSpace(report.SignedHash)
+                    ? report.SignedHash
+                    : (!string.IsNullOrWhiteSpace(report.BaseHash) ? report.BaseHash : report.DriveFileId);
+
+                foreach (char c in Path.GetInvalidFileNameChars())
+                {
+                    cacheKey = cacheKey.Replace(c, '_');
+                }
+
+                string destPath = Path.Combine(tempDir, $"{report.ReportId}_{cacheKey}_Completed.pdf");
+
+                bool fileReady = File.Exists(destPath) && new FileInfo(destPath).Length > 0;
+                if (!fileReady)
+                {
+                    UpdateLoadingOverlay($"Đang tải tệp báo cáo hoàn tất từ máy chủ: {report.Title}...");
+                    fileReady = await _workflowService.DownloadFileAsync(report.DriveFileId, destPath);
+                }
+
+                if (fileReady && File.Exists(destPath))
                 {
                     await LoadPdfDocumentAsync(destPath);
                     MainTabControl.SelectedIndex = 1;
@@ -4163,6 +4220,11 @@ namespace VGCASignToolPro
             catch (Exception ex)
             {
                 MessageBox.Show($"Lỗi hiển thị tệp: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                await HideLoadingOverlayAsync(50);
+                SetProcessingBusyState(false);
             }
         }
 
@@ -4187,7 +4249,28 @@ namespace VGCASignToolPro
                 UpdateStatus("Đang tải tệp về máy tính...");
                 try
                 {
-                    bool success = await _workflowService.DownloadFileAsync(report.DriveFileId, sfd.FileName);
+                    string tempDir = Path.Combine(Path.GetTempPath(), "VGCASignToolPro_Reports");
+                    string cacheKey = !string.IsNullOrWhiteSpace(report.SignedHash)
+                        ? report.SignedHash
+                        : (!string.IsNullOrWhiteSpace(report.BaseHash) ? report.BaseHash : report.DriveFileId);
+
+                    foreach (char c in Path.GetInvalidFileNameChars())
+                    {
+                        cacheKey = cacheKey.Replace(c, '_');
+                    }
+
+                    string cachedPath = Path.Combine(tempDir, $"{report.ReportId}_{cacheKey}_Completed.pdf");
+                    bool success = false;
+                    if (File.Exists(cachedPath) && new FileInfo(cachedPath).Length > 0)
+                    {
+                        File.Copy(cachedPath, sfd.FileName, true);
+                        success = true;
+                    }
+                    else
+                    {
+                        success = await _workflowService.DownloadFileAsync(report.DriveFileId, sfd.FileName);
+                    }
+
                     if (success)
                     {
                         MessageBox.Show($"Đã tải và lưu báo cáo hoàn tất thành công tại:\n{sfd.FileName}",
