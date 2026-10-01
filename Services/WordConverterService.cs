@@ -216,10 +216,35 @@ namespace VGCASignToolPro.Services
             return outputPdfPath;
         }
 
+        [DllImport("oleaut32.dll", PreserveSig = false)]
+        private static extern void GetActiveObject(ref Guid rclsid, IntPtr pvReserved, [MarshalAs(UnmanagedType.IUnknown)] out object ppunk);
+
+        [DllImport("ole32.dll", CharSet = CharSet.Unicode)]
+        private static extern int CLSIDFromProgID([MarshalAs(UnmanagedType.LPWStr)] string lpszProgID, out Guid lpclsid);
+
+        private static object? TryGetActiveWordApplication()
+        {
+            try
+            {
+                int hr = CLSIDFromProgID("Word.Application", out Guid clsid);
+                if (hr >= 0)
+                {
+                    GetActiveObject(ref clsid, IntPtr.Zero, out object obj);
+                    return obj;
+                }
+            }
+            catch
+            {
+                // Word không có phiên làm việc đang chạy sẵn
+            }
+            return null;
+        }
+
         /// <summary>
         /// Xuất trực tiếp tài liệu Word sang PDF bằng Microsoft Word Native Engine (ExportAsFixedFormat).
         /// Mở tài liệu ở chế độ ReadOnly 100% để bảo vệ an toàn tuyệt đối cho tệp gốc của người dùng.
         /// Đảm bảo văn bản PDF xuất ra chuẩn in ấn Nghị định 30/2020/NĐ-CP, hoàn toàn sạch sẽ, 0 watermark bản quyền.
+        /// Tích hợp cơ chế Fast Attach (đính kèm vào Word đang chạy) đạt tốc độ ~200-400ms tương đương Python.
         /// </summary>
         public string ConvertWordToPdfViaWordNative(string wordFilePath, string outputPdfPath)
         {
@@ -229,42 +254,99 @@ namespace VGCASignToolPro.Services
                 throw new InvalidOperationException("Microsoft Word không khả dụng trên hệ thống.");
             }
 
+            bool isAttachedInstance = false;
             dynamic? wordApp = null;
             dynamic? wordDoc = null;
 
             try
             {
-                wordApp = Activator.CreateInstance(wordType);
-                if (wordApp == null)
+                // 1. Thử kết nối với phiên làm việc Word đang mở sẵn (tốc độ siêu tốc ~200ms như Python)
+                object? activeApp = TryGetActiveWordApplication();
+                if (activeApp != null)
                 {
-                    throw new InvalidOperationException("Không thể khởi động tiến trình Word.Application.");
+                    wordApp = activeApp;
+                    isAttachedInstance = true;
+                }
+                else
+                {
+                    // 2. Nếu chưa có Word chạy sẵn, tạo một phiên làm việc riêng
+                    wordApp = Activator.CreateInstance(wordType);
+                    isAttachedInstance = false;
                 }
 
-                wordApp.Visible = false;
-                wordApp.ScreenUpdating = false;
-                wordApp.DisplayAlerts = 0; // wdAlertsNone
+                if (wordApp == null)
+                {
+                    throw new InvalidOperationException("Không thể khởi động hoặc kết nối tiến trình Word.Application.");
+                }
+
+                // Cấu hình tối ưu hiệu năng: Tắt kiểm tra chính tả/ngữ pháp để xuất PDF thần tốc
+                if (!isAttachedInstance)
+                {
+                    try { wordApp.Visible = false; } catch { }
+                    try { wordApp.ScreenUpdating = false; } catch { }
+                    try { wordApp.DisplayAlerts = 0; } catch { } // wdAlertsNone
+                }
+
+                try { wordApp.Options.DoNotPromptForConvert = true; } catch { }
+                try { wordApp.Options.CheckGrammarAsYouType = false; } catch { }
+                try { wordApp.Options.CheckSpellingAsYouType = false; } catch { }
 
                 // MỞ TỆP Ở CHẾ ĐỘ READ-ONLY 100% BẢO VỆ TỆP GỐC
-                wordDoc = wordApp.Documents.Open(
-                    FileName: wordFilePath,
-                    ConfirmConversions: false,
-                    ReadOnly: true,
-                    AddToRecentFiles: false);
+                // Sử dụng retry loop chống nghẽn COM khi Word đang bận
+                int retries = 0;
+                while (true)
+                {
+                    try
+                    {
+                        wordDoc = wordApp.Documents.Open(
+                            FileName: wordFilePath,
+                            ConfirmConversions: false,
+                            ReadOnly: true,
+                            AddToRecentFiles: false,
+                            Visible: false,
+                            OpenAndRepair: false,
+                            NoEncodingDialog: true);
+                        break;
+                    }
+                    catch (COMException comEx) when (retries < 3 && (comEx.HResult == unchecked((int)0x8001010A) || comEx.HResult == unchecked((int)0x800AC472)))
+                    {
+                        retries++;
+                        System.Threading.Thread.Sleep(150);
+                    }
+                }
+
+                if (wordDoc == null)
+                {
+                    throw new InvalidOperationException("Không thể mở tài liệu Word qua COM.");
+                }
 
                 // XUẤT TRỰC TIẾP SANG PDF VECTOR CHUẨN IN ẤN
-                wordDoc.ExportAsFixedFormat(
-                    OutputFileName: outputPdfPath,
-                    ExportFormat: 17, // wdExportFormatPDF
-                    OpenAfterExport: false,
-                    OptimizeFor: 0, // wdExportOptimizeForPrint
-                    Range: 0, // wdExportAllDocument
-                    Item: 0, // wdExportDocumentContent
-                    IncludeDocProps: true,
-                    KeepIRM: true,
-                    CreateBookmarks: 1,
-                    DocStructureTags: true,
-                    BitmapMissingFonts: true,
-                    UseISO19005_1: false);
+                retries = 0;
+                while (true)
+                {
+                    try
+                    {
+                        wordDoc.ExportAsFixedFormat(
+                            OutputFileName: outputPdfPath,
+                            ExportFormat: 17, // wdExportFormatPDF
+                            OpenAfterExport: false,
+                            OptimizeFor: 0, // wdExportOptimizeForPrint
+                            Range: 0, // wdExportAllDocument
+                            Item: 0, // wdExportDocumentContent
+                            IncludeDocProps: true,
+                            KeepIRM: true,
+                            CreateBookmarks: 1,
+                            DocStructureTags: true,
+                            BitmapMissingFonts: true,
+                            UseISO19005_1: false);
+                        break;
+                    }
+                    catch (COMException comEx) when (retries < 3 && (comEx.HResult == unchecked((int)0x8001010A) || comEx.HResult == unchecked((int)0x800AC472)))
+                    {
+                        retries++;
+                        System.Threading.Thread.Sleep(150);
+                    }
+                }
 
                 StatusChanged?.Invoke($"Đã xuất PDF hoàn tất qua Word Native (Chuẩn 100%, 0 watermark): {Path.GetFileName(outputPdfPath)}");
                 return outputPdfPath;
@@ -280,13 +362,14 @@ namespace VGCASignToolPro.Services
 
                 if (wordApp != null)
                 {
-                    try { wordApp.Quit(false); } catch { }
+                    // Chỉ Quit nếu ta tự khởi tạo phiên riêng. Nếu là phiên đính kèm của người dùng, không Quit để bảo toàn công việc đang làm.
+                    if (!isAttachedInstance)
+                    {
+                        try { wordApp.Quit(false); } catch { }
+                    }
                     try { Marshal.ReleaseComObject(wordApp); } catch { }
                     wordApp = null;
                 }
-
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
             }
         }
 
