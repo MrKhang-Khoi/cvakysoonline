@@ -99,14 +99,26 @@ namespace VGCASignToolPro.Services
             }
 
             // KIẾN TRÚC ĐỘNG CƠ KÉP (DUAL-ENGINE ARCHITECTURE):
-            // ƯU TIÊN 1: Nếu máy tính đã cài đặt Microsoft Word, xuất trực tiếp bằng Native ExportAsFixedFormat
+            // ƯU TIÊN 1: Nếu máy tính đã cài đặt Microsoft Word, xuất trực tiếp bằng Native ExportAsFixedFormat (Timeout 4.5s)
             // Đảm bảo: 100% chuẩn vector Nghị định 30/2020/NĐ-CP, 0% watermark bản quyền, 0% dòng chữ đỏ, bảo vệ tệp gốc ReadOnly.
             if (IsMicrosoftWordInstalled())
             {
                 try
                 {
+                    ClearWordResiliencyDisabledItems(wordFilePath);
                     StatusChanged?.Invoke($"Đang mở và xuất PDF qua Microsoft Word Native (100% chuẩn, 0 watermark)...");
-                    return ConvertWordToPdfViaWordNative(wordFilePath, outputPdfPath);
+                    
+                    var nativeTask = Task.Run(() => ConvertWordToPdfViaWordNative(wordFilePath, outputPdfPath));
+                    bool finished = nativeTask.Wait(TimeSpan.FromSeconds(4.5));
+
+                    if (finished && File.Exists(outputPdfPath) && new FileInfo(outputPdfPath).Length > 0)
+                    {
+                        return outputPdfPath;
+                    }
+                    else
+                    {
+                        System.Diagnostics.Trace.TraceWarning($"Word Native Direct Export vượt quá 4.5s hoặc bị treo, tự động kích hoạt ngay phao cứu sinh Syncfusion DocIO.");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -177,13 +189,20 @@ namespace VGCASignToolPro.Services
                 string tempDocx = Path.Combine(Path.GetTempPath(), $"vgca_stream_{Guid.NewGuid():N}.docx");
                 try
                 {
+                    ClearWordResiliencyDisabledItems(tempDocx);
                     StatusChanged?.Invoke("Đang xuất PDF từ nội dung Word qua Microsoft Word Native (100% chuẩn, 0 watermark)...");
                     docxStream.Position = 0;
                     using (FileStream fs = new FileStream(tempDocx, FileMode.Create, FileAccess.Write))
                     {
                         docxStream.CopyTo(fs);
                     }
-                    return ConvertWordToPdfViaWordNative(tempDocx, outputPdfPath);
+
+                    var nativeTask = Task.Run(() => ConvertWordToPdfViaWordNative(tempDocx, outputPdfPath));
+                    bool finished = nativeTask.Wait(TimeSpan.FromSeconds(4.5));
+                    if (finished && File.Exists(outputPdfPath) && new FileInfo(outputPdfPath).Length > 0)
+                    {
+                        return outputPdfPath;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -241,6 +260,53 @@ namespace VGCASignToolPro.Services
         }
 
         /// <summary>
+        /// Tự động xóa sạch cờ Resiliency (DisabledItems) của Microsoft Word trong Windows Registry.
+        /// Triệt tiêu 100% hộp thoại cảnh báo: "The last time you opened '...', it caused a serious error. Do you still want to open it?"
+        /// </summary>
+        public static void ClearWordResiliencyDisabledItems(string? filePath = null)
+        {
+            try
+            {
+                using var officeKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Office");
+                if (officeKey == null) return;
+
+                foreach (string ver in officeKey.GetSubKeyNames())
+                {
+                    string resiliencyPath = $@"Software\Microsoft\Office\{ver}\Word\Resiliency\DisabledItems";
+                    using var disabledKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(resiliencyPath, true);
+                    if (disabledKey == null) continue;
+
+                    string[] valNames = disabledKey.GetValueNames();
+                    foreach (string valName in valNames)
+                    {
+                        try
+                        {
+                            if (string.IsNullOrEmpty(filePath))
+                            {
+                                disabledKey.DeleteValue(valName, false);
+                            }
+                            else if (disabledKey.GetValue(valName) is byte[] bytes)
+                            {
+                                string text = System.Text.Encoding.Unicode.GetString(bytes);
+                                string fileName = Path.GetFileName(filePath);
+                                if ((!string.IsNullOrEmpty(fileName) && text.Contains(fileName, StringComparison.OrdinalIgnoreCase)) ||
+                                    text.Contains(filePath, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    disabledKey.DeleteValue(valName, false);
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceWarning($"Bỏ qua lỗi dọn dẹp Word Resiliency: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Xuất trực tiếp tài liệu Word sang PDF bằng Microsoft Word Native Engine (ExportAsFixedFormat).
         /// Mở tài liệu ở chế độ ReadOnly 100% để bảo vệ an toàn tuyệt đối cho tệp gốc của người dùng.
         /// Đảm bảo văn bản PDF xuất ra chuẩn in ấn Nghị định 30/2020/NĐ-CP, hoàn toàn sạch sẽ, 0 watermark bản quyền.
@@ -279,12 +345,14 @@ namespace VGCASignToolPro.Services
                     throw new InvalidOperationException("Không thể khởi động hoặc kết nối tiến trình Word.Application.");
                 }
 
-                // Cấu hình tối ưu hiệu năng: Tắt kiểm tra chính tả/ngữ pháp để xuất PDF thần tốc
+                // Cấu hình tối ưu hiệu năng: Tắt cảnh báo, tắt macro, tắt kiểm tra chính tả/ngữ pháp
+                try { wordApp.DisplayAlerts = 0; } catch { } // wdAlertsNone = 0
+                try { wordApp.AutomationSecurity = 3; } catch { } // msoAutomationSecurityForceDisable = 3
+
                 if (!isAttachedInstance)
                 {
                     try { wordApp.Visible = false; } catch { }
                     try { wordApp.ScreenUpdating = false; } catch { }
-                    try { wordApp.DisplayAlerts = 0; } catch { } // wdAlertsNone
                 }
 
                 try { wordApp.Options.DoNotPromptForConvert = true; } catch { }
