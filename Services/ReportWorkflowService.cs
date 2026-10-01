@@ -43,6 +43,9 @@ namespace VGCASignToolPro.Services
         [JsonProperty("driveFileId")]
         public string DriveFileId { get; set; } = string.Empty;
 
+        [JsonProperty("googleDriveUrl")]
+        public string GoogleDriveUrl { get; set; } = string.Empty;
+
         [JsonProperty("notes")]
         public string Notes { get; set; } = string.Empty;
 
@@ -129,24 +132,25 @@ namespace VGCASignToolPro.Services
         private readonly HttpClient _http;
         private readonly string _firebaseUrl;
         private readonly string _secret;
+        private readonly string _googleAppsScriptUrl;
+        private readonly string _googleDriveFolderId;
 
         public ReportWorkflowService(string? firebaseUrl = null, string? secret = null)
         {
             var config = LoadConfiguration();
             _firebaseUrl = (firebaseUrl ?? config.Url).TrimEnd('/');
             _secret = secret ?? config.Secret;
+            _googleAppsScriptUrl = config.GoogleAppsScriptUrl;
+            _googleDriveFolderId = config.GoogleDriveFolderId;
             _http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         }
 
-        private static (string Url, string Secret) LoadConfiguration()
+        private static (string Url, string Secret, string GoogleAppsScriptUrl, string GoogleDriveFolderId) LoadConfiguration()
         {
             string envUrl = Environment.GetEnvironmentVariable("CVA_FIREBASE_URL") ?? string.Empty;
             string envSecret = Environment.GetEnvironmentVariable("CVA_FIREBASE_SECRET") ?? string.Empty;
-
-            if (!string.IsNullOrEmpty(envUrl) && !string.IsNullOrEmpty(envSecret))
-            {
-                return (envUrl, envSecret);
-            }
+            string envGas = Environment.GetEnvironmentVariable("CVA_GAS_URL") ?? string.Empty;
+            string envFolder = Environment.GetEnvironmentVariable("CVA_DRIVE_FOLDER") ?? string.Empty;
 
             string[] searchPaths = new[]
             {
@@ -164,9 +168,11 @@ namespace VGCASignToolPro.Services
                         var obj = JObject.Parse(json);
                         string url = obj["firebaseUrl"]?.ToString() ?? DefaultFirebaseUrl;
                         string sec = obj["databaseSecret"]?.ToString() ?? string.Empty;
+                        string gas = obj["googleAppsScriptUrl"]?.ToString() ?? string.Empty;
+                        string folder = obj["googleDriveFolderId"]?.ToString() ?? string.Empty;
                         if (!string.IsNullOrEmpty(sec))
                         {
-                            return (url, sec);
+                            return (url, sec, gas, folder);
                         }
                     }
                     catch
@@ -176,7 +182,7 @@ namespace VGCASignToolPro.Services
                 }
             }
 
-            return (!string.IsNullOrEmpty(envUrl) ? envUrl : DefaultFirebaseUrl, envSecret);
+            return (!string.IsNullOrEmpty(envUrl) ? envUrl : DefaultFirebaseUrl, envSecret, envGas, envFolder);
         }
 
         public static string ComputeSha256(string filePath)
@@ -518,34 +524,66 @@ namespace VGCASignToolPro.Services
                 long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 string signedHash = ComputeSha256(signedPdfPath);
 
-                // Lưu tệp PDF v2 đã có 2 chữ ký vào /files
-                byte[] signedBytes = await File.ReadAllBytesAsync(signedPdfPath).ConfigureAwait(false);
-                string fileDataBase64 = Convert.ToBase64String(signedBytes);
-                string fileIdV2 = $"FILE_{reportId}_V2_SIGNED";
+                // 1. Kiểm tra và ưu tiên đẩy lên Google Drive nếu đã cấu hình Google Apps Script Web App
+                string googleDriveViewUrl = string.Empty;
+                string finalDriveFileId = string.Empty;
 
-                var filePayload = new
+                if (!string.IsNullOrWhiteSpace(_googleAppsScriptUrl))
                 {
-                    fileName = $"{report.Title}_DaKyDuyet.pdf",
-                    fileData = fileDataBase64,
-                    fileSize = signedBytes.Length,
-                    createdAt = now
-                };
+                    try
+                    {
+                        var driveRes = await UploadToGoogleDriveAsync(signedPdfPath, reportId, $"{report.Title}_DaKyDuyet.pdf").ConfigureAwait(false);
+                        if (driveRes.Success && !string.IsNullOrEmpty(driveRes.ViewUrl))
+                        {
+                            googleDriveViewUrl = driveRes.ViewUrl;
+                            finalDriveFileId = !string.IsNullOrEmpty(driveRes.DownloadUrl) ? driveRes.DownloadUrl : (driveRes.FileId ?? string.Empty);
 
-                string fileUrl = BuildUrl($"files/{fileIdV2}");
-                var fileContent = new StringContent(JsonConvert.SerializeObject(filePayload), Encoding.UTF8, "application/json");
-                var putRes = await _http.PutAsync(fileUrl, fileContent).ConfigureAwait(false);
-                if (!putRes.IsSuccessStatusCode)
-                {
-                    return (false, "Không thể lưu trữ tệp đã ký lên máy chủ đám mây.");
+                            // Giải phóng 100% dung lượng Firebase: Xóa bản nháp V1 ngay lập tức khỏi /files
+                            if (!string.IsNullOrEmpty(report.DriveFileId))
+                            {
+                                _ = DeleteFileFromFirebaseAsync(report.DriveFileId);
+                            }
+                        }
+                    }
+                    catch (Exception gEx)
+                    {
+                        System.Diagnostics.Trace.TraceWarning($"Upload Google Drive thất bại, chuyển sang phương án Firebase dự phòng: {gEx.Message}");
+                    }
                 }
 
-                // Cập nhật trạng thái SIGNED_COMMITTED
+                // 2. Dự phòng (Fallback): Nếu chưa cấu hình Google Drive hoặc lỗi upload, lưu tạm Base64 lên Firebase như cũ
+                if (string.IsNullOrEmpty(finalDriveFileId))
+                {
+                    byte[] signedBytes = await File.ReadAllBytesAsync(signedPdfPath).ConfigureAwait(false);
+                    string fileDataBase64 = Convert.ToBase64String(signedBytes);
+                    string fileIdV2 = $"FILE_{reportId}_V2_SIGNED";
+
+                    var filePayload = new
+                    {
+                        fileName = $"{report.Title}_DaKyDuyet.pdf",
+                        fileData = fileDataBase64,
+                        fileSize = signedBytes.Length,
+                        createdAt = now
+                    };
+
+                    string fileUrl = BuildUrl($"files/{fileIdV2}");
+                    var fileContent = new StringContent(JsonConvert.SerializeObject(filePayload), Encoding.UTF8, "application/json");
+                    var putRes = await _http.PutAsync(fileUrl, fileContent).ConfigureAwait(false);
+                    if (!putRes.IsSuccessStatusCode)
+                    {
+                        return (false, "Không thể lưu trữ tệp đã ký lên máy chủ đám mây.");
+                    }
+                    finalDriveFileId = fileIdV2;
+                }
+
+                // 3. Cập nhật trạng thái SIGNED_COMMITTED trên Firebase Realtime Database
                 var commitPayload = new
                 {
                     status = "SIGNED_COMMITTED",
                     signedBy = approverCccd,
                     signedHash = signedHash,
-                    driveFileId = fileIdV2,
+                    driveFileId = finalDriveFileId,
+                    googleDriveUrl = googleDriveViewUrl,
                     signedAt = now,
                     updatedAt = now
                 };
@@ -566,12 +604,30 @@ namespace VGCASignToolPro.Services
         }
 
         /// <summary>
-        /// Tải tệp PDF từ đám mây về đường dẫn cục bộ
+        /// Tải tệp PDF từ Google Drive hoặc Firebase về máy tính cục bộ
         /// </summary>
         public async Task<bool> DownloadFileAsync(string fileId, string destinationPath)
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(fileId)) return false;
+
+                // Nếu fileId là một liên kết web trực tiếp (Google Drive Download URL hoặc CDN)
+                if (fileId.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
+                    fileId.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                {
+                    var webRes = await _http.GetAsync(fileId).ConfigureAwait(false);
+                    if (webRes.IsSuccessStatusCode)
+                    {
+                        byte[] webBytes = await webRes.Content.ReadAsByteArrayAsync().ConfigureAwait(false);
+                        string? webDir = Path.GetDirectoryName(destinationPath);
+                        if (!string.IsNullOrEmpty(webDir)) Directory.CreateDirectory(webDir);
+                        await File.WriteAllBytesAsync(destinationPath, webBytes).ConfigureAwait(false);
+                        return true;
+                    }
+                }
+
+                // Tải từ Firebase Realtime Database (/files/{fileId})
                 string fileUrl = BuildUrl($"files/{fileId}");
                 var res = await _http.GetAsync(fileUrl).ConfigureAwait(false);
                 if (!res.IsSuccessStatusCode) return false;
@@ -592,6 +648,88 @@ namespace VGCASignToolPro.Services
             {
                 System.Diagnostics.Trace.TraceError($"Lỗi DownloadFileAsync: {ex}");
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Xóa tệp khỏi node /files của Firebase để giải phóng dung lượng định ngạch 1GB
+        /// </summary>
+        public async Task<bool> DeleteFileFromFirebaseAsync(string fileId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(fileId)) return true;
+                string fileUrl = BuildUrl($"files/{fileId}");
+                var res = await _http.DeleteAsync(fileUrl).ConfigureAwait(false);
+                return res.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceWarning($"Lỗi xóa tệp Firebase {fileId}: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Đẩy tệp PDF hoàn tất lên Google Drive thông qua Google Apps Script Web App Gateway
+        /// </summary>
+        public async Task<(bool Success, string Message, string? FileId, string? ViewUrl, string? DownloadUrl)> UploadToGoogleDriveAsync(
+            string localPdfPath,
+            string reportId,
+            string fileName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(_googleAppsScriptUrl) || !File.Exists(localPdfPath))
+                {
+                    return (false, "Chưa cấu hình Google Apps Script URL hoặc tệp không tồn tại.", null, null, null);
+                }
+
+                byte[] fileBytes = await File.ReadAllBytesAsync(localPdfPath).ConfigureAwait(false);
+                string base64Data = Convert.ToBase64String(fileBytes);
+
+                var payload = new
+                {
+                    action = "uploadFile",
+                    fileName = fileName,
+                    base64Data = base64Data,
+                    reportId = reportId,
+                    folderId = _googleDriveFolderId
+                };
+
+                string jsonContent = JsonConvert.SerializeObject(payload);
+                using var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                // Google Apps Script chuyển hướng HTTP 302 sang googleusercontent
+                using var handler = new HttpClientHandler { AllowAutoRedirect = true };
+                using var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(60) };
+
+                var response = await client.PostAsync(_googleAppsScriptUrl, content).ConfigureAwait(false);
+                if (!response.IsSuccessStatusCode)
+                {
+                    return (false, $"Lỗi phản hồi từ Google Apps Script Gateway: {response.StatusCode}", null, null, null);
+                }
+
+                string responseJson = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var obj = JObject.Parse(responseJson);
+
+                bool success = obj["success"]?.Value<bool>() ?? false;
+                if (!success)
+                {
+                    string errMsg = obj["message"]?.ToString() ?? "Lỗi không xác định từ Google Apps Script.";
+                    return (false, errMsg, null, null, null);
+                }
+
+                var data = obj["data"];
+                string fileId = data?["fileId"]?.ToString() ?? string.Empty;
+                string viewUrl = data?["directViewUrl"]?.ToString() ?? (data?["viewUrl"]?.ToString() ?? string.Empty);
+                string downloadUrl = data?["downloadUrl"]?.ToString() ?? string.Empty;
+
+                return (true, "Đã lưu trữ thành công lên Google Drive.", fileId, viewUrl, downloadUrl);
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi kết nối tới Google Apps Script: {ex.Message}", null, null, null);
             }
         }
     }

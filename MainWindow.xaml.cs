@@ -3705,9 +3705,27 @@ namespace VGCASignToolPro
                 // 3. Archive: Toàn trường đã hoàn tất
                 var archive = all.Where(r => r.Status == "SIGNED_COMMITTED").ToList();
 
+                var prevInboxId = (LvInboxReports.SelectedItem as ReportModel)?.ReportId;
+                var prevOutboxId = (LvOutboxReports.SelectedItem as ReportModel)?.ReportId;
+                var prevArchiveId = (LvArchiveReports.SelectedItem as ReportModel)?.ReportId;
+
                 LvInboxReports.ItemsSource = inbox;
                 LvOutboxReports.ItemsSource = outbox;
                 LvArchiveReports.ItemsSource = archive;
+
+                // Tự động khôi phục lựa chọn hoặc chọn dòng đầu tiên để người dùng bấm nút là mở được ngay
+                if (inbox.Count > 0)
+                {
+                    LvInboxReports.SelectedItem = inbox.FirstOrDefault(x => x.ReportId == prevInboxId) ?? inbox[0];
+                }
+                if (outbox.Count > 0)
+                {
+                    LvOutboxReports.SelectedItem = outbox.FirstOrDefault(x => x.ReportId == prevOutboxId) ?? outbox[0];
+                }
+                if (archive.Count > 0)
+                {
+                    LvArchiveReports.SelectedItem = archive.FirstOrDefault(x => x.ReportId == prevArchiveId) ?? archive[0];
+                }
 
                 TxtCountInbox.Text = inbox.Count.ToString();
                 TxtCountOutbox.Text = outbox.Count.ToString();
@@ -3840,6 +3858,20 @@ namespace VGCASignToolPro
                         "Trình Ký Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
 
                     UpdateStatus($"Đã gửi trình ký báo cáo '{title}' tới {approver.FullName} (Mã: {result.ReportId})");
+
+                    // Tự động lưu bản sao vào bộ nhớ đệm cục bộ của máy tính để người gửi mở xem tức thì (<10ms)
+                    try
+                    {
+                        string tempDir = Path.Combine(Path.GetTempPath(), "VGCASignToolPro_Reports");
+                        Directory.CreateDirectory(tempDir);
+                        string baseHash = ReportWorkflowService.ComputeSha256(_lastSignedPdfPath);
+                        string cacheDest = Path.Combine(tempDir, $"{result.ReportId}_{baseHash}.pdf");
+                        File.Copy(_lastSignedPdfPath, cacheDest, true);
+                    }
+                    catch (Exception cacheEx)
+                    {
+                        System.Diagnostics.Trace.TraceWarning($"Lỗi lưu cache báo cáo gửi: {cacheEx.Message}");
+                    }
 
                     MainTabControl.SelectedIndex = 2;
                     TabControlWorkflowSub.SelectedIndex = 1;
@@ -4129,20 +4161,36 @@ namespace VGCASignToolPro
 
                 if (fileReady && File.Exists(destPath))
                 {
-                    _isOutboxViewMode = true;
-                    _activeWorkflowReportId = null; // Cấm không gán ID phiên duyệt để tránh commit nhầm
+                    try
+                    {
+                        // Mở trực tiếp trên máy tính của giáo viên bằng trình đọc PDF mặc định của Windows (<10ms)
+                        var psi = new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = destPath,
+                            UseShellExecute = true
+                        };
+                        System.Diagnostics.Process.Start(psi);
+                        UpdateStatus($"Đã mở xem báo cáo '{report.Title}' trên máy tính thành công.");
+                    }
+                    catch (Exception launchEx)
+                    {
+                        System.Diagnostics.Trace.TraceWarning($"Lỗi mở PDF ngoài: {launchEx.Message}. Chuyển sang trình xem Tab 2.");
+                        // Dự phòng (Fallback): Mở tại Tab 2 nếu máy tính không có ứng dụng đọc PDF
+                        _isOutboxViewMode = true;
+                        _activeWorkflowReportId = null;
 
-                    BorderWorkflowReviewNotice.Visibility = Visibility.Visible;
-                    TxtWorkflowReviewNoticeHeader.Text = $"CHẾ ĐỘ XEM BÁO CÁO ĐÃ GỬI (CHỈ ĐỌC): {report.Title}";
-                    TxtWorkflowReviewNoticeDetail.Text = $"Người nhận: {report.ApproverName} • Ngày gửi: {report.CreatedTimeFormatted} • Trạng thái: {report.StatusText} (Chế độ xem an toàn, không ảnh hưởng phiên ký của người duyệt).";
-                    BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
-                    BtnSubmitWorkflowReport.Visibility = Visibility.Collapsed;
-                    BtnSignCurrentDocument.IsEnabled = false;
-                    BtnInsertSignatureStamp.IsEnabled = false;
+                        BorderWorkflowReviewNotice.Visibility = Visibility.Visible;
+                        TxtWorkflowReviewNoticeHeader.Text = $"CHẾ ĐỘ XEM BÁO CÁO ĐÃ GỬI (CHỈ ĐỌC): {report.Title}";
+                        TxtWorkflowReviewNoticeDetail.Text = $"Người nhận: {report.ApproverName} • Ngày gửi: {report.CreatedTimeFormatted} • Trạng thái: {report.StatusText} (Chế độ xem an toàn, không ảnh hưởng phiên ký của người duyệt).";
+                        BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
+                        BtnSubmitWorkflowReport.Visibility = Visibility.Collapsed;
+                        BtnSignCurrentDocument.IsEnabled = false;
+                        BtnInsertSignatureStamp.IsEnabled = false;
 
-                    await LoadPdfDocumentAsync(destPath);
-                    MainTabControl.SelectedIndex = 1;
-                    UpdateStatus($"Đang hiển thị bản gửi: '{report.Title}' (Chế độ xem chỉ đọc).");
+                        await LoadPdfDocumentAsync(destPath);
+                        MainTabControl.SelectedIndex = 1;
+                        UpdateStatus($"Đang hiển thị bản gửi: '{report.Title}' (Chế độ xem chỉ đọc).");
+                    }
                 }
                 else
                 {
@@ -4208,9 +4256,33 @@ namespace VGCASignToolPro
 
                 if (fileReady && File.Exists(destPath))
                 {
-                    await LoadPdfDocumentAsync(destPath);
-                    MainTabControl.SelectedIndex = 1;
-                    UpdateStatus($"Đang hiển thị báo cáo hoàn tất: {report.Title}");
+                    try
+                    {
+                        var psi = new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = destPath,
+                            UseShellExecute = true
+                        };
+                        System.Diagnostics.Process.Start(psi);
+                        UpdateStatus($"Đã mở báo cáo hoàn tất '{report.Title}' trên máy tính.");
+                    }
+                    catch
+                    {
+                        await LoadPdfDocumentAsync(destPath);
+                        MainTabControl.SelectedIndex = 1;
+                        UpdateStatus($"Đang hiển thị báo cáo hoàn tất: {report.Title}");
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(report.GoogleDriveUrl))
+                {
+                    // Mở trực tiếp link xem Google Drive trên trình duyệt web
+                    var psi = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = report.GoogleDriveUrl,
+                        UseShellExecute = true
+                    };
+                    System.Diagnostics.Process.Start(psi);
+                    UpdateStatus($"Đang mở báo cáo '{report.Title}' trên Google Drive...");
                 }
                 else
                 {

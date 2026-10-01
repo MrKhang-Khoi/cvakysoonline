@@ -367,7 +367,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListViewItem">
-                        <Grid SnapsToDevicePixels="True">
+                        <Grid SnapsToDevicePixels="True" Background="Transparent">
                             <Border x:Name="ItemRowBorder"
                                     Background="#FFFFFF"
                                     BorderBrush="#F1F5F9"
