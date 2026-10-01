@@ -59,7 +59,8 @@ namespace VGCASignToolPro
         private TextBlock? _popupLoadingTitle;
         private TextBlock? _popupLoadingMessage;
         private TextBlock? _popupLoadingIcon;
-        private RotateTransform? _popupSpinnerTransform;
+        private Button? _btnCancelSigningOverlay;
+        private System.Threading.CancellationTokenSource? _signingCts;
 
         public MainWindow()
         {
@@ -1634,7 +1635,7 @@ namespace VGCASignToolPro
                 _popupLoadingTitle = root.FindName("TxtPopupLoadingTitle") as TextBlock;
                 _popupLoadingMessage = root.FindName("TxtPopupLoadingMessage") as TextBlock;
                 _popupLoadingIcon = root.FindName("TxtPopupLoadingIcon") as TextBlock;
-                _popupSpinnerTransform = root.FindName("PopupSpinnerTransform") as RotateTransform;
+                _btnCancelSigningOverlay = root.FindName("BtnCancelSigningOverlay") as Button;
             }
         }
 
@@ -1655,10 +1656,10 @@ namespace VGCASignToolPro
         }
 
         /// <summary>
-        /// Hiển thị hộp thoại trung tâm Loading Dialog với hiệu ứng vòng xoay Fluent và thanh tiến trình.
+        /// Hiển thị hộp thoại trung tâm Loading Dialog với huy hiệu tĩnh chống lag và thanh tiến trình.
         /// Sử dụng WPF Popup tạo HWND độc lập giải quyết triệt để lỗi Airspace che khuất của WebView2.
         /// </summary>
-        private void ShowLoadingOverlay(string title, string message, string icon = "📄")
+        private void ShowLoadingOverlay(string title, string message, string icon = "📄", bool showCancelButton = false, string cancelButtonText = "✕ Hủy Chờ Ký")
         {
             _loadingStartTime = DateTime.UtcNow;
 
@@ -1667,16 +1668,10 @@ namespace VGCASignToolPro
             if (_popupLoadingMessage != null) _popupLoadingMessage.Text = message;
             if (_popupLoadingIcon != null) _popupLoadingIcon.Text = icon;
 
-            if (_popupSpinnerTransform != null)
+            if (_btnCancelSigningOverlay != null)
             {
-                var animation = new System.Windows.Media.Animation.DoubleAnimation
-                {
-                    From = 0,
-                    To = 360,
-                    Duration = new Duration(TimeSpan.FromSeconds(1)),
-                    RepeatBehavior = System.Windows.Media.Animation.RepeatBehavior.Forever
-                };
-                _popupSpinnerTransform.BeginAnimation(RotateTransform.AngleProperty, animation);
+                _btnCancelSigningOverlay.Content = cancelButtonText;
+                _btnCancelSigningOverlay.Visibility = showCancelButton ? Visibility.Visible : Visibility.Collapsed;
             }
 
             // Giữ Placeholder màu xám nhạt (#F8FAFC) để che chắn nền của WebView2 trong suốt lúc tải
@@ -1702,6 +1697,24 @@ namespace VGCASignToolPro
 
             // Bắt buộc WPF flush render queue để giao diện hiển thị ngay lập tức không bị trễ
             Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Render);
+        }
+
+        private void BtnCancelSigningOverlay_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_signingCts != null && !_signingCts.IsCancellationRequested)
+                {
+                    _signingCts.Cancel();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceWarning($"Lỗi hủy ký: {ex.Message}");
+            }
+            HideLoadingOverlay();
+            SetProcessingBusyState(false);
+            UpdateStatus("Đã hủy bỏ thao tác ký số theo yêu cầu của người dùng.");
         }
 
         /// <summary>
@@ -2732,6 +2745,16 @@ namespace VGCASignToolPro
                 }
             }
 
+            // CHỐT CHẶN BẮT BUỘC: QUY TRÌNH CHÈN ẢNH KÝ RỒI MỚI ĐƯỢC KÝ
+            if (!_hasUserPlacedStamp)
+            {
+                MessageBox.Show(
+                    "Theo đúng quy trình ký số văn bản điện tử, bạn cần chèn ảnh chữ ký và đặt vào đúng vị trí trên trang tài liệu trước khi thực hiện ký!\n\n" +
+                    "👉 Vui lòng nhấn nút '📍 Chèn Vị Trí Ký' trên thanh công cụ để đưa khung chữ ký lên trang văn bản, kéo thả căn chỉnh vị trí ký rồi mới bấm '✍️ Ký Cá Nhân'.",
+                    "Yêu Cầu Chèn Vị Trí Chữ Ký Trước Khi Ký", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             // Đọc cấu hình mẫu ký: Ưu tiên tọa độ kéo thả tương tác của người dùng
             int pageNumber = -1;
             float coordX = 380;
@@ -2838,7 +2861,8 @@ namespace VGCASignToolPro
                 TSAUrl = "http://ca.gov.vn/tsa"
             };
 
-            ShowLoadingOverlay("Đang tiến hành ký số...", "Đang kết nối chứng thư số và nhúng chữ ký điện tử chuẩn PAdES LTV...", "✍️");
+            _signingCts = new System.Threading.CancellationTokenSource();
+            ShowLoadingOverlay("Đang tiến hành ký số...", "Đang kết nối chứng thư số và nhúng chữ ký điện tử chuẩn PAdES LTV...", "✍️", showCancelButton: true, cancelButtonText: "✕ Hủy Chờ Ký");
             SetProcessingBusyState(true, "Đang tiến hành ký số văn bản chuẩn PAdES LTV...");
 
             Action<string> onSignStatus = msg =>
@@ -2850,7 +2874,11 @@ namespace VGCASignToolPro
 
             try
             {
-                string signedPath = await _pdfSigner.SignPdfAsync(request);
+                string signedPath = await _pdfSigner.SignPdfAsync(request, _signingCts.Token);
+                if (_signingCts.IsCancellationRequested)
+                {
+                    return;
+                }
                 _lastSignedPdfPath = signedPath;
 
                 // Nạp file đã ký vào Interactive Viewer để người dùng thẩm định kết quả trực quan
@@ -2895,8 +2923,17 @@ namespace VGCASignToolPro
                     }
                 }
             }
+            catch (OperationCanceledException)
+            {
+                UpdateStatus("Đã hủy bỏ thao tác ký số theo yêu cầu của người dùng.");
+            }
             catch (Exception ex)
             {
+                if (_signingCts?.IsCancellationRequested == true)
+                {
+                    UpdateStatus("Đã hủy bỏ thao tác ký số theo yêu cầu của người dùng.");
+                    return;
+                }
                 bool isVc = request.Certificate?.IsVirtualCspCertificate == true;
                 var (errTitle, errMsg, errDetails) = VcspStatusService.ExplainSigningError(ex, isVc);
                 MessageBox.Show(errMsg, errTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -2908,6 +2945,8 @@ namespace VGCASignToolPro
                 await HideLoadingOverlayAsync(0);
                 SetProcessingBusyState(false);
                 UpdateSignAndSealButtonsState(true);
+                _signingCts?.Dispose();
+                _signingCts = null;
             }
         }
 
@@ -3149,6 +3188,16 @@ namespace VGCASignToolPro
                 }
             }
 
+            // CHỐT CHẶN BẮT BUỘC: QUY TRÌNH CHÈN VỊ TRÍ CON DẤU RỒI MỚI ĐƯỢC ĐÓNG DẤU
+            if (!_hasUserPlacedStamp)
+            {
+                MessageBox.Show(
+                    "Theo đúng quy trình đóng dấu pháp nhân, bạn cần chèn con dấu và đặt vào đúng vị trí trên trang tài liệu trước khi thực hiện đóng dấu!\n\n" +
+                    "👉 Vui lòng nhấn nút '📍 Chèn Vị Trí Ký' trên thanh công cụ để đưa khung con dấu lên trang văn bản, kéo thả căn chỉnh vị trí đóng dấu rồi mới bấm '🔴 Đóng dấu'.",
+                    "Yêu Cầu Chèn Vị Trí Con Dấu Trước Khi Đóng Dấu", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             // 5. Xác định tọa độ đóng dấu (ưu tiên vị trí người dùng kéo thả trên Tab 2)
             int pageNumber = -1;
             float coordX = 380;
@@ -3212,7 +3261,8 @@ namespace VGCASignToolPro
                 TSAUrl = "http://ca.gov.vn/tsa"
             };
 
-            ShowLoadingOverlay("Đang đóng dấu pháp nhân...", $"Đang kết nối USB Token và đóng dấu pháp nhân {orgCert.CommonName}...", "🔴");
+            _signingCts = new System.Threading.CancellationTokenSource();
+            ShowLoadingOverlay("Đang đóng dấu pháp nhân...", $"Đang kết nối USB Token và đóng dấu pháp nhân {orgCert.CommonName}...", "🔴", showCancelButton: true, cancelButtonText: "✕ Hủy Chờ Ký");
             SetProcessingBusyState(true, $"Đang kết nối USB Token và đóng dấu pháp nhân {orgCert.CommonName}...");
 
             Action<string> onSealStatus = msg =>
@@ -3224,7 +3274,11 @@ namespace VGCASignToolPro
 
             try
             {
-                string signedPath = await _pdfSigner.SignPdfAsync(request);
+                string signedPath = await _pdfSigner.SignPdfAsync(request, _signingCts.Token);
+                if (_signingCts.IsCancellationRequested)
+                {
+                    return;
+                }
                 _lastSignedPdfPath = signedPath;
 
                 // Nạp file đã đóng dấu vào Interactive Viewer
@@ -3246,8 +3300,17 @@ namespace VGCASignToolPro
                     $"Văn bản đã được bảo toàn tính toàn vẹn và có giá trị pháp lý phát hành theo Nghị định 30/2020/NĐ-CP.",
                     "Đóng Dấu Cơ Quan Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+            catch (OperationCanceledException)
+            {
+                UpdateStatus("Đã hủy bỏ thao tác đóng dấu theo yêu cầu của người dùng.");
+            }
             catch (Exception ex)
             {
+                if (_signingCts?.IsCancellationRequested == true)
+                {
+                    UpdateStatus("Đã hủy bỏ thao tác đóng dấu theo yêu cầu của người dùng.");
+                    return;
+                }
                 System.Diagnostics.Trace.TraceError($"Lỗi đóng dấu cơ quan bằng USB Token: {ex}");
                 bool isVc = request.Certificate?.IsVirtualCspCertificate == true;
                 var (errTitle, errMsg, errDetails) = VcspStatusService.ExplainSigningError(ex, isVc);
@@ -3260,6 +3323,8 @@ namespace VGCASignToolPro
                 await HideLoadingOverlayAsync(0);
                 SetProcessingBusyState(false);
                 UpdateSignAndSealButtonsState(true);
+                _signingCts?.Dispose();
+                _signingCts = null;
             }
         }
 

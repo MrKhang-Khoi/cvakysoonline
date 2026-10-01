@@ -1,7 +1,7 @@
 ﻿{
   "schoolName": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
   "description": "Danh mục phân quyền tài khoản Giáo viên toàn trường kết nối ký số Ban Cơ Yếu Chính Phủ",
-  "updatedAt": "2026-10-01T11:52:33.9759569Z",
+  "updatedAt": "2026-10-01T13:15:40.0523115Z",
   "roster": [
     {
       "cccd": "062185001053",
@@ -23,7 +23,7 @@
       "department": "ỦY BAN NHÂN DÂN XÃ ĐĂK HÀ",
       "organization": "ỦY BAN NHÂN DÂN TỈNH QUẢNG NGÃI",
       "email": "hvty-dakha@quangngai.gov.vn",
-      "canSeal": true,
+      "canSeal": false,
       "password": "123456",
       "status": "ACTIVE"
     },

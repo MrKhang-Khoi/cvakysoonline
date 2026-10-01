@@ -20,12 +20,13 @@ namespace VGCASignToolPro.Services
         public event Action<string>? StatusChanged;
         private readonly System.Threading.SemaphoreSlim _signLock = new(1, 1);
 
-        public async Task<string> SignPdfAsync(SigningRequest request)
+        public async Task<string> SignPdfAsync(SigningRequest request, System.Threading.CancellationToken cancellationToken = default)
         {
-            await _signLock.WaitAsync();
+            await _signLock.WaitAsync(cancellationToken);
             try
             {
-                return await Task.Run(() => SignPdf(request));
+                cancellationToken.ThrowIfCancellationRequested();
+                return await Task.Run(() => SignPdf(request), cancellationToken);
             }
             finally
             {

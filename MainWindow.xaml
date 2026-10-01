@@ -362,30 +362,29 @@
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
             <Setter Property="MinHeight" Value="38" />
-            <Setter Property="Margin" Value="0,1" />
+            <Setter Property="Margin" Value="0,0" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListViewItem">
                         <Border x:Name="ItemRowBorder"
                                 Background="#FFFFFF"
-                                BorderBrush="#F1F5F9"
-                                BorderThickness="1"
-                                CornerRadius="5"
-                                Padding="4,4"
+                                BorderBrush="#E2E8F0"
+                                BorderThickness="0,0,0,1"
+                                CornerRadius="0"
+                                Padding="8,5"
                                 SnapsToDevicePixels="True">
                             <GridViewRowPresenter VerticalAlignment="Center" SnapsToDevicePixels="True" />
                         </Border>
                         <ControlTemplate.Triggers>
-                            <!-- KHI RÊ CHUỘT (HOVER): MÀU XANH BĂNG DỊU MẮT, MƯỢT MÀ KHÔNG GIẬT MÀU -->
+                            <!-- KHI RÊ CHUỘT (HOVER): MÀU DỊU MẮT NHẸ NHÀNG, KHÔNG ĐỔI VIỀN ĐỘT NGỘT TRIỆT TIÊU CHỚP GIẬT MÀU -->
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ItemRowBorder" Property="Background" Value="#EFF6FF" />
-                                <Setter TargetName="ItemRowBorder" Property="BorderBrush" Value="#BFDBFE" />
+                                <Setter TargetName="ItemRowBorder" Property="Background" Value="#F1F5F9" />
                             </Trigger>
                             <!-- KHI ĐƯỢC CHỌN (SELECTED): NỔI BẬT RÕ RÀNG -->
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="ItemRowBorder" Property="Background" Value="#DBEAFE" />
-                                <Setter TargetName="ItemRowBorder" Property="BorderBrush" Value="#60A5FA" />
+                                <Setter TargetName="ItemRowBorder" Property="Background" Value="#E0E7FF" />
+                                <Setter TargetName="ItemRowBorder" Property="BorderBrush" Value="#C7D2FE" />
                             </Trigger>
                             <!-- KHI VỪA ĐƯỢC CHỌN VỪA RÊ CHUỘT -->
                             <MultiTrigger>
@@ -393,8 +392,7 @@
                                     <Condition Property="IsSelected" Value="True" />
                                     <Condition Property="IsMouseOver" Value="True" />
                                 </MultiTrigger.Conditions>
-                                <Setter TargetName="ItemRowBorder" Property="Background" Value="#BFDBFE" />
-                                <Setter TargetName="ItemRowBorder" Property="BorderBrush" Value="#3B82F6" />
+                                <Setter TargetName="ItemRowBorder" Property="Background" Value="#C7D2FE" />
                             </MultiTrigger>
                             <!-- KHI VÔ HIỆU HÓA -->
                             <Trigger Property="IsEnabled" Value="False">
@@ -1370,39 +1368,13 @@
                         <DropShadowEffect BlurRadius="28" ShadowDepth="8" Direction="270" Opacity="0.25" Color="#0F172A" />
                     </Border.Effect>
                     <StackPanel HorizontalAlignment="Center">
-                        <!-- VÒNG XOAY SPINNER HIỆN ĐẠI -->
-                        <Viewbox Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,16">
-                            <Grid Width="56" Height="56">
-                                <!-- Vòng tròn mờ bên dưới -->
-                                <Ellipse Width="50" Height="50" Stroke="#E2E8F0" StrokeThickness="4" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                
-                                <!-- Vòng xoay xanh chuyển động mượt mà -->
-                                <Path Stroke="#2563EB" StrokeThickness="4" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                                      Data="M 0,0 M 56,56 M 28,3 A 25,25 0 0 1 53,28" 
-                                      HorizontalAlignment="Center" VerticalAlignment="Center"
-                                      RenderTransformOrigin="0.5,0.5">
-                                    <Path.RenderTransform>
-                                        <RotateTransform x:Name="PopupSpinnerTransform" Angle="0" />
-                                    </Path.RenderTransform>
-                                    <Path.Triggers>
-                                        <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                                            <BeginStoryboard>
-                                                <Storyboard RepeatBehavior="Forever">
-                                                    <DoubleAnimation Storyboard.TargetName="PopupSpinnerTransform"
-                                                                     Storyboard.TargetProperty="Angle"
-                                                                     From="0" To="360" Duration="0:0:1" />
-                                                </Storyboard>
-                                            </BeginStoryboard>
-                                        </EventTrigger>
-                                    </Path.Triggers>
-                                </Path>
-
-                                <!-- Huy hiệu Icon loại tệp ở tâm -->
-                                <Border Width="34" Height="34" CornerRadius="17" Background="#EFF6FF" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock x:Name="TxtPopupLoadingIcon" Text="📄" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                </Border>
-                            </Grid>
-                        </Viewbox>
+                        <!-- HUY HIỆU ICON CHỮ KÝ / TỆP TIN TĨNH (SIÊU MƯỢT, TRIỆT TIÊU HOÀN TOÀN HIỆN TƯỢNG LAG) -->
+                        <Border Width="64" Height="64" CornerRadius="32" 
+                                Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="2" 
+                                HorizontalAlignment="Center" Margin="0,0,0,16">
+                            <TextBlock x:Name="TxtPopupLoadingIcon" Text="✍️" FontSize="28" 
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
 
                         <!-- TIÊU ĐỀ THAO TÁC -->
                         <TextBlock x:Name="TxtPopupLoadingTitle" Text="Đang mở file, vui lòng chờ..." 
@@ -1431,6 +1403,18 @@
                                 <TextBlock Text="Động cơ hiển thị chuẩn VGCA &amp; Nghị định 30/2020/NĐ-CP" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" />
                             </StackPanel>
                         </Border>
+
+                        <!-- NÚT HỦY KÝ / HỦY CHỜ THAO TÁC (CHO PHÉP NGƯỜI DÙNG DỪNG BẤT KỲ LÚC NÀO) -->
+                        <Button x:Name="BtnCancelSigningOverlay" 
+                                Content="✕ Hủy Chờ Ký" 
+                                Style="{StaticResource SecondaryButton}" 
+                                Foreground="#DC2626" BorderBrush="#FCA5A5" Background="#FEF2F2"
+                                FontSize="12" FontWeight="SemiBold" 
+                                Padding="16,6" Margin="0,14,0,0" 
+                                HorizontalAlignment="Center"
+                                Visibility="Collapsed"
+                                Click="BtnCancelSigningOverlay_Click" 
+                                ToolTip="Hủy bỏ phiên chờ ký số hiện tại và quay lại màn hình làm việc" />
                     </StackPanel>
                 </Border>
             </Grid>
