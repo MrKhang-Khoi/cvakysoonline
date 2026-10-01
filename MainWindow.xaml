@@ -1362,11 +1362,8 @@
                PopupAnimation="Fade" 
                StaysOpen="True">
             <Grid Margin="24">
-                <Border Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="16" 
+                <Border Background="White" BorderBrush="#94A3B8" BorderThickness="1.5" CornerRadius="16" 
                         Width="420" Padding="32,28">
-                    <Border.Effect>
-                        <DropShadowEffect BlurRadius="28" ShadowDepth="8" Direction="270" Opacity="0.25" Color="#0F172A" />
-                    </Border.Effect>
                     <StackPanel HorizontalAlignment="Center">
                         <!-- HUY HIỆU ICON CHỮ KÝ / TỆP TIN TĨNH (SIÊU MƯỢT, TRIỆT TIÊU HOÀN TOÀN HIỆN TƯỢNG LAG) -->
                         <Border Width="64" Height="64" CornerRadius="32" 
@@ -1386,15 +1383,11 @@
                                    FontSize="13" Foreground="#64748B" TextWrapping="Wrap" 
                                    HorizontalAlignment="Center" TextAlignment="Center" LineHeight="19" Margin="0,0,0,18" MaxWidth="360" />
 
-                        <!-- THANH TIẾN TRÌNH LƯỚT SÓNG FLUENT (INDETERMINATE) -->
-                        <ProgressBar Height="5" Width="320" IsIndeterminate="True" 
-                                     Foreground="#2563EB" Background="#E2E8F0" BorderThickness="0" Margin="0,0,0,14">
-                            <ProgressBar.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="2.5"/>
-                                </Style>
-                            </ProgressBar.Resources>
-                        </ProgressBar>
+                        <!-- THANH TIẾN TRÌNH LƯỚT SÓNG FLUENT (INDETERMINATE) SIÊU NHẸ 0% CPU -->
+                        <Border Width="320" Height="4" Background="#E2E8F0" CornerRadius="2" Margin="0,0,0,14" SnapsToDevicePixels="True">
+                            <ProgressBar Height="4" Width="320" IsIndeterminate="True" 
+                                         Foreground="#2563EB" Background="Transparent" BorderThickness="0" />
+                        </Border>
 
                         <!-- HUY HIỆU BẢO MẬT & TIÊU CHUẨN KÝ SỐ -->
                         <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,5" HorizontalAlignment="Center">
@@ -1430,11 +1423,8 @@
                StaysOpen="True"
                Focusable="True">
             <Grid Margin="24">
-                <Border Background="White" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="14" 
+                <Border Background="White" BorderBrush="#94A3B8" BorderThickness="1.5" CornerRadius="14" 
                         MaxWidth="620" Width="600" Padding="28">
-                    <Border.Effect>
-                        <DropShadowEffect BlurRadius="28" ShadowDepth="8" Direction="270" Opacity="0.25" Color="#0F172A" />
-                    </Border.Effect>
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                             <Border Background="#CCFBF1" CornerRadius="8" Padding="10" Margin="0,0,12,0">

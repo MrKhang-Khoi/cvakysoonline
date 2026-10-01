@@ -82,23 +82,24 @@ namespace VGCASignToolPro.Models
                                 issuerUpper.Contains("VGCA") ||
                                 issuerUpper.Contains("CA PHỤC VỤ CÁC CƠ QUAN NHÀ NƯỚC");
 
-            // Xác định loại khóa bí mật (RSA hay ECDSA)
-            using var rsa = cert.GetRSAPrivateKey();
-            if (rsa != null)
+            // Xác định loại khóa từ Public Key (Tuyệt đối không gọi PrivateKey để tránh đánh thức KSP driver / USB Token)
+            string oidVal = cert.PublicKey.Oid.Value ?? "";
+            string oidName = cert.PublicKey.Oid.FriendlyName ?? "";
+            if (oidVal == "1.2.840.10045.2.1" || oidName.Contains("ECC", StringComparison.OrdinalIgnoreCase) || oidName.Contains("ECDSA", StringComparison.OrdinalIgnoreCase))
             {
-                KeyAlgorithm = $"RSA {rsa.KeySize}-bit";
+                using var ecdsaPub = cert.GetECDsaPublicKey();
+                int keySize = ecdsaPub?.KeySize ?? 384;
+                KeyAlgorithm = $"ECDSA {keySize}-bit (ECC P-{keySize})";
+            }
+            else if (oidVal == "1.2.840.113549.1.1.1" || oidName.Contains("RSA", StringComparison.OrdinalIgnoreCase))
+            {
+                using var rsaPub = cert.GetRSAPublicKey();
+                int keySize = rsaPub?.KeySize ?? 2048;
+                KeyAlgorithm = $"RSA {keySize}-bit";
             }
             else
             {
-                using var ecdsa = cert.GetECDsaPrivateKey();
-                if (ecdsa != null)
-                {
-                    KeyAlgorithm = $"ECDSA {ecdsa.KeySize}-bit (ECC P-{ecdsa.KeySize})";
-                }
-                else
-                {
-                    KeyAlgorithm = cert.PublicKey.Oid.FriendlyName ?? "Khóa công khai";
-                }
+                KeyAlgorithm = !string.IsNullOrEmpty(oidName) ? oidName : "Khóa công khai";
             }
 
             string vgcaTag = IsVGCACertificate ? "[VGCA Ban Cơ yếu] " : "";
