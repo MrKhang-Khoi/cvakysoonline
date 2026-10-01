@@ -213,7 +213,7 @@ namespace VGCASignToolPro.Services
                     var chain = chainList.ToArray();
 
                     // Khởi tạo cầu nối chữ ký số qua Windows CryptoAPI / CNG (USB Token / KSP)
-                    IExternalSignature externalSignature = new NetX509ExternalSignature(request.Certificate.Certificate, "SHA256");
+                    IExternalSignature externalSignature = new NetX509ExternalSignature(request.Certificate.Certificate);
                     var externalDigest = new BouncyCastleDigest();
 
                     // Cấu hình Dấu thời gian TSA (RFC 3161)
@@ -232,7 +232,14 @@ namespace VGCASignToolPro.Services
                         }
                     }
 
-                    StatusChanged?.Invoke("Đang tính toán mã băm SHA-256 và thực hiện ký số PAdES...");
+                    if (request.Certificate.IsVirtualCspCertificate)
+                    {
+                        StatusChanged?.Invoke("Đang gửi yêu cầu xác thực tới máy chủ Ban Cơ Yếu (Chờ thông báo trên điện thoại)...");
+                    }
+                    else
+                    {
+                        StatusChanged?.Invoke("Đang tính toán mã băm và thực hiện ký số PAdES với USB Token...");
+                    }
 
                     // Ký số chuẩn PAdES LTV Detached
                     signer.SignDetached(

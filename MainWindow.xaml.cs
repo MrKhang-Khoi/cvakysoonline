@@ -1718,6 +1718,21 @@ namespace VGCASignToolPro
         }
 
         /// <summary>
+        /// Cập nhật nội dung thông điệp tiến trình trong hộp thoại Loading Dialog theo thời gian thực.
+        /// </summary>
+        private void UpdateLoadingOverlay(string message, string? title = null, string? icon = null)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                EnsurePopupElements();
+                if (_popupLoadingMessage != null) _popupLoadingMessage.Text = message;
+                if (title != null && _popupLoadingTitle != null) _popupLoadingTitle.Text = title;
+                if (icon != null && _popupLoadingIcon != null) _popupLoadingIcon.Text = icon;
+                if (TxtStatusBar != null) TxtStatusBar.Text = $"[{DateTime.Now:HH:mm:ss}] {message}";
+            });
+        }
+
+        /// <summary>
         /// Ẩn hộp thoại Loading Dialog với cơ chế chờ tối thiểu (mặc định 600ms) để người dùng kịp nhìn thấy phản hồi trực quan.
         /// </summary>
         private async Task HideLoadingOverlayAsync(int minDisplayMs = 600)
@@ -2820,6 +2835,13 @@ namespace VGCASignToolPro
             ShowLoadingOverlay("Đang tiến hành ký số...", "Đang kết nối chứng thư số và nhúng chữ ký điện tử chuẩn PAdES LTV...", "✍️");
             SetProcessingBusyState(true, "Đang tiến hành ký số văn bản chuẩn PAdES LTV...");
 
+            Action<string> onSignStatus = msg =>
+            {
+                UpdateLoadingOverlay(msg);
+            };
+
+            _pdfSigner.StatusChanged += onSignStatus;
+
             try
             {
                 string signedPath = await _pdfSigner.SignPdfAsync(request);
@@ -2869,12 +2891,14 @@ namespace VGCASignToolPro
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Quá trình ký số gặp lỗi:\n\n{ex.Message}\n\nVui lòng kiểm tra lại quyền truy cập khóa riêng tư của Virtual CSP hoặc mã PIN Token.",
-                    "Lỗi Ký Số", MessageBoxButton.OK, MessageBoxImage.Error);
-                UpdateStatus($"Lỗi ký số: {ex.Message}");
+                bool isVc = request.Certificate?.IsVirtualCspCertificate == true;
+                var (errTitle, errMsg, errDetails) = VcspStatusService.ExplainSigningError(ex, isVc);
+                MessageBox.Show(errMsg, errTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+                UpdateStatus($"Lỗi ký số: {errTitle}");
             }
             finally
             {
+                _pdfSigner.StatusChanged -= onSignStatus;
                 await HideLoadingOverlayAsync(0);
                 SetProcessingBusyState(false);
                 UpdateSignAndSealButtonsState(true);
@@ -3185,6 +3209,13 @@ namespace VGCASignToolPro
             ShowLoadingOverlay("Đang đóng dấu pháp nhân...", $"Đang kết nối USB Token và đóng dấu pháp nhân {orgCert.CommonName}...", "🔴");
             SetProcessingBusyState(true, $"Đang kết nối USB Token và đóng dấu pháp nhân {orgCert.CommonName}...");
 
+            Action<string> onSealStatus = msg =>
+            {
+                UpdateLoadingOverlay(msg);
+            };
+
+            _pdfSigner.StatusChanged += onSealStatus;
+
             try
             {
                 string signedPath = await _pdfSigner.SignPdfAsync(request);
@@ -3212,14 +3243,14 @@ namespace VGCASignToolPro
             catch (Exception ex)
             {
                 System.Diagnostics.Trace.TraceError($"Lỗi đóng dấu cơ quan bằng USB Token: {ex}");
-                MessageBox.Show(
-                    $"Không thể hoàn tất đóng dấu cơ quan:\n\n{ex.Message}\n\n" +
-                    $"Gợi ý: Kiểm tra mã PIN của USB Token hoặc kết nối phần cứng thiết bị.",
-                    "Lỗi Đóng Dấu USB Token", MessageBoxButton.OK, MessageBoxImage.Error);
-                UpdateStatus($"Lỗi đóng dấu USB Token: {ex.Message}");
+                bool isVc = request.Certificate?.IsVirtualCspCertificate == true;
+                var (errTitle, errMsg, errDetails) = VcspStatusService.ExplainSigningError(ex, isVc);
+                MessageBox.Show(errMsg, errTitle, MessageBoxButton.OK, MessageBoxImage.Warning);
+                UpdateStatus($"Lỗi đóng dấu: {errTitle}");
             }
             finally
             {
+                _pdfSigner.StatusChanged -= onSealStatus;
                 await HideLoadingOverlayAsync(0);
                 SetProcessingBusyState(false);
                 UpdateSignAndSealButtonsState(true);
