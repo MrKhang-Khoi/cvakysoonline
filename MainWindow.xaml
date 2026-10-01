@@ -290,11 +290,6 @@
                                 <Setter TargetName="TabBorder" Property="Background" Value="#2563EB" />
                                 <Setter Property="Foreground" Value="#FFFFFF" />
                                 <Setter Property="FontWeight" Value="Bold" />
-                                <Setter TargetName="TabBorder" Property="Effect">
-                                    <Setter.Value>
-                                        <DropShadowEffect BlurRadius="8" ShadowDepth="1" Direction="270" Color="#1E40AF" Opacity="0.35" />
-                                    </Setter.Value>
-                                </Setter>
                             </Trigger>
                             
                             <!-- KHI BỊ KHÓA (DISABLED) -->
@@ -368,15 +363,19 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="ListViewItem">
                         <Grid SnapsToDevicePixels="True" Background="Transparent">
-                            <Border x:Name="ItemRowBorder"
+                            <!-- Lớp 1: Nền dòng độc lập (Background Border) - Thay đổi màu sắc khi Hover/Select hoàn toàn không kích hoạt InvalidateVisual/LayoutPass lên GridViewRowPresenter -->
+                            <Border x:Name="ItemRowBackground"
                                     Background="#FFFFFF"
                                     BorderBrush="#F1F5F9"
                                     BorderThickness="0,0,0,1"
-                                    Padding="10,6"
-                                    SnapsToDevicePixels="True">
+                                    SnapsToDevicePixels="True" />
+
+                            <!-- Lớp 2: Nội dung các cột (GridViewRowPresenter) cố định đệm và không bị re-layout khi đổi màu nền -->
+                            <Border Padding="10,6" Background="Transparent" SnapsToDevicePixels="True">
                                 <GridViewRowPresenter VerticalAlignment="Center" SnapsToDevicePixels="True" />
                             </Border>
-                            <!-- Dải định vị Accent mép trái chuẩn Windows 11 Fluent UI -->
+
+                            <!-- Lớp 3: Dải định vị Accent mép trái chuẩn Windows 11 Fluent UI -->
                             <Border x:Name="AccentIndicator"
                                     Width="3.5"
                                     HorizontalAlignment="Left"
@@ -392,17 +391,17 @@
                                     <Condition Property="IsMouseOver" Value="True" />
                                     <Condition Property="IsSelected" Value="False" />
                                 </MultiTrigger.Conditions>
-                                <Setter TargetName="ItemRowBorder" Property="Background" Value="#F8FAFC" />
+                                <Setter TargetName="ItemRowBackground" Property="Background" Value="#F8FAFC" />
                             </MultiTrigger>
                             <!-- KHI ĐƯỢC CHỌN (SELECTED): NỀN XANH NHẠT CAO CẤP + THANH ACCENT MẼP TRÁI, CỐ ĐỊNH 1 MÀU DUY NHẤT TRIỆT TIÊU CHỚP MÀU -->
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="ItemRowBorder" Property="Background" Value="#EFF6FF" />
-                                <Setter TargetName="ItemRowBorder" Property="BorderBrush" Value="#DBEAFE" />
+                                <Setter TargetName="ItemRowBackground" Property="Background" Value="#EFF6FF" />
+                                <Setter TargetName="ItemRowBackground" Property="BorderBrush" Value="#DBEAFE" />
                                 <Setter TargetName="AccentIndicator" Property="Background" Value="#2563EB" />
                             </Trigger>
                             <!-- KHI VÔ HIỆU HÓA -->
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="ItemRowBorder" Property="Opacity" Value="0.45" />
+                                <Setter TargetName="ItemRowBackground" Property="Opacity" Value="0.45" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -454,7 +453,7 @@
         </Border>
 
         <!-- MAIN TABS CONTAINER -->
-        <TabControl x:Name="MainTabControl" Grid.Row="1" Margin="14,10,14,10" Background="Transparent" BorderThickness="0">
+        <TabControl x:Name="MainTabControl" Grid.Row="1" Margin="14,10,14,10" Background="Transparent" BorderThickness="0" SelectionChanged="MainTabControl_SelectionChanged">
 
             <!-- ================= TAB 1: THÔNG TIN CHỮ KÝ SỐ (VGCA & PROFILES) ================= -->
             <TabItem Header="  1. 👤 Tài Khoản Ký Số  " FontSize="13" FontWeight="SemiBold">
@@ -1147,12 +1146,13 @@
                                     <Border Grid.Row="0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
                                         <ListView x:Name="LvInboxReports" BorderThickness="0" Background="Transparent" 
                                                   ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                  ScrollViewer.CanContentScroll="True"
                                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
-                                                  VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.CacheLength="2" VirtualizingPanel.CacheLengthUnit="Page"
+                                                  VirtualizingPanel.ScrollUnit="Item"
                                                   SelectionMode="Single" MouseDoubleClick="LvInboxReports_MouseDoubleClick">
                                             <ListView.View>
                                                 <GridView>
-                                                    <GridViewColumn Header="Mã Báo Cáo" Width="130" DisplayMemberBinding="{Binding ReportId}" />
+                                                    <GridViewColumn Header="Mã Báo Cáo" Width="155" DisplayMemberBinding="{Binding ReportId}" />
                                                     <GridViewColumn Header="Tiêu Đề Báo Cáo" Width="300" DisplayMemberBinding="{Binding Title}" />
                                                     <GridViewColumn Header="Người Lập" Width="170" DisplayMemberBinding="{Binding SenderName}" />
                                                     <GridViewColumn Header="Thời Gian Gửi" Width="135" DisplayMemberBinding="{Binding CreatedTimeFormatted}" />
@@ -1209,13 +1209,14 @@
                                     <Border Grid.Row="0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
                                         <ListView x:Name="LvOutboxReports" BorderThickness="0" Background="Transparent" SelectionMode="Single"
                                                   ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                  ScrollViewer.CanContentScroll="True"
                                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
-                                                  VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.CacheLength="2" VirtualizingPanel.CacheLengthUnit="Page"
+                                                  VirtualizingPanel.ScrollUnit="Item"
                                                   SelectionChanged="LvOutboxReports_SelectionChanged"
                                                   MouseDoubleClick="LvOutboxReports_MouseDoubleClick">
                                             <ListView.View>
                                                 <GridView>
-                                                    <GridViewColumn Header="Mã Báo Cáo" Width="130" DisplayMemberBinding="{Binding ReportId}" />
+                                                    <GridViewColumn Header="Mã Báo Cáo" Width="155" DisplayMemberBinding="{Binding ReportId}" />
                                                     <GridViewColumn Header="Tiêu Đề Báo Cáo" Width="320" DisplayMemberBinding="{Binding Title}" />
                                                     <GridViewColumn Header="Thời Gian Gửi" Width="140" DisplayMemberBinding="{Binding CreatedTimeFormatted}" />
                                                     <GridViewColumn Header="Người Nhận" Width="180" DisplayMemberBinding="{Binding ApproverName}" />
@@ -1282,13 +1283,14 @@
                                     <Border Grid.Row="0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
                                         <ListView x:Name="LvReturnedReports" BorderThickness="0" Background="Transparent" SelectionMode="Single"
                                                   ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                  ScrollViewer.CanContentScroll="True"
                                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
-                                                  VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.CacheLength="2" VirtualizingPanel.CacheLengthUnit="Page"
+                                                  VirtualizingPanel.ScrollUnit="Item"
                                                   MouseDoubleClick="LvReturnedReports_MouseDoubleClick">
                                             <ListView.View>
                                                 <GridView>
                                                     <GridViewColumn Header="TT" Width="45" DisplayMemberBinding="{Binding OrderIndex}" />
-                                                    <GridViewColumn Header="Mã Báo Cáo" Width="130" DisplayMemberBinding="{Binding ReportId}" />
+                                                    <GridViewColumn Header="Mã Báo Cáo" Width="155" DisplayMemberBinding="{Binding ReportId}" />
                                                     <GridViewColumn Header="Tên Báo Cáo" Width="280" DisplayMemberBinding="{Binding Title}" />
                                                     <GridViewColumn Header="Thời Gian Trả Về" Width="140" DisplayMemberBinding="{Binding ReturnedTimeFormatted}" />
                                                     <GridViewColumn Header="Người Trả Về" Width="170" DisplayMemberBinding="{Binding ReturnedBy}" />
@@ -1341,12 +1343,13 @@
                                     <Border Grid.Row="0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
                                         <ListView x:Name="LvArchiveReports" BorderThickness="0" Background="Transparent" SelectionMode="Single"
                                                   ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                  ScrollViewer.CanContentScroll="True"
                                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
-                                                  VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.CacheLength="2" VirtualizingPanel.CacheLengthUnit="Page"
+                                                  VirtualizingPanel.ScrollUnit="Item"
                                                   MouseDoubleClick="LvArchiveReports_MouseDoubleClick">
                                             <ListView.View>
                                                 <GridView>
-                                                    <GridViewColumn Header="Mã Báo Cáo" Width="130" DisplayMemberBinding="{Binding ReportId}" />
+                                                    <GridViewColumn Header="Mã Báo Cáo" Width="155" DisplayMemberBinding="{Binding ReportId}" />
                                                     <GridViewColumn Header="Tiêu Đề Báo Cáo" Width="300" DisplayMemberBinding="{Binding Title}" />
                                                     <GridViewColumn Header="Người Lập" Width="160" DisplayMemberBinding="{Binding SenderName}" />
                                                     <GridViewColumn Header="Thời Gian Gửi" Width="135" DisplayMemberBinding="{Binding CreatedTimeFormatted}" />

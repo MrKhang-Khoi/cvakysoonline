@@ -64,6 +64,7 @@ namespace VGCASignToolPro
         private Button? _btnCancelSigningOverlay;
         private System.Threading.CancellationTokenSource? _signingCts;
         private DateTime _lastActivatedCheckTime = DateTime.MinValue;
+        private DateTime _lastRosterSyncTime = DateTime.MinValue;
 
         public MainWindow()
         {
@@ -3755,14 +3756,23 @@ namespace VGCASignToolPro
                 string myCccd = _vgcaAuth.CurrentTeacher?.Cccd ?? string.Empty;
 
                 // Tự động đồng bộ danh sách giáo viên mới nhất từ đám mây (nếu có cập nhật từ web quản trị)
-                try
+                // Áp dụng bộ đệm 60s để tránh gửi request HTTP thừa thãi gây lag khi người dùng thao tác danh sách
+                if (DateTime.UtcNow - _lastRosterSyncTime > TimeSpan.FromSeconds(60))
                 {
-                    await _vgcaAuth.SyncRosterFromCloudAsync();
-                    PopulateWorkflowApprovers(myCccd);
+                    try
+                    {
+                        await _vgcaAuth.SyncRosterFromCloudAsync();
+                        _lastRosterSyncTime = DateTime.UtcNow;
+                        PopulateWorkflowApprovers(myCccd);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Trace.TraceWarning($"Bỏ qua lỗi tự động đồng bộ roster: {ex.Message}");
+                    }
                 }
-                catch (Exception ex)
+                else
                 {
-                    System.Diagnostics.Trace.TraceWarning($"Bỏ qua lỗi tự động đồng bộ roster: {ex.Message}");
+                    PopulateWorkflowApprovers(myCccd);
                 }
 
                 if (string.IsNullOrEmpty(myCccd))
@@ -3845,7 +3855,10 @@ namespace VGCASignToolPro
 
                 if (inbox.Count > 0)
                 {
-                    try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+                    _ = Task.Run(() =>
+                    {
+                        try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+                    });
                 }
             }
             catch (Exception ex)
@@ -4803,6 +4816,33 @@ namespace VGCASignToolPro
         private void BtnNewReportFromTab3_Click(object sender, RoutedEventArgs e)
         {
             MainTabControl.SelectedIndex = 1;
+        }
+
+        /// <summary>
+        /// Quản lý trạng thái hiển thị của WebView2 theo Tab hiện tại.
+        /// Khi ở Tab 3, Tab 1, Tab 4: Thu gọn (Collapsed) PdfPreviewControl để giải phóng hoàn toàn HWND Win32,
+        /// triệt tiêu triệt để hiện tượng tranh chấp chuột, trỏ chuột và luồng vẽ nền (WM_MOUSEMOVE, WM_PAINT) gây giật lag.
+        /// Khi quay lại Tab 2: Phục hồi Visible ngay tức thì, bảo toàn nguyên vẹn tài liệu đang nạp.
+        /// </summary>
+        private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // Bắt buộc kiểm tra chỉ xử lý khi chính MainTabControl kích hoạt sự kiện
+            // Tránh bắt nhầm các sự kiện SelectionChanged từ TabControl con (như TabControlWorkflowSub) hoặc ListView/ComboBox
+            if (!ReferenceEquals(e.OriginalSource, MainTabControl))
+            {
+                return;
+            }
+
+            if (PdfPreviewControl == null) return;
+
+            if (MainTabControl.SelectedIndex == 1)
+            {
+                PdfPreviewControl.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                PdfPreviewControl.Visibility = Visibility.Collapsed;
+            }
         }
 
         #endregion
