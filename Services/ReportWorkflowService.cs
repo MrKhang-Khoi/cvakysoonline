@@ -70,6 +70,18 @@ namespace VGCASignToolPro.Services
         [JsonProperty("recalledAt")]
         public long RecalledAt { get; set; }
 
+        [JsonProperty("returnedBy")]
+        public string ReturnedBy { get; set; } = string.Empty;
+
+        [JsonProperty("returnedAt")]
+        public long ReturnedAt { get; set; }
+
+        [JsonProperty("returnReason")]
+        public string ReturnReason { get; set; } = string.Empty;
+
+        [JsonIgnore]
+        public int OrderIndex { get; set; }
+
         // UI Helpers
         [JsonIgnore]
         public string CreatedTimeFormatted
@@ -83,12 +95,24 @@ namespace VGCASignToolPro.Services
         }
 
         [JsonIgnore]
+        public string ReturnedTimeFormatted
+        {
+            get
+            {
+                if (ReturnedAt <= 0) return "--:--";
+                var dt = DateTimeOffset.FromUnixTimeMilliseconds(ReturnedAt).ToLocalTime();
+                return dt.ToString("dd/MM/yyyy HH:mm");
+            }
+        }
+
+        [JsonIgnore]
         public string StatusText => Status switch
         {
             "WAITING_OPEN" => "Chưa mở (Chờ nhận)",
             "ACQUIRED_LOCKED" => "Đã nhận (Đang xem)",
             "SIGNED_COMMITTED" => "Đã duyệt & Ký số",
             "RECALLED" => "Đã thu hồi",
+            "RETURNED" => "Đã trả về",
             "LOCK_TIMEOUT" => "Quá hạn 60 phút",
             _ => Status
         };
@@ -100,6 +124,7 @@ namespace VGCASignToolPro.Services
             "ACQUIRED_LOCKED" => "#0284C7",  // Xanh dương
             "SIGNED_COMMITTED" => "#16A34A", // Xanh lá
             "RECALLED" => "#DC2626",         // Đỏ
+            "RETURNED" => "#EA580C",         // Cam đậm
             "LOCK_TIMEOUT" => "#64748B",     // Xám
             _ => "#475569"
         };
@@ -445,6 +470,16 @@ namespace VGCASignToolPro.Services
                     return (false, "Bạn không phải người lập báo cáo này nên không thể thu hồi.");
                 }
 
+                if (report.Status == "RECALLED")
+                {
+                    return (false, "Báo cáo này đã được thu hồi trước đó rồi.");
+                }
+
+                if (report.Status == "RETURNED")
+                {
+                    return (false, "Báo cáo này đã bị Ban Giám hiệu trả về, không thể thu hồi.");
+                }
+
                 if (report.Status == "SIGNED_COMMITTED")
                 {
                     return (false, "Không thể thu hồi: Báo cáo đã được ký duyệt hoàn tất!");
@@ -475,6 +510,69 @@ namespace VGCASignToolPro.Services
                 }
 
                 return (true, "Đã thu hồi báo cáo thành công!");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi hệ thống: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Người duyệt (Ban Giám Hiệu) trả về báo cáo kèm lý do
+        /// </summary>
+        public async Task<(bool Success, string Message)> ReturnReportAsync(
+            string reportId,
+            string approverCccd,
+            string approverName,
+            string returnReason)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(reportId))
+                {
+                    return (false, "Mã báo cáo không hợp lệ.");
+                }
+
+                string reportUrl = BuildUrl($"reports/{reportId}");
+                var getRes = await _http.GetAsync(reportUrl).ConfigureAwait(false);
+                if (!getRes.IsSuccessStatusCode)
+                {
+                    return (false, "Không tìm thấy thông tin báo cáo.");
+                }
+
+                string content = await getRes.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var report = JsonConvert.DeserializeObject<ReportModel>(content);
+                if (report == null) return (false, "Dữ liệu báo cáo bị lỗi.");
+
+                if (report.Status == "SIGNED_COMMITTED")
+                {
+                    return (false, "Không thể trả về: Báo cáo đã được ký duyệt hoàn tất!");
+                }
+
+                if (report.Status == "RECALLED")
+                {
+                    return (false, "Không thể trả về: Báo cáo đã bị người lập thu hồi trước đó!");
+                }
+
+                long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                var updatePayload = new
+                {
+                    status = "RETURNED",
+                    returnedBy = approverName,
+                    returnedAt = now,
+                    returnReason = returnReason.Trim(),
+                    updatedAt = now
+                };
+
+                var patchContent = new StringContent(JsonConvert.SerializeObject(updatePayload), Encoding.UTF8, "application/json");
+                var patchRes = await _http.PatchAsync(reportUrl, patchContent).ConfigureAwait(false);
+                if (!patchRes.IsSuccessStatusCode)
+                {
+                    return (false, "Không thể cập nhật trạng thái trả về trên máy chủ.");
+                }
+
+                return (true, "Đã trả về báo cáo thành công.");
             }
             catch (Exception ex)
             {

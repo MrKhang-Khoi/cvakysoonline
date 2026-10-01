@@ -955,8 +955,19 @@
                                 <TextBlock x:Name="TxtWorkflowReviewNoticeDetail" Text="Văn bản được tải từ hệ thống trình ký. Vui lòng kiểm tra nội dung và cắm USB Token để ký số phê duyệt." 
                                            FontSize="11" Foreground="#2563EB" Margin="22,2,0,0" />
                             </StackPanel>
-                            <Button Grid.Column="1" Content="✕ Thoát Chế Độ Duyệt" Style="{StaticResource SecondaryButton}" 
-                                    Padding="10,5" FontSize="11" Click="BtnExitWorkflowReviewMode_Click" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button x:Name="BtnReturnWorkflowReport" Content="↩️ Trả Về Báo Cáo" Background="#EA580C" Foreground="White" 
+                                        FontWeight="Bold" Padding="12,5" FontSize="11" Margin="0,0,8,0" BorderThickness="0"
+                                        Cursor="Hand" Click="BtnReturnWorkflowReport_Click">
+                                    <Button.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="4"/>
+                                        </Style>
+                                    </Button.Resources>
+                                </Button>
+                                <Button Content="✕ Thoát Chế Độ Duyệt" Style="{StaticResource SecondaryButton}" 
+                                        Padding="10,5" FontSize="11" Click="BtnExitWorkflowReviewMode_Click" />
+                            </StackPanel>
                         </Grid>
                     </Border>
 
@@ -1094,6 +1105,14 @@
                                     </StackPanel>
                                 </Border>
 
+                                <!-- THẺ ĐẾM BÁO CÁO BỊ TRẢ VỀ -->
+                                <Border Background="#FFF7ED" BorderBrush="#FED7AA" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="0,0,8,0">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="↩️ Bị trả về: " FontSize="11" Foreground="#C2410C" FontWeight="SemiBold" />
+                                        <TextBlock x:Name="TxtCountReturned" Text="0" FontWeight="Bold" FontSize="13" Foreground="#EA580C" Margin="4,0,0,0" />
+                                    </StackPanel>
+                                </Border>
+
                                 <!-- THẺ ĐẾM TOÀN TRƯỜNG HOÀN TẤT -->
                                 <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="10,4">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -1192,6 +1211,7 @@
                                                   ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                                                   VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.CacheLength="2" VirtualizingPanel.CacheLengthUnit="Page"
+                                                  SelectionChanged="LvOutboxReports_SelectionChanged"
                                                   MouseDoubleClick="LvOutboxReports_MouseDoubleClick">
                                             <ListView.View>
                                                 <GridView>
@@ -1222,7 +1242,7 @@
                                         </ListView>
                                     </Border>
 
-                                    <!-- THANH THAO TÁC THU HỒI -->
+                                    <!-- THANH THAO TÁC THU HỒI & XÓA KHỎI DANH SÁCH -->
                                     <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,8,0,0">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
@@ -1232,6 +1252,10 @@
                                             <TextBlock Grid.Column="0" Text="💡 Gợi ý: Nhấp đúp chuột vào văn bản để xem lại nội dung đã trình ký." 
                                                        FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
                                             <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <Button x:Name="BtnDismissOutboxReport" Content="🗑 Xóa Khỏi Danh Sách" 
+                                                        Style="{StaticResource SecondaryButton}" 
+                                                        Foreground="#475569" BorderBrush="#CBD5E1" Background="#F1F5F9"
+                                                        FontSize="12" FontWeight="SemiBold" Padding="12,8" Margin="0,0,8,0" Click="BtnDismissOutboxReport_Click" />
                                                 <Button x:Name="BtnViewOutboxReport" Content="👁 Xem Lại Báo Cáo" 
                                                         Style="{StaticResource PrimaryButton}" 
                                                         Background="#4F46E5" BorderBrush="#4338CA"
@@ -1246,7 +1270,66 @@
                                 </Grid>
                             </TabItem>
 
-                            <!-- SUB-TAB 3: KHO BÁO CÁO TOÀN TRƯỜNG ĐÃ HOÀN TẤT (ARCHIVE) -->
+                            <!-- SUB-TAB 3: BÁO CÁO TRẢ VỀ (RETURNED) -->
+                            <TabItem Header="  ↩️ Báo Cáo Trả Về  " FontSize="13" FontWeight="SemiBold">
+                                <Grid Margin="4,8,4,4">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <!-- DANH SÁCH BÁO CÁO TRẢ VỀ -->
+                                    <Border Grid.Row="0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
+                                        <ListView x:Name="LvReturnedReports" BorderThickness="0" Background="Transparent" SelectionMode="Single"
+                                                  ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                                                  VirtualizingPanel.ScrollUnit="Pixel" VirtualizingPanel.CacheLength="2" VirtualizingPanel.CacheLengthUnit="Page"
+                                                  MouseDoubleClick="LvReturnedReports_MouseDoubleClick">
+                                            <ListView.View>
+                                                <GridView>
+                                                    <GridViewColumn Header="TT" Width="45" DisplayMemberBinding="{Binding OrderIndex}" />
+                                                    <GridViewColumn Header="Mã Báo Cáo" Width="130" DisplayMemberBinding="{Binding ReportId}" />
+                                                    <GridViewColumn Header="Tên Báo Cáo" Width="280" DisplayMemberBinding="{Binding Title}" />
+                                                    <GridViewColumn Header="Thời Gian Trả Về" Width="140" DisplayMemberBinding="{Binding ReturnedTimeFormatted}" />
+                                                    <GridViewColumn Header="Người Trả Về" Width="170" DisplayMemberBinding="{Binding ReturnedBy}" />
+                                                    <GridViewColumn Header="Lý Do" Width="320">
+                                                        <GridViewColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding ReturnReason}" Foreground="#C2410C" FontWeight="SemiBold" 
+                                                                           TextTrimming="CharacterEllipsis" ToolTip="{Binding ReturnReason}" />
+                                                            </DataTemplate>
+                                                        </GridViewColumn.CellTemplate>
+                                                    </GridViewColumn>
+                                                </GridView>
+                                            </ListView.View>
+                                        </ListView>
+                                    </Border>
+
+                                    <!-- THANH THAO TÁC SUB-TAB TRẢ VỀ -->
+                                    <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,8,0,0">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="💡 Gợi ý: Nhấp đúp chuột để mở xem lại báo cáo hoặc xem lý do Ban Giám Hiệu gửi phản hồi." 
+                                                       FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <Button x:Name="BtnDismissReturnedReport" Content="🗑 Xóa Khỏi Danh Sách" 
+                                                        Style="{StaticResource SecondaryButton}" 
+                                                        Foreground="#475569" BorderBrush="#CBD5E1" Background="#F1F5F9"
+                                                        FontSize="12" FontWeight="SemiBold" Padding="12,8" Margin="0,0,8,0" Click="BtnDismissReturnedReport_Click" />
+                                                <Button x:Name="BtnViewReturnedReport" Content="👁 Xem Lại Báo Cáo" 
+                                                        Style="{StaticResource PrimaryButton}" 
+                                                        Background="#EA580C" BorderBrush="#C2410C"
+                                                        FontSize="12" FontWeight="Bold" Padding="14,8" Click="BtnViewReturnedReport_Click" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </TabItem>
+
+                            <!-- SUB-TAB 4: KHO BÁO CÁO TOÀN TRƯỜNG ĐÃ HOÀN TẤT (ARCHIVE) -->
                             <TabItem Header="  📁 Kho Báo Cáo Đã Duyệt Toàn Trường  " FontSize="13" FontWeight="SemiBold">
                                 <Grid Margin="4,8,4,4">
                                     <Grid.RowDefinitions>

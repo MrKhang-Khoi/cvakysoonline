@@ -8,6 +8,8 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Text;
+using Newtonsoft.Json;
 using Microsoft.Win32;
 using VGCASignToolPro.Models;
 using VGCASignToolPro.Services;
@@ -526,9 +528,11 @@ namespace VGCASignToolPro
                     CboWorkflowApprover.ItemsSource = null;
                     LvInboxReports.ItemsSource = null;
                     LvOutboxReports.ItemsSource = null;
+                    LvReturnedReports.ItemsSource = null;
                     LvArchiveReports.ItemsSource = null;
                     TxtCountInbox.Text = "0";
                     TxtCountOutbox.Text = "0";
+                    TxtCountReturned.Text = "0";
                     TxtCountCompleted.Text = "0";
 
                     // Khóa Tab 2
@@ -3694,6 +3698,56 @@ namespace VGCASignToolPro
             }
         }
 
+        private HashSet<string> GetHiddenReportIds(string cccd)
+        {
+            var hidden = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(cccd)) return hidden;
+
+            try
+            {
+                string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VGCASignToolPro");
+                Directory.CreateDirectory(dir);
+                string filePath = Path.Combine(dir, $"hidden_reports_{cccd}.json");
+                if (File.Exists(filePath))
+                {
+                    string json = File.ReadAllText(filePath, Encoding.UTF8);
+                    var list = JsonConvert.DeserializeObject<List<string>>(json);
+                    if (list != null)
+                    {
+                        foreach (var id in list)
+                        {
+                            if (!string.IsNullOrWhiteSpace(id)) hidden.Add(id);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceWarning($"Lỗi đọc hidden reports: {ex.Message}");
+            }
+            return hidden;
+        }
+
+        private void AddHiddenReportId(string cccd, string reportId)
+        {
+            if (string.IsNullOrWhiteSpace(cccd) || string.IsNullOrWhiteSpace(reportId)) return;
+
+            try
+            {
+                string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "VGCASignToolPro");
+                Directory.CreateDirectory(dir);
+                string filePath = Path.Combine(dir, $"hidden_reports_{cccd}.json");
+                var hidden = GetHiddenReportIds(cccd);
+                hidden.Add(reportId);
+                string json = JsonConvert.SerializeObject(hidden.ToList(), Formatting.Indented);
+                File.WriteAllText(filePath, json, Encoding.UTF8);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceError($"Lỗi ghi hidden reports: {ex}");
+            }
+        }
+
         public async Task RefreshWorkflowDataAsync()
         {
             try
@@ -3715,15 +3769,18 @@ namespace VGCASignToolPro
                 {
                     LvInboxReports.ItemsSource = null;
                     LvOutboxReports.ItemsSource = null;
+                    LvReturnedReports.ItemsSource = null;
                     LvArchiveReports.ItemsSource = null;
                     TxtCountInbox.Text = "0";
                     TxtCountOutbox.Text = "0";
+                    TxtCountReturned.Text = "0";
                     TxtCountCompleted.Text = "0";
                     return;
                 }
 
                 var all = await _workflowService.GetAllReportsAsync();
                 _allReports = all;
+                var hiddenIds = GetHiddenReportIds(myCccd);
 
                 // 1. Inbox: Chờ tôi duyệt (người duyệt là tôi và trạng thái còn hiệu lực)
                 var inbox = all.Where(r => 
@@ -3731,20 +3788,36 @@ namespace VGCASignToolPro
                     (r.Status == "WAITING_OPEN" || r.Status == "ACQUIRED_LOCKED" || r.Status == "LOCK_TIMEOUT")
                 ).ToList();
 
-                // 2. Outbox: Tôi đã gửi
+                // 2. Outbox: Tôi đã gửi (Tuyệt đối không hiển thị báo cáo đã bị trả về và báo cáo đã ẩn khỏi giao diện)
                 var outbox = all.Where(r =>
-                    string.Equals(r.SenderCccd, myCccd, StringComparison.OrdinalIgnoreCase)
+                    string.Equals(r.SenderCccd, myCccd, StringComparison.OrdinalIgnoreCase) &&
+                    r.Status != "RETURNED" &&
+                    !hiddenIds.Contains(r.ReportId)
                 ).ToList();
 
-                // 3. Archive: Toàn trường đã hoàn tất
+                // 3. Returned: Báo cáo trả về (chỉ hiển thị các báo cáo bị trả về cho tôi)
+                var returned = all.Where(r =>
+                    string.Equals(r.SenderCccd, myCccd, StringComparison.OrdinalIgnoreCase) &&
+                    r.Status == "RETURNED" &&
+                    !hiddenIds.Contains(r.ReportId)
+                ).OrderByDescending(r => r.ReturnedAt).ToList();
+
+                for (int i = 0; i < returned.Count; i++)
+                {
+                    returned[i].OrderIndex = i + 1; // Số thứ tự: 1, 2, 3...
+                }
+
+                // 4. Archive: Toàn trường đã hoàn tất
                 var archive = all.Where(r => r.Status == "SIGNED_COMMITTED").ToList();
 
                 var prevInboxId = (LvInboxReports.SelectedItem as ReportModel)?.ReportId;
                 var prevOutboxId = (LvOutboxReports.SelectedItem as ReportModel)?.ReportId;
+                var prevReturnedId = (LvReturnedReports.SelectedItem as ReportModel)?.ReportId;
                 var prevArchiveId = (LvArchiveReports.SelectedItem as ReportModel)?.ReportId;
 
                 LvInboxReports.ItemsSource = inbox;
                 LvOutboxReports.ItemsSource = outbox;
+                LvReturnedReports.ItemsSource = returned;
                 LvArchiveReports.ItemsSource = archive;
 
                 // Tự động khôi phục lựa chọn hoặc chọn dòng đầu tiên để người dùng bấm nút là mở được ngay
@@ -3756,6 +3829,10 @@ namespace VGCASignToolPro
                 {
                     LvOutboxReports.SelectedItem = outbox.FirstOrDefault(x => x.ReportId == prevOutboxId) ?? outbox[0];
                 }
+                if (returned.Count > 0)
+                {
+                    LvReturnedReports.SelectedItem = returned.FirstOrDefault(x => x.ReportId == prevReturnedId) ?? returned[0];
+                }
                 if (archive.Count > 0)
                 {
                     LvArchiveReports.SelectedItem = archive.FirstOrDefault(x => x.ReportId == prevArchiveId) ?? archive[0];
@@ -3763,6 +3840,7 @@ namespace VGCASignToolPro
 
                 TxtCountInbox.Text = inbox.Count.ToString();
                 TxtCountOutbox.Text = outbox.Count.ToString();
+                TxtCountReturned.Text = returned.Count.ToString();
                 TxtCountCompleted.Text = archive.Count.ToString();
 
                 if (inbox.Count > 0)
@@ -3982,11 +4060,12 @@ namespace VGCASignToolPro
                     TxtWorkflowReviewNoticeDetail.Text = $"Người lập: {report.SenderName} • Ngày gửi: {report.CreatedTimeFormatted} • Đã khóa phiên xử lý.";
                     BtnCommitWorkflowApproval.Visibility = Visibility.Visible;
                     BtnSubmitWorkflowReport.Visibility = Visibility.Collapsed;
+                    BtnReturnWorkflowReport.Visibility = Visibility.Visible;
 
                     await LoadPdfDocumentAsync(result.DownloadedFilePath);
 
                     MainTabControl.SelectedIndex = 1;
-                    UpdateStatus($"Đã nạp báo cáo '{report.Title}' sang không gian ký duyệt. Vui lòng ký số và bấm 'Nộp Báo Cáo Đã Duyệt'.");
+                    UpdateStatus($"Đã nạp báo cáo '{report.Title}' sang không gian ký duyệt. Vui lòng ký số hoặc bấm 'Trả Về Báo Cáo'.");
                 }
                 else
                 {
@@ -4013,6 +4092,7 @@ namespace VGCASignToolPro
                 _isOutboxViewMode = false;
                 BorderWorkflowReviewNotice.Visibility = Visibility.Collapsed;
                 BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
+                BtnReturnWorkflowReport.Visibility = Visibility.Collapsed;
                 BtnSignCurrentDocument.IsEnabled = _lastSignedPdfPath != null;
                 MainTabControl.SelectedIndex = 2;
                 TabControlWorkflowSub.SelectedIndex = 1;
@@ -4030,7 +4110,148 @@ namespace VGCASignToolPro
                 BorderWorkflowReviewNotice.Visibility = Visibility.Collapsed;
                 BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
                 BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
+                BtnReturnWorkflowReport.Visibility = Visibility.Collapsed;
                 UpdateStatus("Đã thoát chế độ phê duyệt liên thông.");
+            }
+        }
+
+        private async void BtnReturnWorkflowReport_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_activeWorkflowReportId))
+            {
+                MessageBox.Show("Không có phiên phê duyệt báo cáo nào đang mở.", "Thông Báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!_vgcaAuth.IsLoggedIn || _vgcaAuth.CurrentTeacher == null)
+            {
+                MessageBox.Show("Bạn cần đăng nhập tài khoản chữ ký số VGCA để thực hiện trả về báo cáo.",
+                    "Chưa Đăng Nhập", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var promptWindow = new Window
+            {
+                Title = "↩️ Trả Về Báo Cáo Cho Giáo Viên",
+                Width = 480,
+                Height = 260,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                Owner = this,
+                ResizeMode = ResizeMode.NoResize,
+                Background = (Brush)new BrushConverter().ConvertFromString("#F8FAFC")!
+            };
+
+            var stack = new StackPanel { Margin = new Thickness(16) };
+
+            var lblHeader = new TextBlock
+            {
+                Text = "Vui lòng nhập lý do trả về báo cáo để giáo viên tiếp thu, chỉnh sửa:",
+                FontSize = 13,
+                FontWeight = FontWeights.SemiBold,
+                Foreground = (Brush)new BrushConverter().ConvertFromString("#1E293B")!,
+                Margin = new Thickness(0, 0, 0, 8)
+            };
+            stack.Children.Add(lblHeader);
+
+            var txtReason = new TextBox
+            {
+                Height = 85,
+                AcceptsReturn = true,
+                TextWrapping = TextWrapping.Wrap,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Padding = new Thickness(8),
+                FontSize = 12,
+                BorderBrush = (Brush)new BrushConverter().ConvertFromString("#CBD5E1")!,
+                Background = Brushes.White
+            };
+            stack.Children.Add(txtReason);
+
+            var btnPanel = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 16, 0, 0)
+            };
+
+            var btnCancel = new Button
+            {
+                Content = "Hủy Bỏ",
+                Padding = new Thickness(14, 6, 14, 6),
+                Margin = new Thickness(0, 0, 8, 0),
+                IsCancel = true
+            };
+
+            var btnOk = new Button
+            {
+                Content = "↩️ Xác Nhận Trả Về",
+                Padding = new Thickness(16, 6, 16, 6),
+                Background = (Brush)new BrushConverter().ConvertFromString("#EA580C")!,
+                Foreground = Brushes.White,
+                FontWeight = FontWeights.Bold,
+                BorderThickness = new Thickness(0)
+            };
+
+            bool isConfirmed = false;
+            btnOk.Click += (s, ev) =>
+            {
+                if (string.IsNullOrWhiteSpace(txtReason.Text))
+                {
+                    MessageBox.Show("Vui lòng nhập lý do trả về để giáo viên hiểu rõ nội dung cần điều chỉnh.",
+                        "Chưa Nhập Lý Do", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+                isConfirmed = true;
+                promptWindow.Close();
+            };
+
+            btnPanel.Children.Add(btnCancel);
+            btnPanel.Children.Add(btnOk);
+            stack.Children.Add(btnPanel);
+
+            promptWindow.Content = stack;
+            promptWindow.ShowDialog();
+
+            if (!isConfirmed) return;
+
+            string reason = txtReason.Text.Trim();
+            string approverCccd = _vgcaAuth.CurrentTeacher.Cccd;
+            string approverName = _vgcaAuth.CurrentTeacher.FullName;
+            string targetReportId = _activeWorkflowReportId;
+
+            UpdateStatus($"Đang trả về báo cáo '{targetReportId}'...");
+            SetProcessingBusyState(true);
+
+            try
+            {
+                var res = await _workflowService.ReturnReportAsync(targetReportId, approverCccd, approverName, reason);
+                if (res.Success)
+                {
+                    MessageBox.Show($"Đã trả về báo cáo thành công cho người lập!\n\nLý do: {reason}",
+                        "Trả Về Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    _activeWorkflowReportId = null;
+                    _activeWorkflowExpectedBaseHash = null;
+                    BorderWorkflowReviewNotice.Visibility = Visibility.Collapsed;
+                    BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
+                    BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
+                    BtnReturnWorkflowReport.Visibility = Visibility.Collapsed;
+
+                    MainTabControl.SelectedIndex = 2; // Quay về Tab 3
+                    TabControlWorkflowSub.SelectedIndex = 0; // Hộp thư đến
+                    await RefreshWorkflowDataAsync();
+                }
+                else
+                {
+                    MessageBox.Show($"Không thể trả về báo cáo:\n{res.Message}", "Lỗi Trả Về", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi hệ thống khi trả về: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                SetProcessingBusyState(false);
             }
         }
 
@@ -4072,9 +4293,10 @@ namespace VGCASignToolPro
                     BorderWorkflowReviewNotice.Visibility = Visibility.Collapsed;
                     BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
                     BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
+                    BtnReturnWorkflowReport.Visibility = Visibility.Collapsed;
 
                     MainTabControl.SelectedIndex = 2;
-                    TabControlWorkflowSub.SelectedIndex = 2;
+                    TabControlWorkflowSub.SelectedIndex = 3;
                     await RefreshWorkflowDataAsync();
                 }
                 else
@@ -4093,11 +4315,47 @@ namespace VGCASignToolPro
             }
         }
 
+        private void LvOutboxReports_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (LvOutboxReports.SelectedItem is ReportModel report)
+            {
+                if (report.Status == "RECALLED" || report.Status == "SIGNED_COMMITTED" || report.Status == "RETURNED")
+                {
+                    BtnRecallReport.IsEnabled = false;
+                    BtnRecallReport.ToolTip = report.Status == "RECALLED"
+                        ? "Báo cáo này đã được thu hồi trước đó rồi."
+                        : (report.Status == "RETURNED" ? "Báo cáo này đã bị Ban Giám hiệu trả về." : "Báo cáo đã được ký duyệt hoàn tất, không thể thu hồi.");
+                }
+                else
+                {
+                    BtnRecallReport.IsEnabled = true;
+                    BtnRecallReport.ToolTip = "Thu hồi báo cáo đã gửi (khi Ban Giám hiệu chưa ký duyệt).";
+                }
+            }
+            else
+            {
+                BtnRecallReport.IsEnabled = false;
+                BtnRecallReport.ToolTip = null;
+            }
+        }
+
         private async void BtnRecallReport_Click(object sender, RoutedEventArgs e)
         {
             if (LvOutboxReports.SelectedItem is not ReportModel report)
             {
                 MessageBox.Show("Vui lòng chọn một báo cáo bạn đã gửi để thu hồi.", "Chưa Chọn Báo Cáo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (report.Status == "RECALLED")
+            {
+                MessageBox.Show("Báo cáo này đã được thu hồi trước đó rồi.", "Thông Báo", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            if (report.Status == "RETURNED")
+            {
+                MessageBox.Show("Báo cáo này đã bị Ban Giám hiệu trả về, không thể thu hồi.", "Thông Báo", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -4141,6 +4399,50 @@ namespace VGCASignToolPro
             }
         }
 
+        private async void BtnDismissOutboxReport_Click(object sender, RoutedEventArgs e)
+        {
+            if (LvOutboxReports.SelectedItem is not ReportModel report)
+            {
+                MessageBox.Show("Vui lòng chọn một báo cáo cần xóa khỏi danh sách hiển thị.", "Chưa Chọn Báo Cáo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"Bạn có chắc chắn muốn xóa báo cáo '{report.Title}' (Mã: {report.ReportId}) khỏi danh sách hiển thị trên máy không?\n\n(Lưu ý: Tệp gốc và lịch sử trên hệ thống vẫn được lưu trữ an toàn, chỉ ẩn khỏi giao diện của bạn).",
+                "Xác Nhận Xóa Khỏi Danh Sách",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            string myCccd = _vgcaAuth.CurrentTeacher?.Cccd ?? string.Empty;
+            AddHiddenReportId(myCccd, report.ReportId);
+            UpdateStatus($"Đã xóa báo cáo '{report.ReportId}' khỏi danh sách hiển thị.");
+            await RefreshWorkflowDataAsync();
+        }
+
+        private async void BtnDismissReturnedReport_Click(object sender, RoutedEventArgs e)
+        {
+            if (LvReturnedReports.SelectedItem is not ReportModel report)
+            {
+                MessageBox.Show("Vui lòng chọn một báo cáo trả về cần xóa khỏi danh sách hiển thị.", "Chưa Chọn Báo Cáo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"Bạn có chắc chắn muốn xóa báo cáo trả về '{report.Title}' (Mã: {report.ReportId}) khỏi danh sách hiển thị không?\n\n(Lưu ý: Tệp gốc và lý do trả về trên hệ thống vẫn được lưu trữ an toàn).",
+                "Xác Nhận Xóa Khỏi Danh Sách",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            string myCccd = _vgcaAuth.CurrentTeacher?.Cccd ?? string.Empty;
+            AddHiddenReportId(myCccd, report.ReportId);
+            UpdateStatus($"Đã xóa báo cáo '{report.ReportId}' khỏi danh sách trả về.");
+            await RefreshWorkflowDataAsync();
+        }
+
         private async void BtnViewOutboxReport_Click(object sender, RoutedEventArgs e)
         {
             await OpenSelectedOutboxReportForViewingAsync();
@@ -4151,53 +4453,130 @@ namespace VGCASignToolPro
             await OpenSelectedOutboxReportForViewingAsync();
         }
 
+        private async void BtnViewReturnedReport_Click(object sender, RoutedEventArgs e)
+        {
+            await OpenSelectedReturnedReportForViewingAsync();
+        }
+
+        private async void LvReturnedReports_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            await OpenSelectedReturnedReportForViewingAsync();
+        }
+
         private async Task OpenSelectedOutboxReportForViewingAsync()
         {
-            if (_isBusyProcessing)
-            {
-                return;
-            }
-
             if (LvOutboxReports.SelectedItem is not ReportModel report)
             {
                 MessageBox.Show("Vui lòng chọn một báo cáo trong danh sách đã gửi để xem.",
                     "Chưa Chọn Báo Cáo", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+            await OpenReportFileForViewingAsync(report, BtnViewOutboxReport);
+        }
 
-            UpdateStatus($"Đang tải bản sao báo cáo '{report.ReportId}' để hiển thị...");
-            BtnViewOutboxReport.IsEnabled = false;
-            ShowLoadingOverlay("Đang mở văn bản...", $"Đang nạp tệp báo cáo: {report.Title}...", "📥");
-            SetProcessingBusyState(true);
+        private async Task OpenSelectedReturnedReportForViewingAsync()
+        {
+            if (LvReturnedReports.SelectedItem is not ReportModel report)
+            {
+                MessageBox.Show("Vui lòng chọn một báo cáo trong danh sách trả về để xem.",
+                    "Chưa Chọn Báo Cáo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            await OpenReportFileForViewingAsync(report, BtnViewReturnedReport);
+        }
+
+        /// <summary>
+        /// Mở xem tệp báo cáo nhanh không nhấp nháy, kiểm tra cache cục bộ trước (<10ms)
+        /// </summary>
+        private async Task OpenReportFileForViewingAsync(ReportModel report, Button? sourceButton = null)
+        {
+            if (_isBusyProcessing || report == null) return;
 
             try
             {
                 string tempDir = Path.Combine(Path.GetTempPath(), "VGCASignToolPro_Reports");
                 Directory.CreateDirectory(tempDir);
 
+                string? localFile = null;
+
+                // 1. Kiểm tra chính xác theo cacheKey
                 string cacheKey = !string.IsNullOrWhiteSpace(report.SignedHash)
                     ? report.SignedHash
                     : (!string.IsNullOrWhiteSpace(report.BaseHash) ? report.BaseHash : report.DriveFileId);
 
-                foreach (char c in Path.GetInvalidFileNameChars())
+                if (!string.IsNullOrWhiteSpace(cacheKey))
                 {
-                    cacheKey = cacheKey.Replace(c, '_');
+                    foreach (char c in Path.GetInvalidFileNameChars())
+                    {
+                        cacheKey = cacheKey.Replace(c, '_');
+                    }
+                    string exactPath = Path.Combine(tempDir, $"{report.ReportId}_{cacheKey}.pdf");
+                    if (File.Exists(exactPath) && new FileInfo(exactPath).Length > 0)
+                    {
+                        localFile = exactPath;
+                    }
                 }
 
-                string destPath = Path.Combine(tempDir, $"{report.ReportId}_{cacheKey}.pdf");
-
-                bool fileReady = File.Exists(destPath) && new FileInfo(destPath).Length > 0;
-                if (!fileReady)
+                // 2. Nếu chưa thấy, tìm bất kỳ file cache nào của reportId này trên máy
+                if (localFile == null)
                 {
-                    UpdateLoadingOverlay($"Đang tải tệp báo cáo từ máy chủ: {report.Title}...");
-                    fileReady = await _workflowService.DownloadFileAsync(report.DriveFileId, destPath);
+                    var candidates = Directory.GetFiles(tempDir, $"{report.ReportId}_*.pdf");
+                    if (candidates.Length > 0)
+                    {
+                        localFile = candidates.OrderByDescending(f => new FileInfo(f).LastWriteTime).First();
+                    }
                 }
 
-                if (fileReady && File.Exists(destPath))
+                // 3. NẾU ĐÃ CÓ FILE CỤC BỘ TRÊN MÁY: MỞ TRỰC TIẾP NGAY LẬP TỨC (<10ms)
+                // TUYỆT ĐỐI KHÔNG BẬT ShowLoadingOverlay (Tránh tối màn hình, nhấp nháy, giật lag)
+                if (localFile != null && File.Exists(localFile))
                 {
                     try
                     {
-                        // Mở trực tiếp trên máy tính của giáo viên bằng trình đọc PDF mặc định của Windows (<10ms)
+                        var psi = new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = localFile,
+                            UseShellExecute = true
+                        };
+                        System.Diagnostics.Process.Start(psi);
+                        UpdateStatus($"Đã mở xem báo cáo '{report.Title}' trên máy tính.");
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Trace.TraceWarning($"Lỗi mở PDF bên ngoài: {ex.Message}. Mở sang Tab 2.");
+                        _isOutboxViewMode = true;
+                        _activeWorkflowReportId = null;
+
+                        BorderWorkflowReviewNotice.Visibility = Visibility.Visible;
+                        TxtWorkflowReviewNoticeHeader.Text = $"CHẾ ĐỘ XEM BÁO CÁO (CHỈ ĐỌC): {report.Title}";
+                        TxtWorkflowReviewNoticeDetail.Text = $"Người nhận: {report.ApproverName} • Ngày gửi: {report.CreatedTimeFormatted} • Trạng thái: {report.StatusText}.";
+                        BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
+                        BtnSubmitWorkflowReport.Visibility = Visibility.Collapsed;
+                        BtnReturnWorkflowReport.Visibility = Visibility.Collapsed;
+                        BtnSignCurrentDocument.IsEnabled = false;
+                        BtnInsertSignatureStamp.IsEnabled = false;
+
+                        await LoadPdfDocumentAsync(localFile);
+                        MainTabControl.SelectedIndex = 1;
+                        UpdateStatus($"Đang hiển thị bản gửi: '{report.Title}' (Chế độ xem chỉ đọc).");
+                        return;
+                    }
+                }
+
+                // 4. NẾU CHƯA CÓ TRÊN MÁY CỤC BỘ: Tải từ máy chủ đám mây
+                UpdateStatus($"Đang tải bản sao báo cáo '{report.ReportId}' từ máy chủ...");
+                if (sourceButton != null) sourceButton.IsEnabled = false;
+                ShowLoadingOverlay("Đang tải văn bản...", $"Đang tải tệp báo cáo: {report.Title}...", "📥");
+                SetProcessingBusyState(true);
+
+                string destPath = Path.Combine(tempDir, $"{report.ReportId}_{cacheKey}.pdf");
+                bool downloaded = await _workflowService.DownloadFileAsync(report.DriveFileId, destPath);
+
+                if (downloaded && File.Exists(destPath))
+                {
+                    try
+                    {
                         var psi = new System.Diagnostics.ProcessStartInfo
                         {
                             FileName = destPath,
@@ -4208,22 +4587,22 @@ namespace VGCASignToolPro
                     }
                     catch (Exception launchEx)
                     {
-                        System.Diagnostics.Trace.TraceWarning($"Lỗi mở PDF ngoài: {launchEx.Message}. Chuyển sang trình xem Tab 2.");
-                        // Dự phòng (Fallback): Mở tại Tab 2 nếu máy tính không có ứng dụng đọc PDF
+                        System.Diagnostics.Trace.TraceWarning($"Lỗi mở PDF ngoài: {launchEx.Message}. Chuyển sang Tab 2.");
                         _isOutboxViewMode = true;
                         _activeWorkflowReportId = null;
 
                         BorderWorkflowReviewNotice.Visibility = Visibility.Visible;
-                        TxtWorkflowReviewNoticeHeader.Text = $"CHẾ ĐỘ XEM BÁO CÁO ĐÃ GỬI (CHỈ ĐỌC): {report.Title}";
-                        TxtWorkflowReviewNoticeDetail.Text = $"Người nhận: {report.ApproverName} • Ngày gửi: {report.CreatedTimeFormatted} • Trạng thái: {report.StatusText} (Chế độ xem an toàn, không ảnh hưởng phiên ký của người duyệt).";
+                        TxtWorkflowReviewNoticeHeader.Text = $"CHẾ ĐỘ XEM BÁO CÁO (CHỈ ĐỌC): {report.Title}";
+                        TxtWorkflowReviewNoticeDetail.Text = $"Người nhận: {report.ApproverName} • Ngày gửi: {report.CreatedTimeFormatted} • Trạng thái: {report.StatusText}.";
                         BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
                         BtnSubmitWorkflowReport.Visibility = Visibility.Collapsed;
+                        BtnReturnWorkflowReport.Visibility = Visibility.Collapsed;
                         BtnSignCurrentDocument.IsEnabled = false;
                         BtnInsertSignatureStamp.IsEnabled = false;
 
                         await LoadPdfDocumentAsync(destPath);
                         MainTabControl.SelectedIndex = 1;
-                        UpdateStatus($"Đang hiển thị bản gửi: '{report.Title}' (Chế độ xem chỉ đọc).");
+                        UpdateStatus($"Đang hiển thị: '{report.Title}'.");
                     }
                 }
                 else
@@ -4239,7 +4618,7 @@ namespace VGCASignToolPro
             {
                 await HideLoadingOverlayAsync(50);
                 SetProcessingBusyState(false);
-                BtnViewOutboxReport.IsEnabled = true;
+                if (sourceButton != null) sourceButton.IsEnabled = true;
             }
         }
 
@@ -4261,10 +4640,6 @@ namespace VGCASignToolPro
                 return;
             }
 
-            UpdateStatus($"Đang tải tệp hoàn tất '{report.ReportId}' để hiển thị...");
-            ShowLoadingOverlay("Đang mở văn bản...", $"Đang nạp báo cáo hoàn tất: {report.Title}...", "📥");
-            SetProcessingBusyState(true);
-
             try
             {
                 string tempDir = Path.Combine(Path.GetTempPath(), "VGCASignToolPro_Reports");
@@ -4281,12 +4656,35 @@ namespace VGCASignToolPro
 
                 string destPath = Path.Combine(tempDir, $"{report.ReportId}_{cacheKey}_Completed.pdf");
 
-                bool fileReady = File.Exists(destPath) && new FileInfo(destPath).Length > 0;
-                if (!fileReady)
+                // Kiểm tra nếu đã có file cục bộ trên máy -> mở trực tiếp ngay lập tức (<10ms)
+                if (File.Exists(destPath) && new FileInfo(destPath).Length > 0)
                 {
-                    UpdateLoadingOverlay($"Đang tải tệp báo cáo hoàn tất từ máy chủ: {report.Title}...");
-                    fileReady = await _workflowService.DownloadFileAsync(report.DriveFileId, destPath);
+                    try
+                    {
+                        var psi = new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = destPath,
+                            UseShellExecute = true
+                        };
+                        System.Diagnostics.Process.Start(psi);
+                        UpdateStatus($"Đã mở báo cáo hoàn tất '{report.Title}' trên máy tính.");
+                        return;
+                    }
+                    catch
+                    {
+                        await LoadPdfDocumentAsync(destPath);
+                        MainTabControl.SelectedIndex = 1;
+                        UpdateStatus($"Đang hiển thị báo cáo hoàn tất: {report.Title}");
+                        return;
+                    }
                 }
+
+                // Nếu chưa có file cục bộ, tải từ máy chủ đám mây
+                UpdateStatus($"Đang tải tệp hoàn tất '{report.ReportId}' để hiển thị...");
+                ShowLoadingOverlay("Đang mở văn bản...", $"Đang nạp báo cáo hoàn tất: {report.Title}...", "📥");
+                SetProcessingBusyState(true);
+
+                bool fileReady = await _workflowService.DownloadFileAsync(report.DriveFileId, destPath);
 
                 if (fileReady && File.Exists(destPath))
                 {
