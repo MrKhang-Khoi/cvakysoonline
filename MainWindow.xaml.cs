@@ -61,6 +61,7 @@ namespace VGCASignToolPro
         private TextBlock? _popupLoadingIcon;
         private Button? _btnCancelSigningOverlay;
         private System.Threading.CancellationTokenSource? _signingCts;
+        private DateTime _lastActivatedCheckTime = DateTime.MinValue;
 
         public MainWindow()
         {
@@ -183,10 +184,23 @@ namespace VGCASignToolPro
                     throw new DirectoryNotFoundException($"Không tìm thấy thư mục wwwroot. Đã tìm tại: {wwwroot}");
                 }
 
+                string previewCacheDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "VGCASignToolPro", "PreviewCache");
+                if (!Directory.Exists(previewCacheDir))
+                {
+                    Directory.CreateDirectory(previewCacheDir);
+                }
+
                 PdfPreviewControl.CoreWebView2.SetVirtualHostNameToFolderMapping(
                     "vgcaviewer.local",
                     wwwroot,
                     Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.DenyCors);
+
+                PdfPreviewControl.CoreWebView2.SetVirtualHostNameToFolderMapping(
+                    "vgcacontent.local",
+                    previewCacheDir,
+                    Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow);
 
                 PdfPreviewControl.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
                 _isWebViewInitialized = true;
@@ -650,42 +664,49 @@ namespace VGCASignToolPro
 
         private void MainWindow_Activated(object? sender, EventArgs e)
         {
-            try
+            // Bỏ qua nếu vừa kiểm tra trong vòng 6 giây (chống nghẽn lag luồng UI khi người dùng chuyển qua lại các cửa sổ)
+            if ((DateTime.UtcNow - _lastActivatedCheckTime).TotalSeconds < 6)
             {
-                // Khi người dùng chuyển cửa sổ từ Virtual CSP về app, kiểm tra và đồng bộ ngay lập tức
-                CertificateModel? activeVgCa = _certService.GetActiveVGCACertificate();
-                string activeThumbprint = activeVgCa?.Thumbprint ?? string.Empty;
-                string currentThumbprint = _currentActiveCert?.Thumbprint ?? string.Empty;
+                return;
+            }
+            _lastActivatedCheckTime = DateTime.UtcNow;
 
-                if (!string.Equals(activeThumbprint, currentThumbprint, StringComparison.OrdinalIgnoreCase) || !_vgcaAuth.IsLoggedIn)
+            _ = Task.Run(async () =>
+            {
+                try
                 {
-                    LoadCertificatesAndVerifyVGCALogin();
-                }
+                    CertificateModel? activeVgCa = _certService.GetActiveVGCACertificate();
+                    string activeThumbprint = activeVgCa?.Thumbprint ?? string.Empty;
+                    string currentThumbprint = _currentActiveCert?.Thumbprint ?? string.Empty;
 
-                // Khi chuyển từ trình duyệt quản trị về app, tự động đồng bộ phân quyền từ đám mây (nếu có thay đổi)
-                _ = Task.Run(async () =>
-                {
-                    try
+                    bool needReload = !string.Equals(activeThumbprint, currentThumbprint, StringComparison.OrdinalIgnoreCase);
+
+                    if (needReload)
                     {
-                        var syncRes = await _vgcaAuth.SyncRosterFromCloudAsync();
-                        if (syncRes.Success)
+                        await Dispatcher.InvokeAsync(() =>
                         {
-                            Dispatcher.Invoke(() =>
-                            {
-                                if (_vgcaAuth.IsLoggedIn && _vgcaAuth.CurrentTeacher != null)
-                                {
-                                    OnVgcaLoginStateChanged(true, _vgcaAuth.CurrentTeacher);
-                                }
-                            });
-                        }
+                            LoadCertificatesAndVerifyVGCALogin();
+                        });
                     }
-                    catch { }
-                });
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Trace.TraceWarning($"Lỗi kiểm tra chứng thư khi kích hoạt cửa sổ: {ex.Message}");
-            }
+
+                    // Tự động kiểm tra đồng bộ phân quyền từ đám mây trong nền (nếu có thay đổi)
+                    var syncRes = await _vgcaAuth.SyncRosterFromCloudAsync();
+                    if (syncRes.Success)
+                    {
+                        await Dispatcher.InvokeAsync(() =>
+                        {
+                            if (_vgcaAuth.IsLoggedIn && _vgcaAuth.CurrentTeacher != null)
+                            {
+                                OnVgcaLoginStateChanged(true, _vgcaAuth.CurrentTeacher);
+                            }
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Trace.TraceWarning($"Bỏ qua lỗi kiểm tra chứng thư khi kích hoạt cửa sổ: {ex.Message}");
+                }
+            });
         }
 
         private void BtnSyncVgcaCertificate_Click(object sender, RoutedEventArgs e)
@@ -1712,6 +1733,18 @@ namespace VGCASignToolPro
             {
                 System.Diagnostics.Trace.TraceWarning($"Lỗi hủy ký: {ex.Message}");
             }
+
+            // ĐÓNG NGAY HỘP THOẠI WINDOWS "VIRTUAL CSP" CỦA BAN CƠ YẾU
+            VcspStatusService.DismissWaitingDialog();
+            _ = Task.Run(async () =>
+            {
+                for (int i = 0; i < 6; i++)
+                {
+                    await Task.Delay(150);
+                    VcspStatusService.DismissWaitingDialog();
+                }
+            });
+
             HideLoadingOverlay();
             SetProcessingBusyState(false);
             UpdateStatus("Đã hủy bỏ thao tác ký số theo yêu cầu của người dùng.");
@@ -2118,9 +2151,6 @@ namespace VGCASignToolPro
             ShowLoadingOverlay("Đang mở file, vui lòng chờ...", $"Đang nạp và kết xuất trang tài liệu PDF: {Path.GetFileName(pdfPath)}...", "📑");
             SetProcessingBusyState(true, $"Đang nạp tệp PDF: {Path.GetFileName(pdfPath)}...");
 
-            // Tự động làm sạch hoàn toàn watermark bản quyền dùng thử nếu tệp chứa vết Syncfusion
-            WordConverterService.SanitizeSyncfusionWatermark(pdfPath);
-
             _originalWordFilePath = null;
             _originalExcelFilePath = null;
             _currentWorkingPdfPath = pdfPath;
@@ -2155,7 +2185,7 @@ namespace VGCASignToolPro
             }
             finally
             {
-                await HideLoadingOverlayAsync(600);
+                await HideLoadingOverlayAsync(50);
                 SetProcessingBusyState(false);
             }
         }
@@ -2377,18 +2407,54 @@ namespace VGCASignToolPro
             try
             {
                 FileInfo fileInfo = new FileInfo(pdfPath);
-                // Giới hạn kích thước file an toàn cho WebView2 in-memory Base64 (30MB)
-                const long maxFileSize = 30 * 1024 * 1024;
+                // Giới hạn kích thước file an toàn cho preview (150MB)
+                const long maxFileSize = 150 * 1024 * 1024;
                 if (fileInfo.Length > maxFileSize)
                 {
-                    RollbackViewerUiState("Tệp PDF quá lớn (>30MB) để nạp vào trình xem tương tác.");
+                    RollbackViewerUiState("Tệp PDF quá lớn (>150MB) để nạp vào trình xem tương tác.");
                     return;
                 }
 
-                // Đọc byte của PDF và chuyển sang Base64, sau đó giải phóng mảng byte ngay lập tức
-                byte[]? pdfBytes = await File.ReadAllBytesAsync(pdfPath);
-                string base64Pdf = Convert.ToBase64String(pdfBytes);
-                pdfBytes = null;
+                string previewCacheDir = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "VGCASignToolPro", "PreviewCache");
+                if (!Directory.Exists(previewCacheDir))
+                {
+                    Directory.CreateDirectory(previewCacheDir);
+                }
+
+                // Sao chép tệp PDF cực nhanh sang cache ảo thay vì nén Base64 (tiết kiệm 100% chi phí IPC và RAM)
+                string previewFileName = $"doc_{Guid.NewGuid():N}.pdf";
+                string destPdf = Path.Combine(previewCacheDir, previewFileName);
+
+                await Task.Run(() =>
+                {
+                    try
+                    {
+                        File.Copy(pdfPath, destPdf, true);
+                    }
+                    catch (Exception copyEx)
+                    {
+                        System.Diagnostics.Trace.TraceWarning($"Lỗi copy cache PDF: {copyEx.Message}. Sao chép bằng FileShare.ReadWrite.");
+                        using var srcStream = new FileStream(pdfPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        using var dstStream = new FileStream(destPdf, FileMode.Create, FileAccess.Write, FileShare.None);
+                        srcStream.CopyTo(dstStream);
+                    }
+
+                    // Tự động dọn dẹp các tệp preview cũ chạy ngầm
+                    try
+                    {
+                        var di = new DirectoryInfo(previewCacheDir);
+                        foreach (var f in di.GetFiles("doc_*.pdf"))
+                        {
+                            if (f.FullName != destPdf && (DateTime.UtcNow - f.LastWriteTimeUtc).TotalMinutes > 5)
+                            {
+                                try { f.Delete(); } catch { }
+                            }
+                        }
+                    }
+                    catch { }
+                });
 
                 if (PdfPreviewControl == null || PdfPreviewControl.CoreWebView2 == null)
                 {
@@ -2451,12 +2517,12 @@ namespace VGCASignToolPro
                     return;
                 }
 
-                // Đảm bảo DOM và script loadPdfFromBase64 đã sẵn sàng
+                // Đảm bảo DOM và script loadPdfFromUrl đã sẵn sàng
                 bool isScriptReady = false;
                 for (int i = 0; i < 30; i++)
                 {
                     if (PdfPreviewControl?.CoreWebView2 == null) break;
-                    string checkScript = await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync("typeof loadPdfFromBase64 === 'function'");
+                    string checkScript = await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync("typeof loadPdfFromUrl === 'function'");
                     if (checkScript == "true")
                     {
                         isScriptReady = true;
@@ -2473,10 +2539,11 @@ namespace VGCASignToolPro
 
                 _pdfRenderCompletionSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-                string safeJsonBase64 = System.Text.Json.JsonSerializer.Serialize(base64Pdf);
-                await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync($"loadPdfFromBase64({safeJsonBase64});");
+                string pdfUrl = $"https://vgcacontent.local/{previewFileName}";
+                string safeJsonUrl = System.Text.Json.JsonSerializer.Serialize(pdfUrl);
+                await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync($"loadPdfFromUrl({safeJsonUrl});");
 
-                // Chờ sự kiện pdfLoaded từ webview2 hoặc timeout an toàn (4000ms)
+                // Chờ sự kiện pdfLoaded (khi trang 1 hiển thị chỉ mất ~100-150ms) hoặc timeout an toàn (4000ms)
                 await Task.WhenAny(_pdfRenderCompletionSource.Task, Task.Delay(4000));
 
                 // Chỉ kích hoạt UI thành công sau khi PDF đã được nạp hoàn tất

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace VGCASignToolPro.Services
 {
@@ -337,6 +339,71 @@ namespace VGCASignToolPro.Services
                 $"Quá trình ký số gặp lỗi:\n\n{ex.Message}\n\nVui lòng kiểm tra lại trạng thái kết nối của ứng dụng Virtual CSP hoặc thiết bị USB Token.",
                 ex.ToString()
             );
+        }
+
+        private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool EnumChildWindows(IntPtr hWndParent, EnumWindowsProc lpEnumFunc, IntPtr lParam);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+
+        [DllImport("user32.dll")]
+        private static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto)]
+        private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+        private const uint WM_CLOSE = 0x0010;
+        private const uint BM_CLICK = 0x00F5;
+
+        /// <summary>
+        /// Tìm và đóng ngay lập tức hộp thoại chờ ký "Virtual CSP" của Windows / Ban Cơ yếu khi người dùng bấm Hủy Ký
+        /// </summary>
+        public static void DismissWaitingDialog()
+        {
+            try
+            {
+                EnumWindows((hWnd, lParam) =>
+                {
+                    StringBuilder sb = new StringBuilder(256);
+                    GetWindowText(hWnd, sb, 256);
+                    string title = sb.ToString();
+
+                    if (!string.IsNullOrWhiteSpace(title) &&
+                        (string.Equals(title, "Virtual CSP", StringComparison.OrdinalIgnoreCase) ||
+                         title.IndexOf("Virtual CSP", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                         title.IndexOf("TSE Mobile", StringComparison.OrdinalIgnoreCase) >= 0))
+                    {
+                        // 1. Thử click nút "Hủy Bỏ" / "Hủy" nếu có trong cây cửa sổ con
+                        EnumChildWindows(hWnd, (childHwnd, childParam) =>
+                        {
+                            StringBuilder childText = new StringBuilder(128);
+                            GetWindowText(childHwnd, childText, 128);
+                            string text = childText.ToString();
+                            if (text.Contains("Hủy") || text.Contains("Cancel") || text.Contains("Bỏ"))
+                            {
+                                SendMessage(childHwnd, BM_CLICK, IntPtr.Zero, IntPtr.Zero);
+                            }
+                            return true;
+                        }, IntPtr.Zero);
+
+                        // 2. Gửi thông điệp đóng cửa sổ WM_CLOSE
+                        PostMessage(hWnd, WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
+                    }
+                    return true;
+                }, IntPtr.Zero);
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning($"Lỗi đóng cửa sổ Virtual CSP: {ex.Message}");
+            }
         }
     }
 }

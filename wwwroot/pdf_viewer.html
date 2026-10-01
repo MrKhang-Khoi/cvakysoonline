@@ -558,6 +558,124 @@
             currentSheetName = null;
         }
 
+        async function loadPdfFromUrl(pdfUrl) {
+            if (!pdfUrl || typeof pdfUrl !== 'string') {
+                console.error('loadPdfFromUrl: invalid input');
+                return;
+            }
+
+            if (window._pdfLoadAbort) window._pdfLoadAbort.aborted = true;
+            const abortFlag = { aborted: false };
+            window._pdfLoadAbort = abortFlag;
+
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+            const loadingText = document.getElementById('loading-text');
+            if (loadingText) loadingText.innerText = 'Đang mở trang tài liệu PDF...';
+
+            const excelContainer = document.getElementById('excel-container');
+            if (excelContainer) excelContainer.style.display = 'none';
+
+            const container = document.getElementById('viewer-container');
+            if (!container) {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                return;
+            }
+            container.style.display = 'flex';
+            container.querySelectorAll('canvas').forEach(c => { c.width = 0; c.height = 0; });
+            container.textContent = '';
+            renderedPages = [];
+            removeStamp();
+
+            try {
+                // Tải trực tiếp file qua native Chromium HTTP Streaming Worker không cần Base64
+                const loadingTask = pdfjsLib.getDocument({
+                    url: pdfUrl,
+                    cMapUrl: 'pdfjs/cmaps/',
+                    cMapPacked: true
+                });
+                const pdf = await loadingTask.promise;
+                await renderPdfProgressive(pdf, abortFlag, container, loadingOverlay);
+            } catch (err) {
+                console.error("Lỗi nạp PDF từ URL:", err);
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                if (window.chrome && window.chrome.webview) {
+                    window.chrome.webview.postMessage({ type: 'pdfLoadError', message: err.message });
+                }
+            }
+        }
+
+        async function renderPdfProgressive(pdf, abortFlag, container, loadingOverlay) {
+            currentPdf = pdf;
+            const totalPages = pdf.numPages;
+            const targetWidth = Math.min(window.innerWidth - 60, 850);
+
+            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                if (abortFlag.aborted) return;
+                const page = await currentPdf.getPage(pageNum);
+                const unscaledViewport = page.getViewport({ scale: 1.0 });
+                const scale = targetWidth / unscaledViewport.width;
+                const viewport = page.getViewport({ scale: scale });
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'page-wrapper';
+                wrapper.id = `page-wrapper-${pageNum}`;
+                wrapper.dataset.pageNumber = pageNum;
+                wrapper.dataset.pdfWidthPt = unscaledViewport.width;
+                wrapper.dataset.pdfHeightPt = unscaledViewport.height;
+                wrapper.dataset.renderWidthPx = viewport.width;
+                wrapper.dataset.renderHeightPx = viewport.height;
+                wrapper.dataset.scale = scale;
+                wrapper.style.width = `${viewport.width}px`;
+                wrapper.style.height = `${viewport.height}px`;
+
+                const badge = document.createElement('div');
+                badge.className = 'page-badge';
+                badge.innerText = `Trang ${pageNum} / ${totalPages}`;
+                wrapper.appendChild(badge);
+
+                const canvas = document.createElement('canvas');
+                canvas.className = 'page-canvas';
+                canvas.width = Math.round(viewport.width);
+                canvas.height = Math.round(viewport.height);
+                wrapper.appendChild(canvas);
+
+                container.appendChild(wrapper);
+
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                    const renderContext = {
+                        canvasContext: ctx,
+                        viewport: viewport
+                    };
+                    await page.render(renderContext).promise;
+                }
+
+                renderedPages.push({
+                    pageNum: pageNum,
+                    wrapper: wrapper,
+                    pdfWidthPt: unscaledViewport.width,
+                    pdfHeightPt: unscaledViewport.height,
+                    scale: scale
+                });
+
+                // NGAY SAU KHI DỰNG XONG TRANG 1: ẨN NGAY LOADING VÀ BÁO CHO WPF XONG! (MỞ NGAY TRONG < 150MS)
+                if (pageNum === 1) {
+                    if (loadingOverlay) loadingOverlay.style.display = 'none';
+                    if (window.chrome && window.chrome.webview) {
+                        window.chrome.webview.postMessage({ type: 'pdfLoaded', totalPages: totalPages });
+                    }
+                }
+
+                // Nhường luồng cho UI phản hồi mượt mà
+                if (pageNum < totalPages) {
+                    await new Promise(r => setTimeout(r, 4));
+                }
+            }
+
+            if (loadingOverlay) loadingOverlay.style.display = 'none';
+        }
+
         async function loadPdfFromBase64(base64Data) {
             if (!base64Data || typeof base64Data !== 'string') {
                 console.error('loadPdfFromBase64: invalid input');
@@ -571,7 +689,7 @@
             const loadingOverlay = document.getElementById('loading-overlay');
             if (loadingOverlay) loadingOverlay.style.display = 'flex';
             const loadingText = document.getElementById('loading-text');
-            if (loadingText) loadingText.innerText = 'Đang phân tích cấu trúc trang PDF...';
+            if (loadingText) loadingText.innerText = 'Đang giải mã và mở trang PDF...';
 
             const excelContainer = document.getElementById('excel-container');
             if (excelContainer) excelContainer.style.display = 'none';
@@ -589,81 +707,22 @@
 
             try {
                 const cleanBase64 = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
-                if (!/^[A-Za-z0-9+/\s]+=*$/.test(cleanBase64.trim())) {
-                    throw new Error('Invalid base64 encoding');
-                }
                 const binaryString = atob(cleanBase64.trim());
-                const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
                     bytes[i] = binaryString.charCodeAt(i);
                 }
 
-                currentPdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-                const totalPages = currentPdf.numPages;
-
-                // Tính toán viewport tối ưu cho độ phân giải màn hình (~820px chiều rộng cho khổ A4)
-                const targetWidth = Math.min(window.innerWidth - 60, 850);
-
-                // ponytail: serial render, upgrade to chunked/virtualized if >20 pages needed
-                for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-                    if (abortFlag.aborted) return;
-                    const page = await currentPdf.getPage(pageNum);
-                    const unscaledViewport = page.getViewport({ scale: 1.0 });
-                    const scale = targetWidth / unscaledViewport.width;
-                    const viewport = page.getViewport({ scale: scale });
-
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'page-wrapper';
-                    wrapper.id = `page-wrapper-${pageNum}`;
-                    wrapper.dataset.pageNumber = pageNum;
-                    wrapper.dataset.pdfWidthPt = unscaledViewport.width;
-                    wrapper.dataset.pdfHeightPt = unscaledViewport.height;
-                    wrapper.dataset.renderWidthPx = viewport.width;
-                    wrapper.dataset.renderHeightPx = viewport.height;
-                    wrapper.dataset.scale = scale;
-                    wrapper.style.width = `${viewport.width}px`;
-                    wrapper.style.height = `${viewport.height}px`;
-
-                    const badge = document.createElement('div');
-                    badge.className = 'page-badge';
-                    badge.innerText = `Trang ${pageNum} / ${totalPages}`;
-                    wrapper.appendChild(badge);
-
-                    const canvas = document.createElement('canvas');
-                    canvas.className = 'page-canvas';
-                    canvas.width = Math.round(viewport.width);
-                    canvas.height = Math.round(viewport.height);
-                    wrapper.appendChild(canvas);
-
-                    container.appendChild(wrapper);
-
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) {
-                        console.error(`Không thể tạo canvas context cho trang ${pageNum}`);
-                        continue;
-                    }
-                    const renderContext = {
-                        canvasContext: ctx,
-                        viewport: viewport
-                    };
-                    await page.render(renderContext).promise;
-
-                    renderedPages.push({
-                        pageNum: pageNum,
-                        wrapper: wrapper,
-                        pdfWidthPt: unscaledViewport.width,
-                        pdfHeightPt: unscaledViewport.height,
-                        scale: scale
-                    });
-                }
-
-                if (window.chrome && window.chrome.webview) {
-                    window.chrome.webview.postMessage({ type: 'pdfLoaded', totalPages: totalPages });
-                }
+                const loadingTask = pdfjsLib.getDocument({
+                    data: bytes,
+                    cMapUrl: 'pdfjs/cmaps/',
+                    cMapPacked: true
+                });
+                const pdf = await loadingTask.promise;
+                await renderPdfProgressive(pdf, abortFlag, container, loadingOverlay);
             } catch (err) {
-                console.error("Lỗi nạp PDF:", err);
-                alert("Không thể nạp file PDF. Vui lòng thử lại.");
-            } finally {
+                console.error("Lỗi nạp PDF từ Base64:", err);
                 if (loadingOverlay) loadingOverlay.style.display = 'none';
             }
         }
