@@ -2,7 +2,7 @@
   "firebaseUrl": "https://cva-kyso-lienthong-default-rtdb.asia-southeast1.firebasedatabase.app",
   "databaseSecret": "TOdsGaw1iflR0dCDtHqQ8pBii9UgiqLaq8nfF250",
   "gatewayWorkerUrl": "https://cva-kyso-gateway.workers.dev",
-  "googleAppsScriptUrl": "",
+  "googleAppsScriptUrl": "https://script.google.com/macros/s/AKfycbzR1sFg4meKC1N6vrlKDup3u3o8MTeWhvItrSL_bF7FZfUIO1ethNTzGd3szTbKLlpT6Q/exec",
   "googleDriveFolderId": "",
   "rosterUrl": ""
 }

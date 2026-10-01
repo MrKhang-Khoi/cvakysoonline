@@ -493,7 +493,12 @@
                                                 <TextBlock Text="Mật Khẩu Đăng Nhập:" FontWeight="SemiBold" FontSize="12" Foreground="#334155" HorizontalAlignment="Left" />
                                                 <TextBlock Text="(Mặc định: 123456)" FontSize="11" Foreground="#64748B" HorizontalAlignment="Right" />
                                             </Grid>
-                                            <PasswordBox x:Name="TxtLoginPassword" FontSize="13" Padding="8,6" Margin="0,0,0,14" KeyDown="TxtLoginInput_KeyDown" />
+                                            <PasswordBox x:Name="TxtLoginPassword" FontSize="13" Padding="8,6" Margin="0,0,0,10" KeyDown="TxtLoginInput_KeyDown" />
+
+                                            <!-- TÙY CHỌN GHI NHỚ ĐĂNG NHẬP (MẶC ĐỊNH BẬT) -->
+                                            <CheckBox x:Name="ChkRememberLogin" Content="Lưu tên đăng nhập và mật khẩu trên máy tính này" 
+                                                      IsChecked="True" FontSize="12" Foreground="#334155" FontWeight="SemiBold" 
+                                                      Margin="0,0,0,14" Cursor="Hand" />
 
                                             <!-- NÚT ĐĂNG NHẬP CHÍNH -->
                                             <Button x:Name="BtnSubmitLogin" Content="🔑 ĐĂNG NHẬP HỆ THỐNG" Style="{StaticResource PrimaryButton}" 

@@ -94,6 +94,7 @@ namespace VGCASignToolPro
                 await InitializePreviewEngineAsync();
 
                 InitializeVgcaAuthRoster();
+                LoadSavedLoginCredentialsIfAny();
                 LoadCertificatesAndVerifyVGCALogin();
                 LoadProfiles();
 
@@ -573,6 +574,7 @@ namespace VGCASignToolPro
                 BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
 
                 _vgcaAuth.Logout();
+                LoadSavedLoginCredentialsIfAny();
                 UpdateStatus("Đã đăng xuất tài khoản VGCA Virtual CSP an toàn.");
             }
         }
@@ -829,7 +831,18 @@ namespace VGCASignToolPro
             if (result.Success && result.Teacher != null)
             {
                 BorderVgcaAuthError.Visibility = Visibility.Collapsed;
-                TxtLoginPassword.Password = string.Empty;
+
+                // Tự động lưu hoặc xóa thông tin đăng nhập theo lựa chọn của giáo viên
+                if (ChkRememberLogin != null && ChkRememberLogin.IsChecked == true)
+                {
+                    CredentialStorageService.SaveCredentials(cccd, password);
+                }
+                else
+                {
+                    CredentialStorageService.ClearCredentials();
+                    TxtLoginPassword.Password = string.Empty;
+                }
+
                 OnVgcaLoginStateChanged(true, result.Teacher);
                 UpdateStatus($"Đăng nhập thành công: {result.Teacher.FullName} ({result.Teacher.Title}) - Phân quyền: {(result.Teacher.CanSeal ? "Đóng dấu cơ quan" : "Ký số cá nhân")}.");
             }
@@ -838,6 +851,27 @@ namespace VGCASignToolPro
                 BorderVgcaAuthError.Visibility = Visibility.Visible;
                 TxtVgcaAuthError.Text = result.ErrorDescription ?? "Số CCCD hoặc Mật khẩu không chính xác.";
                 UpdateStatus($"Đăng nhập thất bại: {result.ErrorDescription}");
+            }
+        }
+
+        private void LoadSavedLoginCredentialsIfAny()
+        {
+            try
+            {
+                var saved = CredentialStorageService.LoadCredentials();
+                if (saved.HasSaved && !string.IsNullOrEmpty(saved.Cccd))
+                {
+                    TxtLoginCccd.Text = saved.Cccd;
+                    TxtLoginPassword.Password = saved.Password;
+                    if (ChkRememberLogin != null)
+                    {
+                        ChkRememberLogin.IsChecked = true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceWarning($"Lỗi nạp thông tin ghi nhớ đăng nhập: {ex.Message}");
             }
         }
 
