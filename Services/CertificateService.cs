@@ -134,7 +134,17 @@ namespace VGCASignToolPro.Services
         public bool IsVGCALoggedIn()
         {
             var activeCert = GetActiveVGCACertificate();
-            return activeCert != null && activeCert.HasPrivateKey;
+            if (activeCert == null || !activeCert.HasPrivateKey) return false;
+
+            // Nếu là chứng thư cá nhân VGCA (Remote Signing KSP) -> Bắt buộc kiểm tra phiên Virtual CSP thật
+            if (activeCert.IsVirtualCspCertificate)
+            {
+                var vcspStatus = VcspStatusService.CheckStatus();
+                return vcspStatus.IsReadyToSign;
+            }
+
+            // Nếu là chứng thư con dấu cơ quan (USB Token phần cứng) -> Đã có khóa riêng hợp lệ
+            return true;
         }
 
         /// <summary>

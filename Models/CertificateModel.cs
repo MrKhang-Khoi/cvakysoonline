@@ -41,6 +41,14 @@ namespace VGCASignToolPro.Models
                        subjectUpper.Contains("OID.0.9.2342.19200300.100.1.1");
             }
         }
+        public bool IsVirtualCspCertificate
+        {
+            get
+            {
+                // Virtual CSP v2.0 của Ban Cơ Yếu Chính Phủ sử dụng ECDSA P-384 qua KSP VGCA RSSP KSP v2.0
+                return IsVGCACertificate && (KeyAlgorithm.StartsWith("ECDSA", StringComparison.OrdinalIgnoreCase) || !IsOrganizationCertificate);
+            }
+        }
         public string KeyAlgorithm { get; }
         public string DisplayText { get; }
 
