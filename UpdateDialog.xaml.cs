@@ -165,8 +165,8 @@ namespace VGCASignToolPro
                 bool launched = _updateService.LaunchExternalUpdater(downloadedZip, currentExePath);
                 if (launched)
                 {
-                    // Tắt ứng dụng chính an toàn để Updater ghi đè
-                    Application.Current.Shutdown();
+                    // Tắt ứng dụng chính an toàn và dứt điểm để Updater ghi đè tệp mà không bị khóa
+                    Environment.Exit(0);
                 }
                 else
                 {

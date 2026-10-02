@@ -72,24 +72,10 @@ namespace VGCASignToolPro.Updater
         {
             reportProgress("Đang chờ ứng dụng chính hoàn tất phiên làm việc...", 10);
 
-            // 1. Chờ tiến trình chính thoát hoàn toàn
-            if (targetPid > 0)
-            {
-                try
-                {
-                    Process mainProc = Process.GetProcessById(targetPid);
-                    if (!mainProc.WaitForExit(15000))
-                    {
-                        try { mainProc.Kill(); } catch { }
-                    }
-                }
-                catch (ArgumentException)
-                {
-                    // Tiến trình đã thoát trước đó
-                }
-            }
+            // 1. Chờ và cưỡng chế tắt triệt để TOÀN BỘ các tiến trình VGCASignToolPro đang chạy
+            TerminateAllAppProcesses(targetPid);
 
-            Thread.Sleep(500); // Đảm bảo Windows nhả toàn bộ file handle
+            Thread.Sleep(1000); // Đảm bảo Windows giải phóng toàn bộ file handle và Memory-Mapped DLL
 
             // 2. Tạo bản sao lưu dự phòng trước khi ghi đè
             reportProgress("Đang tạo bản sao lưu an toàn cho dữ liệu...", 25);
@@ -148,6 +134,9 @@ namespace VGCASignToolPro.Updater
                 }
             }
 
+            // Dọn dẹp các tệp tạm pending delete
+            CleanPendingDeleteFiles(targetDir);
+
             // Dọn dẹp thư mục staging
             try
             {
@@ -204,25 +193,49 @@ namespace VGCASignToolPro.Updater
                     catch { }
                 }
 
-                // Ghi đè file mới (Thử lại tối đa 3 lần nếu Windows còn khóa nhẹ)
+                // Ghi đè file mới bằng kỹ thuật Safe Replace (Move-Before-Overwrite) chuẩn Chrome/VS Code
                 bool copied = false;
-                for (int attempt = 0; attempt < 3; attempt++)
+                Exception? lastEx = null;
+
+                for (int attempt = 0; attempt < 5; attempt++)
                 {
                     try
                     {
+                        if (File.Exists(destFile))
+                        {
+                            try
+                            {
+                                File.Delete(destFile);
+                            }
+                            catch (IOException)
+                            {
+                                // Nếu file đang bị lock nhẹ, đổi tên nó sang tệp tạm pending delete
+                                string pendingDelete = destFile + ".pending_delete_" + Guid.NewGuid().ToString("N").Substring(0, 6);
+                                try
+                                {
+                                    File.Move(destFile, pendingDelete);
+                                }
+                                catch
+                                {
+                                    // Tiếp tục thử copy đè trực tiếp
+                                }
+                            }
+                        }
+
                         file.CopyTo(destFile, true);
                         copied = true;
                         break;
                     }
-                    catch (IOException)
+                    catch (Exception ex)
                     {
-                        Thread.Sleep(300);
+                        lastEx = ex;
+                        Thread.Sleep(500);
                     }
                 }
 
-                if (!copied)
+                if (!copied && lastEx != null)
                 {
-                    file.CopyTo(destFile, true);
+                    throw new IOException($"Không thể cập nhật tệp tin '{destFile}': {lastEx.Message}", lastEx);
                 }
             }
 
@@ -234,6 +247,58 @@ namespace VGCASignToolPro.Updater
                     CopyDirectoryRecursive(subDir.FullName, targetBase, rootSource, backupDir);
                 }
             }
+        }
+
+        private static void TerminateAllAppProcesses(int targetPid)
+        {
+            // 1. Chờ PID cụ thể nếu có
+            if (targetPid > 0)
+            {
+                try
+                {
+                    Process mainProc = Process.GetProcessById(targetPid);
+                    if (!mainProc.WaitForExit(8000))
+                    {
+                        try { mainProc.Kill(); } catch { }
+                    }
+                }
+                catch (ArgumentException)
+                {
+                    // Tiến trình đã thoát
+                }
+            }
+
+            // 2. Quét và cưỡng chế tắt toàn bộ các tiến trình VGCASignToolPro khác (chạy ngầm, autostart)
+            try
+            {
+                var procs = Process.GetProcessesByName("VGCASignToolPro");
+                foreach (var p in procs)
+                {
+                    try
+                    {
+                        if (!p.HasExited)
+                        {
+                            p.Kill();
+                            p.WaitForExit(3000);
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
+
+        private static void CleanPendingDeleteFiles(string targetDir)
+        {
+            try
+            {
+                var pendingFiles = Directory.GetFiles(targetDir, "*.pending_delete_*", SearchOption.AllDirectories);
+                foreach (var f in pendingFiles)
+                {
+                    try { File.Delete(f); } catch { }
+                }
+            }
+            catch { }
         }
     }
 

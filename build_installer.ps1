@@ -77,7 +77,7 @@ if (-not (Test-Path $innoCompiler)) {
 $issFile = Join-Path $projectDir "installer\VGCASignToolPro_Setup.iss"
 & $innoCompiler $issFile
 
-$installerExe = Join-Path $outputInstallerDir "VGCASignToolPro_Setup_v2.1.1.exe"
+$installerExe = Join-Path $outputInstallerDir "VGCASignToolPro_Setup_v2.1.2.exe"
 if (-not (Test-Path $installerExe)) {
     throw "Error: Installer output file was not found after compilation: $installerExe"
 }
@@ -87,7 +87,7 @@ $instHash = (Get-FileHash -Path $installerExe -Algorithm SHA256).Hash
 
 # 6. BUILD AUTO-UPDATE ZIP PACKAGE (EXCLUDING SENSITIVE USER DATA)
 Write-Host "`n[6/6] Building Auto-Update Package (ZIP for UpdateService)..." -ForegroundColor Yellow
-$updateZipPath = Join-Path $outputInstallerDir "VGCASignToolPro_Update_v2.1.1.zip"
+$updateZipPath = Join-Path $outputInstallerDir "VGCASignToolPro_Update_v2.1.2.zip"
 if (Test-Path $updateZipPath) {
     Remove-Item -Path $updateZipPath -Force
 }
@@ -152,34 +152,35 @@ Write-Host "   SHA256: $zipHash" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "3. FIREBASE /app_release.json METADATA PAYLOAD:" -ForegroundColor White
 $releaseObj = @{
-    version = "2.1.1"
+    version = "2.1.2"
     minSupportedVersion = "2.0.0"
     releaseDate = (Get-Date -Format "yyyy-MM-dd")
-    title = "Bản cập nhật VGCA Sign Tool Pro v2.1.1"
-    description = "Tích hợp trọn gói bộ cài VGCA Sign Tool v3.0.6 của Ban Cơ Yếu Chính Phủ, nâng cấp nhận diện kép và Fluent UI."
-    downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.1/VGCASignToolPro_Update_v2.1.1.zip"
-    installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.1/VGCASignToolPro_Setup_v2.1.1.exe"
+    title = "Bản cập nhật VGCA Sign Tool Pro v2.1.2"
+    description = "Khắc phục triệt để lỗi xung đột tiến trình nền khi cập nhật tự động, tối ưu hóa cơ chế giải phóng tệp tin và chuẩn hóa hiển thị Tiếng Việt."
+    downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.2/VGCASignToolPro_Update_v2.1.2.zip"
+    installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.2/VGCASignToolPro_Setup_v2.1.2.exe"
     sha256 = $zipHash
     installerSha256 = $instHash
     mandatory = $false
     status = "ACTIVE"
     changelog = @(
+        "Khắc phục triệt để lỗi khóa tệp Accessibility.dll khi cập nhật bằng cơ chế Move-Before-Overwrite chuẩn Google Chrome/VS Code",
+        "Tự động phát hiện và cưỡng chế giải phóng toàn bộ tiến trình VGCASignToolPro chạy ngầm trước khi nâng cấp",
+        "Chuẩn hóa bảng mã ký tự UTF-8 Tiếng Việt hiển thị sắc nét trên toàn hệ thống cập nhật",
         "Tích hợp trọn gói bộ cài đặt chính thức VGCA Sign Tool v3.0.6 (.msi) của Ban Cơ Yếu Chính Phủ",
-        "Nâng cấp cơ chế nhận diện kép hỗ trợ cả VGCASignTool.exe và VGCA Virtual CSP v2.0",
-        "Hỗ trợ tự động gợi ý cài đặt bộ công cụ Ban Cơ Yếu khi máy chưa có, triệt tiêu lỗi thiếu file",
-        "Tích hợp icon Fluent Windows 11 đa tầng phân giải sắc nét",
-        "Tự động tạo biểu tượng ngoài Desktop và cấu hình tự khởi động cùng Windows ở chế độ nền"
+        "Nâng cấp cơ chế nhận diện kép hỗ trợ cả VGCASignTool.exe và VGCA Virtual CSP v2.0"
     )
 }
 $jsonPayload = $releaseObj | ConvertTo-Json -Depth 5
 Write-Host $jsonPayload -ForegroundColor Green
 
-# Tu dong dong bo metadata len Firebase Realtime Database
-Write-Host "`nDang dong bo metadata cap nhat len Firebase Realtime Database..." -ForegroundColor Yellow
+# Tu dong dong bo metadata len Firebase Realtime Database bang byte UTF-8
+Write-Host "`nDang dong bo metadata cap nhat len Firebase Realtime Database (UTF-8 Bytes)..." -ForegroundColor Yellow
 $firebaseEndpoint = "https://cva-kyso-lienthong-default-rtdb.asia-southeast1.firebasedatabase.app/app_release.json?auth=TOdsGaw1iflR0dCDtHqQ8pBii9UgiqLaq8nfF250"
 try {
-    $null = Invoke-RestMethod -Uri $firebaseEndpoint -Method Put -Body $jsonPayload -ContentType "application/json; charset=utf-8"
-    Write-Host "[OK] Da dong bo thanh cong metadata v2.1.1 len Firebase Control Plane!" -ForegroundColor Green
+    $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($jsonPayload)
+    $null = Invoke-RestMethod -Uri $firebaseEndpoint -Method Put -Body $bodyBytes -ContentType "application/json; charset=utf-8"
+    Write-Host "[OK] Da dong bo thanh cong metadata v2.1.2 (UTF-8 chuan) len Firebase Control Plane!" -ForegroundColor Green
 }
 catch {
     Write-Host "[WARN] Khong the tu dong dong bo Firebase: $_" -ForegroundColor Yellow
