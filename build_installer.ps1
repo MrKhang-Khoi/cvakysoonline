@@ -77,7 +77,7 @@ if (-not (Test-Path $innoCompiler)) {
 $issFile = Join-Path $projectDir "installer\VGCASignToolPro_Setup.iss"
 & $innoCompiler $issFile
 
-$installerExe = Join-Path $outputInstallerDir "VGCASignToolPro_Setup_v2.1.exe"
+$installerExe = Join-Path $outputInstallerDir "VGCASignToolPro_Setup_v2.1.1.exe"
 if (-not (Test-Path $installerExe)) {
     throw "Error: Installer output file was not found after compilation: $installerExe"
 }
@@ -87,7 +87,7 @@ $instHash = (Get-FileHash -Path $installerExe -Algorithm SHA256).Hash
 
 # 6. BUILD AUTO-UPDATE ZIP PACKAGE (EXCLUDING SENSITIVE USER DATA)
 Write-Host "`n[6/6] Building Auto-Update Package (ZIP for UpdateService)..." -ForegroundColor Yellow
-$updateZipPath = Join-Path $outputInstallerDir "VGCASignToolPro_Update_v2.1.0.zip"
+$updateZipPath = Join-Path $outputInstallerDir "VGCASignToolPro_Update_v2.1.1.zip"
 if (Test-Path $updateZipPath) {
     Remove-Item -Path $updateZipPath -Force
 }
@@ -151,27 +151,38 @@ Write-Host "   Size:   $zipSizeMb MB" -ForegroundColor White
 Write-Host "   SHA256: $zipHash" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "3. FIREBASE /app_release.json METADATA PAYLOAD:" -ForegroundColor White
-$jsonPayload = @"
-{
-  "version": "2.1.0",
-  "minSupportedVersion": "2.0.0",
-  "releaseDate": "$(Get-Date -Format 'yyyy-MM-dd')",
-  "title": "Bản cập nhật VGCA Sign Tool Pro v2.1.0",
-  "description": "Nâng cấp giao diện Fluent UI, tích hợp cơ chế JIT quét chứng thư 10ms, hỗ trợ sửa đổi CCCD trên Web và Auto-Update độc lập.",
-  "downloadUrl": "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.0/VGCASignToolPro_Update_v2.1.0.zip",
-  "installerUrl": "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.0/VGCASignToolPro_Setup_v2.1.exe",
-  "sha256": "$zipHash",
-  "installerSha256": "$instHash",
-  "mandatory": false,
-  "status": "ACTIVE",
-  "changelog": [
-    "Triệt tiêu hoàn toàn polling timer chạy ngầm, chuyển sang cơ chế quét JIT tức thời khi ký",
-    "Mở khóa chỉnh sửa CCCD trên cổng Web đồng thời tự động cập nhật liên thông sang Desktop",
-    "Tích hợp hệ thống Auto-Update tự động qua Firebase RTDB và tải tệp từ GitHub Releases",
-    "Đóng gói chuẩn Microsoft Windows Per-User Installer không đòi quyền Administrator",
-    "Tích hợp thư viện C++ App-Local giải quyết dứt điểm lỗi thiếu VC++ Redistributable"
-  ]
+$releaseObj = @{
+    version = "2.1.1"
+    minSupportedVersion = "2.0.0"
+    releaseDate = (Get-Date -Format "yyyy-MM-dd")
+    title = "Bản cập nhật VGCA Sign Tool Pro v2.1.1"
+    description = "Tích hợp trọn gói bộ cài VGCA Sign Tool v3.0.6 của Ban Cơ Yếu Chính Phủ, nâng cấp nhận diện kép và Fluent UI."
+    downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.1/VGCASignToolPro_Update_v2.1.1.zip"
+    installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.1/VGCASignToolPro_Setup_v2.1.1.exe"
+    sha256 = $zipHash
+    installerSha256 = $instHash
+    mandatory = $false
+    status = "ACTIVE"
+    changelog = @(
+        "Tích hợp trọn gói bộ cài đặt chính thức VGCA Sign Tool v3.0.6 (.msi) của Ban Cơ Yếu Chính Phủ",
+        "Nâng cấp cơ chế nhận diện kép hỗ trợ cả VGCASignTool.exe và VGCA Virtual CSP v2.0",
+        "Hỗ trợ tự động gợi ý cài đặt bộ công cụ Ban Cơ Yếu khi máy chưa có, triệt tiêu lỗi thiếu file",
+        "Tích hợp icon Fluent Windows 11 đa tầng phân giải sắc nét",
+        "Tự động tạo biểu tượng ngoài Desktop và cấu hình tự khởi động cùng Windows ở chế độ nền"
+    )
 }
-"@
+$jsonPayload = $releaseObj | ConvertTo-Json -Depth 5
 Write-Host $jsonPayload -ForegroundColor Green
+
+# Tu dong dong bo metadata len Firebase Realtime Database
+Write-Host "`nDang dong bo metadata cap nhat len Firebase Realtime Database..." -ForegroundColor Yellow
+$firebaseEndpoint = "https://cva-kyso-lienthong-default-rtdb.asia-southeast1.firebasedatabase.app/app_release.json?auth=TOdsGaw1iflR0dCDtHqQ8pBii9UgiqLaq8nfF250"
+try {
+    $null = Invoke-RestMethod -Uri $firebaseEndpoint -Method Put -Body $jsonPayload -ContentType "application/json; charset=utf-8"
+    Write-Host "[OK] Da dong bo thanh cong metadata v2.1.1 len Firebase Control Plane!" -ForegroundColor Green
+}
+catch {
+    Write-Host "[WARN] Khong the tu dong dong bo Firebase: $_" -ForegroundColor Yellow
+}
+
 Write-Host "=================================================================" -ForegroundColor Green
