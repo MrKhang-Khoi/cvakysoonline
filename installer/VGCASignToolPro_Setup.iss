@@ -49,6 +49,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 ; MẶC ĐỊNH 100% ĐƯỢC CHỌN: Tạo icon Desktop & Tự khởi động cùng Windows
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "autostart"; Description: "Tự động khởi động cùng Windows khi bật máy (Sẵn sàng nhận lệnh ký số)"; GroupDescription: "Cấu hình hệ thống:"
+Name: "installvgca"; Description: "Tự động cài đặt phần mềm ký số VGCA Sign Tool v3.0.6 chính thức của Ban Cơ Yếu Chính Phủ"; GroupDescription: "Thành phần phụ trợ Ban Cơ Yếu:"; Check: not IsVgcaInstalled
 
 [Files]
 ; 1. Toàn bộ các tệp tin chương trình Self-Contained x64
@@ -61,8 +62,9 @@ Source: "app_icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyAppSourceDir}\school_roster.json"; DestDir: "{app}"; Flags: skipifsourcedoesntexist onlyifdoesntexist uninsneveruninstall
 Source: "{#MyAppSourceDir}\workflow_config.json"; DestDir: "{app}"; Flags: skipifsourcedoesntexist onlyifdoesntexist uninsneveruninstall
 
-; 4. GÓI TÍCH HỢP ALL-IN-ONE: Bộ cài VGCA Virtual CSP v2.0 của Ban Cơ Yếu (Nếu có trong redist)
+; 4. GÓI TÍCH HỢP ALL-IN-ONE: Bộ cài VGCA Sign Tool v3.0.6 chính thức của Ban Cơ Yếu Chính Phủ
 Source: "redist\*"; DestDir: "{tmp}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "redist\*"; DestDir: "{app}\redist"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\{#MyAppExeName}"
@@ -74,8 +76,8 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilen
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "VGCASignToolPro"; ValueData: """{app}\{#MyAppExeName}"" --autostart"; Tasks: autostart; Flags: uninsdeletevalue
 
 [Run]
-; Cài đặt nền tảng VGCA Virtual CSP v2.0 song hành nếu máy chưa có
-Filename: "{tmp}\VGCA_Virtual_CSP_v2.0_Setup.exe"; Description: "Cài đặt bổ sung nền tảng VGCA Virtual CSP v2.0 của Ban Cơ Yếu Chính Phủ"; Flags: skipifdoesntexist nowait postinstall; Check: not IsVgcaVirtualCspInstalled
+; Cài đặt nền tảng VGCA Sign Tool v3.0.6 của Ban Cơ Yếu Chính Phủ nếu máy chưa có
+Filename: "msiexec.exe"; Parameters: "/i ""{tmp}\VGCASignToolSetup.msi"""; Description: "Cài đặt phần mềm ký số VGCA Sign Tool v3.0.6 chính thức của Ban Cơ Yếu Chính Phủ"; Flags: skipifdoesntexist nowait postinstall; Tasks: installvgca; Check: not IsVgcaInstalled
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
@@ -89,14 +91,20 @@ begin
             RegQueryStringValue(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-69D3A8E3EFE7}', 'pv', VersionStr);
 end;
 
-// Kiểm tra phần mềm VGCA Virtual CSP v2.0 và KSP CNG của Ban Cơ yếu trên máy tính
-function IsVgcaVirtualCspInstalled(): Boolean;
+// Kiểm tra toàn diện phần mềm VGCA (VGCA Sign Tool v3.0.6 hoặc Virtual CSP v2.0) đã có trên máy hay chưa
+function IsVgcaInstalled(): Boolean;
 begin
-  Result := FileExists('C:\Program Files (x86)\VGCA\Virtual CSP v2.0\vgca_vcsp_v2_mgr.exe') or
+  Result := FileExists('C:\Program Files (x86)\VGCA\VGCASignTool\VGCASignTool.exe') or
+            FileExists('C:\Program Files\VGCA\VGCASignTool\VGCASignTool.exe') or
+            FileExists('C:\Program Files (x86)\VGCA\Virtual CSP v2.0\vgca_vcsp_v2_mgr.exe') or
             FileExists('C:\Program Files\VGCA\Virtual CSP v2.0\vgca_vcsp_v2_mgr.exe') or
             FileExists('C:\Windows\System32\vgca_vcsp11_v2.dll') or
+            RegKeyExists(HKEY_LOCAL_MACHINE, 'SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{7FBD335C-4ED2-4ECC-8A17-BDF454F15E75}') or
+            RegKeyExists(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{7FBD335C-4ED2-4ECC-8A17-BDF454F15E75}') or
             RegKeyExists(HKEY_LOCAL_MACHINE, 'SYSTEM\CurrentControlSet\Control\Cryptography\Providers\VGCA RSSP KSP v2.0') or
+            FileExists('C:\Users\Public\Desktop\VGCA Sign Tool.lnk') or
             FileExists('C:\Users\Public\Desktop\VGCA Virtual CSP v2.0.lnk') or
+            FileExists(ExpandConstant('{commonprograms}\VGCA\VGCA Sign Tool.lnk')) or
             FileExists(ExpandConstant('{commonprograms}\VGCA\Virtual CSP v2.0.lnk'));
 end;
 
@@ -106,13 +114,13 @@ var
 begin
   Result := True;
 
-  // Nếu máy tính chưa cài đặt VGCA Virtual CSP và không có bộ cài song hành trong redist
-  if not IsVgcaVirtualCspInstalled() and not FileExists(ExpandConstant('{tmp}\VGCA_Virtual_CSP_v2.0_Setup.exe')) then
+  // Nếu máy tính chưa cài đặt VGCA và không có bộ cài song hành trong redist
+  if not IsVgcaInstalled() and not FileExists(ExpandConstant('{tmp}\VGCASignToolSetup.msi')) then
   begin
     MsgPrompt := 'THÔNG BÁO TỪ BAN CƠ YẾU CHÍNH PHỦ:' + #13#10 + #13#10 +
                  'Phần mềm VGCA Sign Tool Pro sẽ được cài đặt và tự động tạo biểu tượng ngoài Desktop.' + #13#10 + #13#10 +
                  '• Nếu Thầy/Cô sử dụng USB Token phần cứng: Có thể cắm USB và ký số được ngay.' + #13#10 +
-                 '• Nếu Thầy/Cô sử dụng Ký số từ xa (VGCA Cloud): Cần cài thêm ứng dụng VGCA Virtual CSP v2.0.' + #13#10 + #13#10 +
+                 '• Nếu cần ký số văn bản định dạng PDF Ban Cơ Yếu: Cần cài thêm ứng dụng VGCA Sign Tool.' + #13#10 + #13#10 +
                  'Bấm "OK" để tiếp tục cài đặt phần mềm.';
     MsgBox(MsgPrompt, mbInformation, MB_OK);
   end;

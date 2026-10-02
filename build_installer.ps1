@@ -60,6 +60,14 @@ if (Test-Path $sourceIcon) {
     Copy-Item -Path $sourceIcon -Destination $distDir -Force
 }
 
+$sourceRedist = Join-Path $projectDir "installer\redist"
+if (Test-Path $sourceRedist) {
+    $targetRedist = Join-Path $distDir "redist"
+    if (-not (Test-Path $targetRedist)) { New-Item -ItemType Directory -Path $targetRedist -Force | Out-Null }
+    Copy-Item -Path "$sourceRedist\*" -Destination $targetRedist -Force
+    Write-Host "  + Bundled VGCA Redistributable Packages to dist\win-x64\redist" -ForegroundColor Green
+}
+
 # 5. COMPILE INNO SETUP INSTALLER (.EXE)
 Write-Host "`n[5/6] Compiling Official Inno Setup Single-Installer (.exe)..." -ForegroundColor Yellow
 if (-not (Test-Path $innoCompiler)) {

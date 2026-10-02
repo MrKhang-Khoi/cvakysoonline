@@ -851,17 +851,52 @@ namespace VGCASignToolPro
 
         private void BtnLaunchVgcaManager_Click(object sender, RoutedEventArgs e)
         {
-            UpdateStatus("Đang khởi động ứng dụng VGCA Virtual CSP v2.0...");
+            UpdateStatus("Đang kiểm tra và khởi động công cụ ký số VGCA của Ban Cơ Yếu...");
             bool launched = _certService.LaunchVGCALoginApp();
             if (!launched)
             {
-                MessageBox.Show("Không tìm thấy tệp tin vgca_vcsp_v2_mgr.exe tại thư mục cài đặt VGCA Virtual CSP.",
-                    "Lỗi Khởi Động", MessageBoxButton.OK, MessageBoxImage.Warning);
+                string? bundledMsi = _certService.GetBundledVgcaInstallerPath();
+                if (!string.IsNullOrEmpty(bundledMsi) && File.Exists(bundledMsi))
+                {
+                    var result = MessageBox.Show(
+                        "Máy tính này chưa phát hiện phần mềm ký số VGCA của Ban Cơ Yếu Chính Phủ.\n\n" +
+                        "Bộ cài đặt chuẩn 'VGCA Sign Tool v3.0.6' đã được tích hợp sẵn trong ứng dụng.\n" +
+                        "Thầy/Cô có muốn tiến hành cài đặt ngay bây giờ không?",
+                        "Cài Đặt Phần Mềm Ban Cơ Yếu Chính Phủ",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Question);
+
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        try
+                        {
+                            UpdateStatus("Đang khởi chạy trình cài đặt VGCA Sign Tool v3.0.6...");
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = "msiexec.exe",
+                                Arguments = $"/i \"{bundledMsi}\"",
+                                UseShellExecute = true
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Không thể khởi chạy bộ cài đặt VGCA: {ex.Message}", "Lỗi Cài Đặt", MessageBoxButton.OK, MessageBoxImage.Error);
+                        }
+                    }
+                }
+                else
+                {
+                    MessageBox.Show(
+                        "Không tìm thấy công cụ ký số VGCA (VGCA Sign Tool hoặc Virtual CSP v2.0) trên máy tính này.\n\n" +
+                        "Vui lòng cài đặt phần mềm ký số chính thức của Ban Cơ Yếu Chính Phủ để sử dụng tính năng ký số.",
+                        "Thông Báo VGCA", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
             }
             else
             {
-                MessageBox.Show("Đã mở ứng dụng VGCA Virtual CSP v2.0.\nVui lòng đăng nhập tài khoản chữ ký số Ban Cơ yếu của bạn, sau đó nhấn nút 'Quét Lại Token' trên phần mềm.",
-                    "Đăng Nhập VGCA", MessageBoxButton.OK, MessageBoxImage.Information);
+                UpdateStatus("Đã khởi động công cụ ký số VGCA của Ban Cơ Yếu Chính Phủ.");
+                MessageBox.Show("Đã mở công cụ ký số của Ban Cơ Yếu Chính Phủ.\nSau khi cắm USB Token hoặc đăng nhập tài khoản, vui lòng nhấn nút 'Quét Lại Token' trên phần mềm.",
+                    "Công Cụ Ký Số Ban Cơ Yếu", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
 
