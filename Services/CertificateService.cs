@@ -220,27 +220,66 @@ namespace VGCASignToolPro.Services
         }
 
         /// <summary>
-        /// Khởi chạy ứng dụng ký số chính thức VGCA Sign Tool hoặc Virtual CSP của Ban Cơ yếu
+        /// Khởi chạy ứng dụng quản lý VGCA Virtual CSP Manager (vgca_vcsp_v2_mgr.exe)
+        /// của Ban Cơ Yếu Chính Phủ để giáo viên đăng nhập tài khoản và mật khẩu chứng thư số
         /// </summary>
-        public bool LaunchVGCALoginApp()
+        public bool LaunchVcspManagerApp()
         {
-            var candidatePaths = new List<string>
+            var candidateVcspPaths = new List<string>
             {
-                // 1. Ứng dụng chính thức VGCA Sign Tool v3.0.6 (Khuyến nghị số 1 của Ban Cơ Yếu)
-                VGCASignToolExePath,
-                VGCASignToolExePath64,
-                @"C:\Users\Public\Desktop\VGCA Sign Tool.lnk",
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "VGCA Sign Tool.lnk"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "VGCA Sign Tool.lnk"),
-                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms), "VGCA", "VGCA Sign Tool.lnk"),
-
-                // 2. Ứng dụng VGCA Virtual CSP v2.0
                 VGCAManagerExePath,
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "VGCA", "Virtual CSP v2.0", "vgca_vcsp_v2_mgr.exe"),
                 @"C:\Users\Public\Desktop\VGCA Virtual CSP v2.0.lnk",
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "VGCA Virtual CSP v2.0.lnk"),
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "VGCA Virtual CSP v2.0.lnk"),
                 Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms), "VGCA", "Virtual CSP v2.0.lnk")
+            };
+
+            foreach (string path in candidateVcspPaths)
+            {
+                if (File.Exists(path))
+                {
+                    try
+                    {
+                        Process.Start(new ProcessStartInfo
+                        {
+                            FileName = path,
+                            UseShellExecute = true
+                        });
+                        return true;
+                    }
+                    catch
+                    {
+                        // Tiếp tục thử đường dẫn thay thế
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Khởi chạy ứng dụng ký số chính thức VGCA: Ưu tiên mở Virtual CSP Manager để đăng nhập
+        /// tài khoản & mật khẩu chứng thư số, nếu không có sẽ mở công cụ VGCA Sign Tool (USB Token)
+        /// </summary>
+        public bool LaunchVGCALoginApp()
+        {
+            var candidatePaths = new List<string>
+            {
+                // 1. ƯU TIÊN SỐ 1: Ứng dụng VGCA Virtual CSP v2.0 để đăng nhập tài khoản & mật khẩu chứng thư số
+                VGCAManagerExePath,
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "VGCA", "Virtual CSP v2.0", "vgca_vcsp_v2_mgr.exe"),
+                @"C:\Users\Public\Desktop\VGCA Virtual CSP v2.0.lnk",
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "VGCA Virtual CSP v2.0.lnk"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "VGCA Virtual CSP v2.0.lnk"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms), "VGCA", "Virtual CSP v2.0.lnk"),
+
+                // 2. Ứng dụng phụ trợ VGCA Sign Tool v3.0.6 (USB Token phần cứng)
+                VGCASignToolExePath,
+                VGCASignToolExePath64,
+                @"C:\Users\Public\Desktop\VGCA Sign Tool.lnk",
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory), "VGCA Sign Tool.lnk"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "VGCA Sign Tool.lnk"),
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonPrograms), "VGCA", "VGCA Sign Tool.lnk")
             };
 
             foreach (string path in candidatePaths)
@@ -275,6 +314,29 @@ namespace VGCASignToolPro.Services
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "redist", "VGCASignToolSetup.msi"),
                 Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VGCASignToolSetup.msi"),
                 @"C:\Users\HPZBook\Desktop\VGCASignToolSetup_v3.0.6\VGCASignToolSetup.msi"
+            };
+
+            foreach (string p in searchPaths)
+            {
+                if (File.Exists(p))
+                {
+                    return p;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Lấy đường dẫn bộ cài đặt VGCA Virtual CSP Installer (VGCA_VCSPInstaller.exe)
+        /// của Ban Cơ Yếu Chính Phủ để giáo viên cài đặt đăng nhập tài khoản/mật khẩu
+        /// </summary>
+        public string? GetBundledVcspInstallerPath()
+        {
+            var searchPaths = new List<string>
+            {
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "redist", "VGCA_VCSPInstaller.exe"),
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VGCA_VCSPInstaller.exe"),
+                @"C:\Users\HPZBook\Desktop\VGCA_VCSPInstaller\VGCA_VCSPInstaller.exe"
             };
 
             foreach (string p in searchPaths)

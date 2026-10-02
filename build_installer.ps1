@@ -77,7 +77,7 @@ if (-not (Test-Path $innoCompiler)) {
 $issFile = Join-Path $projectDir "installer\VGCASignToolPro_Setup.iss"
 & $innoCompiler $issFile
 
-$installerExe = Join-Path $outputInstallerDir "VGCASignToolPro_Setup_v2.1.2.exe"
+$installerExe = Join-Path $outputInstallerDir "VGCASignToolPro_Setup_v2.1.3.exe"
 if (-not (Test-Path $installerExe)) {
     throw "Error: Installer output file was not found after compilation: $installerExe"
 }
@@ -87,7 +87,7 @@ $instHash = (Get-FileHash -Path $installerExe -Algorithm SHA256).Hash
 
 # 6. BUILD AUTO-UPDATE ZIP PACKAGE (EXCLUDING SENSITIVE USER DATA)
 Write-Host "`n[6/6] Building Auto-Update Package (ZIP for UpdateService)..." -ForegroundColor Yellow
-$updateZipPath = Join-Path $outputInstallerDir "VGCASignToolPro_Update_v2.1.2.zip"
+$updateZipPath = Join-Path $outputInstallerDir "VGCASignToolPro_Update_v2.1.3.zip"
 if (Test-Path $updateZipPath) {
     Remove-Item -Path $updateZipPath -Force
 }
@@ -200,23 +200,22 @@ Write-Host "   SHA256: $zipHash" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "3. FIREBASE /app_release.json METADATA PAYLOAD:" -ForegroundColor White
 $releaseObj = @{
-    version = "2.1.2"
+    version = "2.1.3"
     minSupportedVersion = "2.0.0"
     releaseDate = (Get-Date -Format "yyyy-MM-dd")
-    title = "Bản cập nhật VGCA Sign Tool Pro v2.1.2"
-    description = "Khắc phục triệt để lỗi xung đột tiến trình nền khi cập nhật tự động, tối ưu hóa cơ chế giải phóng tệp tin và chuẩn hóa hiển thị Tiếng Việt."
-    downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.2/VGCASignToolPro_Update_v2.1.2.zip"
-    installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.2/VGCASignToolPro_Setup_v2.1.2.exe"
+    title = "Bản cập nhật VGCA Sign Tool Pro v2.1.3"
+    description = "Tích hợp trọn gói bộ cài đặt VGCA Virtual CSP v2.0 của Ban Cơ Yếu Chính Phủ, bổ sung tùy chọn cài đặt linh hoạt và điều chỉnh nút Mở Công Cụ VGCA."
+    downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.3/VGCASignToolPro_Update_v2.1.3.zip"
+    installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.3/VGCASignToolPro_Setup_v2.1.3.exe"
     sha256 = $zipHash
     installerSha256 = $instHash
     mandatory = $false
     status = "ACTIVE"
     changelog = @(
-        "Khắc phục triệt để lỗi khóa tệp Accessibility.dll khi cập nhật bằng cơ chế Move-Before-Overwrite chuẩn Google Chrome/VS Code",
-        "Tự động phát hiện và cưỡng chế giải phóng toàn bộ tiến trình VGCASignToolPro chạy ngầm trước khi nâng cấp",
-        "Chuẩn hóa bảng mã ký tự UTF-8 Tiếng Việt hiển thị sắc nét trên toàn hệ thống cập nhật",
-        "Tích hợp trọn gói bộ cài đặt chính thức VGCA Sign Tool v3.0.6 (.msi) của Ban Cơ Yếu Chính Phủ",
-        "Nâng cấp cơ chế nhận diện kép hỗ trợ cả VGCASignTool.exe và VGCA Virtual CSP v2.0"
+        "Tích hợp trọn gói bộ cài đặt chính thức VGCA Virtual CSP v2.0 (VGCA_VCSPInstaller.exe) của Ban Cơ Yếu Chính Phủ",
+        "Điều chỉnh nút 'Mở Công Cụ VGCA' ưu tiên mở ứng dụng Virtual CSP Manager để đăng nhập tài khoản và mật khẩu chứng thư số",
+        "Bổ sung menu chuột phải cho phép Thầy/Cô chủ động lựa chọn cài đặt Virtual CSP v2.0 hoặc VGCA Sign Tool v3.0.6",
+        "Khắc phục triệt để lỗi khóa tệp và tối ưu hóa gói cập nhật sạch Clean Patch Package (74 MB)"
     )
 }
 $jsonPayload = $releaseObj | ConvertTo-Json -Depth 5
@@ -228,7 +227,7 @@ $firebaseEndpoint = "https://cva-kyso-lienthong-default-rtdb.asia-southeast1.fir
 try {
     $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($jsonPayload)
     $null = Invoke-RestMethod -Uri $firebaseEndpoint -Method Put -Body $bodyBytes -ContentType "application/json; charset=utf-8"
-    Write-Host "[OK] Da dong bo thanh cong metadata v2.1.2 (UTF-8 chuan) len Firebase Control Plane!" -ForegroundColor Green
+    Write-Host "[OK] Da dong bo thanh cong metadata v2.1.3 (UTF-8 chuan) len Firebase Control Plane!" -ForegroundColor Green
 }
 catch {
     Write-Host "[WARN] Khong the tu dong dong bo Firebase: $_" -ForegroundColor Yellow

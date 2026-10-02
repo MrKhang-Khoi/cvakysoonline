@@ -5,7 +5,7 @@
 ; ==============================================================================
 
 #define MyAppName "VGCA Sign Tool Pro"
-#define MyAppVersion "2.1.2"
+#define MyAppVersion "2.1.3"
 #define MyAppPublisher "Ban Co Yeu Chinh Phu & Nha Truong"
 #define MyAppURL "https://github.com/MrKhang-Khoi/cvakysoonline"
 #define MyAppExeName "VGCASignToolPro.exe"
@@ -29,7 +29,7 @@ DisableProgramGroupPage=yes
 
 ; Xuất file cài đặt
 OutputDir=..\Output_Installer
-OutputBaseFilename=VGCASignToolPro_Setup_v2.1.2
+OutputBaseFilename=VGCASignToolPro_Setup_v2.1.3
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -49,7 +49,8 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 ; MẶC ĐỊNH 100% ĐƯỢC CHỌN: Tạo icon Desktop & Tự khởi động cùng Windows
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "autostart"; Description: "Tự động khởi động cùng Windows khi bật máy (Sẵn sàng nhận lệnh ký số)"; GroupDescription: "Cấu hình hệ thống:"
-Name: "installvgca"; Description: "Tự động cài đặt phần mềm ký số VGCA Sign Tool v3.0.6 chính thức của Ban Cơ Yếu Chính Phủ"; GroupDescription: "Thành phần phụ trợ Ban Cơ Yếu:"; Check: not IsVgcaInstalled
+Name: "installvcsp"; Description: "Tự động cài đặt phần mềm ký số từ xa VGCA Virtual CSP v2.0 (Đăng nhập tài khoản & mật khẩu)"; GroupDescription: "Thành phần phụ trợ Ban Cơ Yếu:"; Check: not IsVcspInstalled
+Name: "installvgca"; Description: "Cài đặt phần mềm ký số VGCA Sign Tool v3.0.6 chính thức của Ban Cơ Yếu Chính Phủ (USB Token)"; GroupDescription: "Thành phần phụ trợ Ban Cơ Yếu:"; Flags: unchecked; Check: not IsVgcaInstalled
 
 [Files]
 ; 1. Toàn bộ các tệp tin chương trình Self-Contained x64
@@ -62,7 +63,7 @@ Source: "app_icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#MyAppSourceDir}\school_roster.json"; DestDir: "{app}"; Flags: skipifsourcedoesntexist onlyifdoesntexist uninsneveruninstall
 Source: "{#MyAppSourceDir}\workflow_config.json"; DestDir: "{app}"; Flags: skipifsourcedoesntexist onlyifdoesntexist uninsneveruninstall
 
-; 4. GÓI TÍCH HỢP ALL-IN-ONE: Bộ cài VGCA Sign Tool v3.0.6 chính thức của Ban Cơ Yếu Chính Phủ
+; 4. GÓI TÍCH HỢP ALL-IN-ONE: Bộ cài đặt chính thức của Ban Cơ Yếu Chính Phủ (Virtual CSP v2.0 & Sign Tool v3.0.6)
 Source: "redist\*"; DestDir: "{tmp}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "redist\*"; DestDir: "{app}\redist"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 
@@ -76,7 +77,9 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilen
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "VGCASignToolPro"; ValueData: """{app}\{#MyAppExeName}"" --autostart"; Tasks: autostart; Flags: uninsdeletevalue
 
 [Run]
-; Cài đặt nền tảng VGCA Sign Tool v3.0.6 của Ban Cơ Yếu Chính Phủ nếu máy chưa có
+; Cài đặt nền tảng VGCA Virtual CSP v2.0 (Ký số từ xa) của Ban Cơ Yếu nếu máy chưa có
+Filename: "{tmp}\VGCA_VCSPInstaller.exe"; Description: "Cài đặt phần mềm ký số từ xa VGCA Virtual CSP v2.0 của Ban Cơ Yếu Chính Phủ"; Flags: skipifdoesntexist nowait postinstall; Tasks: installvcsp; Check: not IsVcspInstalled
+; Cài đặt nền tảng VGCA Sign Tool v3.0.6 (USB Token) của Ban Cơ Yếu nếu máy chưa có
 Filename: "msiexec.exe"; Parameters: "/i ""{tmp}\VGCASignToolSetup.msi"""; Description: "Cài đặt phần mềm ký số VGCA Sign Tool v3.0.6 chính thức của Ban Cơ Yếu Chính Phủ"; Flags: skipifdoesntexist nowait postinstall; Tasks: installvgca; Check: not IsVgcaInstalled
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
@@ -89,6 +92,17 @@ begin
   Result := RegQueryStringValue(HKEY_CURRENT_USER, 'Software\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-69D3A8E3EFE7}', 'pv', VersionStr) or
             RegQueryStringValue(HKEY_LOCAL_MACHINE, 'SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-69D3A8E3EFE7}', 'pv', VersionStr) or
             RegQueryStringValue(HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-69D3A8E3EFE7}', 'pv', VersionStr);
+end;
+
+// Kiểm tra phần mềm ký số từ xa VGCA Virtual CSP v2.0 đã có trên máy hay chưa
+function IsVcspInstalled(): Boolean;
+begin
+  Result := FileExists('C:\Program Files (x86)\VGCA\Virtual CSP v2.0\vgca_vcsp_v2_mgr.exe') or
+            FileExists('C:\Program Files\VGCA\Virtual CSP v2.0\vgca_vcsp_v2_mgr.exe') or
+            FileExists('C:\Windows\System32\vgca_vcsp11_v2.dll') or
+            RegKeyExists(HKEY_LOCAL_MACHINE, 'SYSTEM\CurrentControlSet\Control\Cryptography\Providers\VGCA RSSP KSP v2.0') or
+            FileExists('C:\Users\Public\Desktop\VGCA Virtual CSP v2.0.lnk') or
+            FileExists(ExpandConstant('{commonprograms}\VGCA\Virtual CSP v2.0.lnk'));
 end;
 
 // Kiểm tra toàn diện phần mềm VGCA (VGCA Sign Tool v3.0.6 hoặc Virtual CSP v2.0) đã có trên máy hay chưa

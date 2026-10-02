@@ -518,7 +518,19 @@
                                         <Button Grid.Column="0" x:Name="BtnSyncVgcaCertificate" Content="🔄 Quét Token Cắm Sẵn" Style="{StaticResource SecondaryButton}" 
                                                 FontSize="11" FontWeight="SemiBold" Padding="8,8" Margin="0,0,4,0" Click="BtnSyncVgcaCertificate_Click" />
                                         <Button Grid.Column="1" x:Name="BtnLaunchVgcaManager" Content="🖥️ Mở Công Cụ VGCA" Style="{StaticResource SecondaryButton}" 
-                                                FontSize="11" FontWeight="SemiBold" Padding="8,8" Margin="4,0,0,0" Click="BtnLaunchVgcaManager_Click" />
+                                                FontSize="11" FontWeight="SemiBold" Padding="8,8" Margin="4,0,0,0" Click="BtnLaunchVgcaManager_Click"
+                                                ToolTip="Bấm để mở VGCA Virtual CSP Manager đăng nhập tài khoản/mật khẩu chứng thư số (Hoặc chuột phải để chọn cài đặt)">
+                                            <Button.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="🖥️ Mở Virtual CSP Manager (Đăng nhập tài khoản &amp; mật khẩu)" Click="MenuOpenVcspManager_Click" FontWeight="Bold" />
+                                                    <Separator />
+                                                    <MenuItem Header="📦 Cài đặt VGCA Virtual CSP v2.0 (Ký số từ xa - VGCA_VCSPInstaller.exe)" Click="MenuInstallVcsp_Click" />
+                                                    <MenuItem Header="🔑 Cài đặt VGCA Sign Tool v3.0.6 (USB Token phần cứng - .msi)" Click="MenuInstallVgcaSignTool_Click" />
+                                                    <Separator />
+                                                    <MenuItem Header="⚡ Mở VGCA Sign Tool v3.0.6 (USB Token)" Click="MenuOpenVgcaSignTool_Click" />
+                                                </ContextMenu>
+                                            </Button.ContextMenu>
+                                        </Button>
                                     </Grid>
 
                                     <!-- KHUNG THÔNG BÁO LỖI / TRẠNG THÁI -->
@@ -551,7 +563,19 @@
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                                 <Button x:Name="BtnDetailOpenVcsp" Content="🖥️ Mở Công Cụ VGCA" Style="{StaticResource SecondaryButton}" 
                                                         Background="#FEF3C7" BorderBrush="#FCD34D" Foreground="#B45309" FontWeight="Bold" 
-                                                        Padding="8,4" FontSize="11" Margin="0,0,6,0" Click="BtnLaunchVgcaManager_Click" Visibility="Collapsed" />
+                                                        Padding="8,4" FontSize="11" Margin="0,0,6,0" Click="BtnLaunchVgcaManager_Click" Visibility="Collapsed"
+                                                        ToolTip="Bấm để mở VGCA Virtual CSP Manager đăng nhập tài khoản/mật khẩu chứng thư số (Hoặc chuột phải để chọn cài đặt)">
+                                                    <Button.ContextMenu>
+                                                        <ContextMenu>
+                                                            <MenuItem Header="🖥️ Mở Virtual CSP Manager (Đăng nhập tài khoản &amp; mật khẩu)" Click="MenuOpenVcspManager_Click" FontWeight="Bold" />
+                                                            <Separator />
+                                                            <MenuItem Header="📦 Cài đặt VGCA Virtual CSP v2.0 (Ký số từ xa - VGCA_VCSPInstaller.exe)" Click="MenuInstallVcsp_Click" />
+                                                            <MenuItem Header="🔑 Cài đặt VGCA Sign Tool v3.0.6 (USB Token phần cứng - .msi)" Click="MenuInstallVgcaSignTool_Click" />
+                                                            <Separator />
+                                                            <MenuItem Header="⚡ Mở VGCA Sign Tool v3.0.6 (USB Token)" Click="MenuOpenVgcaSignTool_Click" />
+                                                        </ContextMenu>
+                                                    </Button.ContextMenu>
+                                                </Button>
                                                 <Button Content="🔄 Quét Lại Trạng Thái" Style="{StaticResource SecondaryButton}" 
                                                         Background="#F1F5F9" BorderBrush="#CBD5E1" Foreground="#334155" FontWeight="SemiBold" 
                                                         Padding="8,4" FontSize="11" Margin="0,0,6,0" Click="BtnSyncVgcaCertificate_Click" />
