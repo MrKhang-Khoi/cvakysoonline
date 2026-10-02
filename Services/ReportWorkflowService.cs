@@ -754,6 +754,136 @@ namespace VGCASignToolPro.Services
         }
 
         /// <summary>
+        /// Người duyệt (Tổ trưởng / Giáo viên) ký xong và chuyển tiếp báo cáo cho người duyệt tiếp theo (BGH / Lãnh đạo)
+        /// Tệp PDF chuyển tiếp đã mang đầy đủ chữ ký tích lũy của các bước trước.
+        /// </summary>
+        public async Task<(bool Success, string Message)> ForwardReportAsync(
+            string reportId,
+            string currentSignerCccd,
+            string currentSignerName,
+            string nextApproverCccd,
+            string nextApproverName,
+            string signedPdfPath,
+            string expectedBaseHash,
+            string forwardNotes)
+        {
+            try
+            {
+                if (!File.Exists(signedPdfPath))
+                {
+                    return (false, "Tệp PDF đã ký không tồn tại.");
+                }
+
+                string reportUrl = BuildUrl($"reports/{reportId}");
+                var getRes = await _http.GetAsync(reportUrl).ConfigureAwait(false);
+                if (!getRes.IsSuccessStatusCode)
+                {
+                    return (false, "Không tìm thấy thông tin báo cáo.");
+                }
+
+                string content = await getRes.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var report = JsonConvert.DeserializeObject<ReportModel>(content);
+                if (report == null) return (false, "Dữ liệu báo cáo bị lỗi.");
+
+                if (report.Status == "RECALLED")
+                {
+                    return (false, "Từ chối chuyển tiếp: Báo cáo này đã bị người lập thu hồi trước đó!");
+                }
+
+                if (!string.IsNullOrEmpty(report.BaseHash) && report.BaseHash != expectedBaseHash)
+                {
+                    return (false, "Xung đột phiên bản: Tệp gốc trên hệ thống đã thay đổi hoặc cập nhật phiên bản mới!");
+                }
+
+                long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                string signedHash = ComputeSha256(signedPdfPath);
+
+                string googleDriveViewUrl = string.Empty;
+                string finalDriveFileId = string.Empty;
+
+                if (!string.IsNullOrWhiteSpace(_googleAppsScriptUrl))
+                {
+                    try
+                    {
+                        var driveRes = await UploadToGoogleDriveAsync(signedPdfPath, reportId, $"{report.Title}_ChuyenTiep.pdf").ConfigureAwait(false);
+                        if (driveRes.Success && !string.IsNullOrEmpty(driveRes.ViewUrl))
+                        {
+                            googleDriveViewUrl = driveRes.ViewUrl;
+                            finalDriveFileId = !string.IsNullOrEmpty(driveRes.DownloadUrl) ? driveRes.DownloadUrl : (driveRes.FileId ?? string.Empty);
+
+                            if (!string.IsNullOrEmpty(report.DriveFileId))
+                            {
+                                _ = DeleteFileFromFirebaseAsync(report.DriveFileId);
+                            }
+                        }
+                    }
+                    catch (Exception gEx)
+                    {
+                        System.Diagnostics.Trace.TraceWarning($"Upload Google Drive thất bại, chuyển sang phương án Firebase dự phòng: {gEx.Message}");
+                    }
+                }
+
+                if (string.IsNullOrEmpty(finalDriveFileId))
+                {
+                    byte[] signedBytes = await File.ReadAllBytesAsync(signedPdfPath).ConfigureAwait(false);
+                    string fileDataBase64 = Convert.ToBase64String(signedBytes);
+                    string fileIdV2 = $"FILE_{reportId}_FWD_{now}";
+
+                    var filePayload = new
+                    {
+                        fileName = $"{report.Title}_ChuyenTiep.pdf",
+                        fileData = fileDataBase64,
+                        fileSize = signedBytes.Length,
+                        createdAt = now
+                    };
+
+                    string fileUrl = BuildUrl($"files/{fileIdV2}");
+                    var fileContent = new StringContent(JsonConvert.SerializeObject(filePayload), Encoding.UTF8, "application/json");
+                    var putRes = await _http.PutAsync(fileUrl, fileContent).ConfigureAwait(false);
+                    if (!putRes.IsSuccessStatusCode)
+                    {
+                        return (false, "Không thể lưu trữ tệp chuyển tiếp lên máy chủ đám mây.");
+                    }
+                    finalDriveFileId = fileIdV2;
+                }
+
+                string combinedNotes = string.IsNullOrWhiteSpace(forwardNotes)
+                    ? $"[Chuyển tiếp] {currentSignerName} đã ký duyệt và chuyển tiếp lên {nextApproverName}."
+                    : $"[Chuyển tiếp từ {currentSignerName}]: {forwardNotes}";
+
+                var forwardPayload = new
+                {
+                    status = "WAITING_OPEN",
+                    approverCccd = nextApproverCccd,
+                    approverName = nextApproverName,
+                    signedBy = currentSignerCccd,
+                    signedByName = currentSignerName,
+                    signedHash = signedHash,
+                    driveFileId = finalDriveFileId,
+                    googleDriveUrl = googleDriveViewUrl,
+                    signedAt = now,
+                    updatedAt = now,
+                    lockedBy = "",
+                    lockedAt = 0,
+                    notes = combinedNotes
+                };
+
+                var patchContent = new StringContent(JsonConvert.SerializeObject(forwardPayload), Encoding.UTF8, "application/json");
+                var patchRes = await _http.PatchAsync(reportUrl, patchContent).ConfigureAwait(false);
+                if (!patchRes.IsSuccessStatusCode)
+                {
+                    return (false, "Không thể cập nhật thông tin chuyển tiếp trên máy chủ.");
+                }
+
+                return (true, $"Đã chuyển tiếp báo cáo thành công tới {nextApproverName}!");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi hệ thống khi chuyển tiếp: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Văn thư / BGH đóng con dấu pháp nhân trường bằng USB Token Ban Cơ Yếu và nộp bản hoàn tất chính thức
         /// </summary>
         public async Task<(bool Success, string Message)> CommitSealedReportAsync(

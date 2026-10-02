@@ -1,6 +1,6 @@
 ﻿# ==============================================================================
 # SCRIPT DONG GOI BO CAI DAT & GOI UPDATE TU DONG CHUAN MICROSOFT WINDOWS
-# Project: VGCA Sign Tool Pro (v2.2.0)
+# Project: VGCA Sign Tool Pro (v2.3.0)
 # ==============================================================================
 
 $ErrorActionPreference = "Stop"
@@ -78,7 +78,7 @@ if (-not (Test-Path $innoCompiler)) {
 $issFile = Join-Path $projectDir "installer\VGCASignToolPro_Setup.iss"
 & $innoCompiler $issFile
 
-$installerExe = Join-Path $outputInstallerDir "VGCASignToolPro_Setup_v2.2.0.exe"
+$installerExe = Join-Path $outputInstallerDir "VGCASignToolPro_Setup_v2.3.0.exe"
 if (-not (Test-Path $installerExe)) {
     throw "Error: Installer output file was not found after compilation: $installerExe"
 }
@@ -88,7 +88,7 @@ $instHash = (Get-FileHash -Path $installerExe -Algorithm SHA256).Hash
 
 # 6. BUILD AUTO-UPDATE ZIP PACKAGE (EXCLUDING SENSITIVE USER DATA)
 Write-Host "`n[6/6] Building Auto-Update Package (ZIP for UpdateService)..." -ForegroundColor Yellow
-$updateZipPath = Join-Path $outputInstallerDir "VGCASignToolPro_Update_v2.2.0.zip"
+$updateZipPath = Join-Path $outputInstallerDir "VGCASignToolPro_Update_v2.3.0.zip"
 if (Test-Path $updateZipPath) {
     Remove-Item -Path $updateZipPath -Force
 }
@@ -163,23 +163,23 @@ Write-Host "   SHA256: $zipHash" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "3. FIREBASE /app_release.json METADATA PAYLOAD:" -ForegroundColor White
 $releaseObj = @{
-    version = "2.2.0"
+    version = "2.3.0"
     minSupportedVersion = "2.0.0"
     releaseDate = (Get-Date -Format "yyyy-MM-dd")
-    title = "Bản cập nhật VGCA Sign Tool Pro v2.2.0"
-    description = "Chuyển đổi toàn diện kiến trúc Tự Động Nhận Diện Danh Tính VGCA & Phân Quyền CCCD (Zero-Login Architecture). Tự động nhận diện thiết bị Ban Cơ Yếu Chính Phủ (Virtual CSP & USB Token), loại bỏ hoàn toàn mật khẩu cục bộ, đối soát trực tiếp với Firebase Cloud Roster và tối ưu hóa phản hồi ký số di động."
-    downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.2.0/VGCASignToolPro_Update_v2.2.0.zip"
-    installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.2.0/VGCASignToolPro_Setup_v2.2.0.exe"
+    title = "Bản cập nhật VGCA Sign Tool Pro v2.3.0"
+    description = "Hoàn thiện quy trình phê duyệt đa cấp (Multi-Tier Workflow) với tính năng chuyển tiếp báo cáo đã ký duyệt lên Ban Giám Hiệu/Lãnh đạo, chế độ ký số êm ái (Native-First Signing) không che khuất màn hình ứng dụng Virtual CSP / USB Token tránh treo kẹt ứng dụng, và triệt tiêu 100% hiện tượng đọng thông tin kỹ thuật cũ trên RAM khi đóng app VGCA."
+    downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.3.0/VGCASignToolPro_Update_v2.3.0.zip"
+    installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.3.0/VGCASignToolPro_Setup_v2.3.0.exe"
     sha256 = $zipHash
     installerSha256 = $instHash
     mandatory = $false
     status = "ACTIVE"
     changelog = @(
-        "Tự động nhận diện chứng thư số Ban Cơ Yếu Chính Phủ (Virtual CSP & USB Token) ngay khi kết nối",
-        "Loại bỏ hoàn toàn form đăng nhập CCCD/mật khẩu và tệp danh bạ cục bộ school_roster.json",
-        "Tự động đối soát CCCD với Firebase Cloud Roster để phân quyền đóng dấu và hiển thị chức vụ",
-        "Khắc phục triệt để lỗi không nhận tín hiệu thông báo ký trên ứng dụng di động",
-        "Mở sẵn Tab Soạn Thảo & Ký Số ngay khi khởi động, bảo tồn 100% tính năng nạp Word, Excel, PDF và Hộp Thư Trình Ký"
+        "Bổ sung quy trình Phê Duyệt Đa Cấp: Tổ trưởng/Giáo viên ký duyệt xong có thể chọn Chuyển Tiếp cho Ban Giám Hiệu ký lượt tiếp theo và đóng dấu cơ quan",
+        "Tệp PDF chuyển tiếp mang đầy đủ chữ ký số PAdES LTV tích lũy của các cấp duyệt trước",
+        "Chế độ ký số êm ái (Native-First Signing): Cắt bỏ hoàn toàn popup modal che khuất màn hình khi ký hoặc đóng dấu, cho phép cửa sổ Ban Cơ Yếu (Virtual CSP / PIN Token) tự do hiển thị và chiếm focus tự nhiên, triệt tiêu nguy cơ treo kẹt",
+        "Triệt tiêu 100% bug UI Residual State: Toàn bộ thông tin chi tiết kỹ thuật tự động xóa trắng về '---' ngay khi thoát app VGCA hoặc rút Token",
+        "Bảo tồn 100% tính năng nạp Word, Excel, PDF và Hộp Thư Trình Ký thời gian thực SSE"
     )
 }
 $jsonPayload = $releaseObj | ConvertTo-Json -Depth 5
@@ -191,7 +191,7 @@ $firebaseEndpoint = "https://cva-kyso-lienthong-default-rtdb.asia-southeast1.fir
 try {
     $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($jsonPayload)
     $null = Invoke-RestMethod -Uri $firebaseEndpoint -Method Put -Body $bodyBytes -ContentType "application/json; charset=utf-8"
-    Write-Host "[OK] Da dong bo thanh cong metadata v2.2.0 (UTF-8 chuan) len Firebase Control Plane!" -ForegroundColor Green
+    Write-Host "[OK] Da dong bo thanh cong metadata v2.3.0 (UTF-8 chuan) len Firebase Control Plane!" -ForegroundColor Green
 }
 catch {
     Write-Host "[WARN] Khong the tu dong dong bo Firebase: $_" -ForegroundColor Yellow

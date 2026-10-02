@@ -943,7 +943,10 @@
                                         Padding="12,5" FontSize="11" FontWeight="Bold" Margin="0,0,6,0" Click="BtnSubmitWorkflowReport_Click" />
                                 <Button x:Name="BtnCommitWorkflowApproval" Content="✅ Nộp Báo Cáo Đã Duyệt ➡" Style="{StaticResource SuccessButton}" 
                                         Background="#2563EB" BorderBrush="#1D4ED8"
-                                        Padding="12,5" FontSize="11" FontWeight="Bold" Visibility="Collapsed" Click="BtnCommitWorkflowApproval_Click" />
+                                        Padding="12,5" FontSize="11" FontWeight="Bold" Margin="0,0,6,0" Visibility="Collapsed" Click="BtnCommitWorkflowApproval_Click" />
+                                <Button x:Name="BtnForwardWorkflowReport" Content="➡ Chuyển Tiếp BGH / Người Duyệt Tiếp" Style="{StaticResource PrimaryButton}" 
+                                        Background="#7C3AED" BorderBrush="#6D28D9"
+                                        Padding="12,5" FontSize="11" FontWeight="Bold" Margin="0,0,6,0" Visibility="Collapsed" Click="BtnForwardWorkflowReport_Click" />
                                 <Button x:Name="BtnCommitWorkflowSeal" Content="🔴 Nộp Báo Cáo Đã Đóng Dấu ➡" Style="{StaticResource SuccessButton}" 
                                         Background="#DC2626" BorderBrush="#B91C1C"
                                         Padding="12,5" FontSize="11" FontWeight="Bold" Visibility="Collapsed" Click="BtnCommitWorkflowSeal_Click" />
@@ -1090,7 +1093,7 @@
                         <TabControl x:Name="TabControlWorkflowSub" Background="Transparent" BorderThickness="0">
                             
                             <!-- SUB-TAB 1: BÁO CÁO CHỜ TÔI DUYỆT (INBOX) -->
-                            <TabItem Header="  📥 Báo Cáo Chờ Tôi Duyệt  " FontSize="13" FontWeight="SemiBold">
+                            <TabItem x:Name="TabItemInbox" Header="  📥 Báo Cáo Chờ Tôi Duyệt  " FontSize="13" FontWeight="SemiBold">
                                 <Grid Margin="4,8,4,4">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="*" />
@@ -1153,7 +1156,7 @@
                             </TabItem>
 
                             <!-- SUB-TAB 2: BÁO CÁO TÔI ĐÃ GỬI (OUTBOX) -->
-                            <TabItem Header="  📤 Báo Cáo Tôi ĐÃ Gửi  " FontSize="13" FontWeight="SemiBold">
+                            <TabItem x:Name="TabItemOutbox" Header="  📤 Báo Cáo Tôi ĐÃ Gửi  " FontSize="13" FontWeight="SemiBold">
                                 <Grid Margin="4,8,4,4">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="*" />
@@ -1472,7 +1475,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="TIẾN TRÌNH: " FontSize="10" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <TextBlock Grid.Column="1" x:Name="TxtStatusBar" Text="Sẵn sàng." FontSize="11" Foreground="#E2E8F0" FontFamily="Segoe UI" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                <TextBlock Grid.Column="2" x:Name="TxtAppVersion" Text="Phiên bản v2.2.0 • .NET 8 x64" FontSize="11" Foreground="#94A3B8" VerticalAlignment="Center" Margin="16,0,0,0" />
+                <TextBlock Grid.Column="2" x:Name="TxtAppVersion" Text="Phiên bản v2.3.0 • .NET 8 x64" FontSize="11" Foreground="#94A3B8" VerticalAlignment="Center" Margin="16,0,0,0" />
             </Grid>
         </Border>
 
@@ -1579,6 +1582,125 @@
                             <Button x:Name="BtnConfirmSubmitWorkflow" Content="🚀 Xác Nhận Gửi Trình Ký" Style="{StaticResource SuccessButton}" 
                                     Background="#0D9488" BorderBrush="#0F766E"
                                     Padding="20,8" FontSize="13" FontWeight="Bold" Click="BtnConfirmSubmitWorkflow_Click" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Popup>
+
+        <!-- POPUP LỰA CHỌN PHÊ DUYỆT HOÀN TẤT HOẶC CHUYỂN TIẾP CHO BGH -->
+        <Popup x:Name="OverlayApprovalChoicePopup" 
+               IsOpen="False" 
+               Placement="Center" 
+               PlacementTarget="{Binding ElementName=MainRootGrid}" 
+               AllowsTransparency="True" 
+               PopupAnimation="None" 
+               StaysOpen="True"
+               Focusable="True">
+            <Grid Margin="24">
+                <Border Background="White" BorderBrush="#2563EB" BorderThickness="2" CornerRadius="14" 
+                        MaxWidth="640" Width="620" Padding="28">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <Border Background="#EFF6FF" CornerRadius="8" Padding="10" Margin="0,0,12,0">
+                                <TextBlock Text="✅" FontSize="26" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="KÝ SỐ PHÊ DUYỆT THÀNH CÔNG!" FontWeight="Bold" FontSize="17" Foreground="#1D4ED8" />
+                                <TextBlock Text="Văn bản đã được nhúng chữ ký số và tem thời gian TSA Ban Cơ Yếu" FontSize="12" Foreground="#64748B" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <TextBlock Text="Vui lòng chọn bước xử lý tiếp theo cho báo cáo này:" FontSize="13" FontWeight="SemiBold" Foreground="#1E293B" Margin="0,0,0,14" />
+
+                        <!-- OPTION 1: HOÀN TẤT -->
+                        <Border Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="8" Padding="14,12" Margin="0,0,0,10" Cursor="Hand" MouseLeftButtonUp="ChoiceCommitApproval_Click">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="🏁" FontSize="22" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="1. Phê Duyệt Hoàn Tất &amp; Lưu Kho Toàn Trường" FontWeight="Bold" FontSize="13" Foreground="#0F172A" />
+                                    <TextBlock Text="Áp dụng khi bạn là người ký cuối cùng (văn bản cấp tổ, nội bộ hoặc BGH)." FontSize="11" Foreground="#64748B" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <Button Grid.Column="2" Content="Chọn ➡" Style="{StaticResource SuccessButton}" Background="#059669" BorderBrush="#047857" FontSize="11" FontWeight="Bold" Padding="10,5" Click="ChoiceCommitApproval_Click" />
+                            </Grid>
+                        </Border>
+
+                        <!-- OPTION 2: CHUYỂN TIẾP -->
+                        <Border Background="#FAF5FF" BorderBrush="#DDD6FE" BorderThickness="1" CornerRadius="8" Padding="14,12" Margin="0,0,0,16" Cursor="Hand" MouseLeftButtonUp="ChoiceForwardApproval_Click">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="➡" FontSize="22" Foreground="#7C3AED" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="2. Chuyển Tiếp Cho Ban Giám Hiệu / Người Duyệt Tiếp Theo" FontWeight="Bold" FontSize="13" Foreground="#6D28D9" />
+                                    <TextBlock Text="Áp dụng khi Tổ trưởng duyệt xong cần trình lên BGH phê duyệt và đóng dấu." FontSize="11" Foreground="#64748B" TextWrapping="Wrap" />
+                                </StackPanel>
+                                <Button Grid.Column="2" Content="Chọn ➡" Style="{StaticResource PrimaryButton}" Background="#7C3AED" BorderBrush="#6D28D9" FontSize="11" FontWeight="Bold" Padding="10,5" Click="ChoiceForwardApproval_Click" />
+                            </Grid>
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="👁 Xem Lại Bản Đã Ký" Style="{StaticResource SecondaryButton}" 
+                                    Padding="14,7" FontSize="12" Click="BtnCloseApprovalChoice_Click" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Popup>
+
+        <!-- POPUP CHUYỂN TIẾP BÁO CÁO CHO BGH / NGƯỜI DUYỆT TIẾP THEO -->
+        <Popup x:Name="OverlayForwardWorkflowPopup" 
+               IsOpen="False" 
+               Placement="Center" 
+               PlacementTarget="{Binding ElementName=MainRootGrid}" 
+               AllowsTransparency="True" 
+               PopupAnimation="None" 
+               StaysOpen="True" 
+               Focusable="True">
+            <Grid Margin="24">
+                <Border Background="White" BorderBrush="#7C3AED" BorderThickness="2" CornerRadius="14" 
+                        MaxWidth="620" Width="600" Padding="28">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <Border Background="#F3E8FF" CornerRadius="8" Padding="10" Margin="0,0,12,0">
+                                <TextBlock Text="➡" FontSize="26" Foreground="#7C3AED" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="CHUYỂN TIẾP BÁO CÁO LÊN CẤP TRÊN" FontWeight="Bold" FontSize="16" Foreground="#6D28D9" />
+                                <TextBlock Text="Trình văn bản đã ký duyệt lên Ban Giám Hiệu / Người duyệt tiếp theo" FontSize="12" Foreground="#64748B" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <TextBlock Text="Tiêu đề báo cáo:" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
+                        <Border Background="#F1F5F9" CornerRadius="6" Padding="10,6" Margin="0,0,0,12">
+                            <TextBlock x:Name="TxtForwardReportTitle" Text="---" FontSize="12" Foreground="#1E293B" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        </Border>
+
+                        <TextBlock Text="Người đã ký duyệt:" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
+                        <Border Background="#F1F5F9" CornerRadius="6" Padding="10,6" Margin="0,0,0,12">
+                            <TextBlock x:Name="TxtForwardCurrentSigner" Text="---" FontSize="12" Foreground="#1E293B" FontWeight="Medium" />
+                        </Border>
+
+                        <TextBlock Text="Chọn Người duyệt tiếp theo (Ban Giám Hiệu / Lãnh đạo):" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
+                        <ComboBox x:Name="CboForwardNextApprover" Padding="8,6" FontSize="13" Margin="0,0,0,12" />
+
+                        <TextBlock Text="Ý kiến chuyên môn / Ghi chú chuyển tiếp:" FontSize="12" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
+                        <TextBox x:Name="TxtForwardNotes" Padding="8,6" FontSize="12" Height="50" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,20" Background="#F8FAFC" />
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="✕ Hủy Bỏ" Style="{StaticResource SecondaryButton}" 
+                                    Padding="16,8" FontSize="13" Margin="0,0,10,0" Click="BtnCancelForwardWorkflow_Click" />
+                            <Button x:Name="BtnConfirmForwardWorkflow" Content="🚀 Xác Nhận Chuyển Tiếp" Style="{StaticResource PrimaryButton}" 
+                                    Background="#7C3AED" BorderBrush="#6D28D9"
+                                    Padding="20,8" FontSize="13" FontWeight="Bold" Click="BtnConfirmForwardWorkflow_Click" />
                         </StackPanel>
                     </StackPanel>
                 </Border>
