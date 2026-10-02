@@ -25,15 +25,22 @@ if (-not (Test-Path $outputInstallerDir)) {
     New-Item -ItemType Directory -Path $outputInstallerDir -Force | Out-Null
 }
 
-# 2. PUBLISH MAIN APP (SELF-CONTAINED WIN-X64)
-Write-Host "`n[2/6] Publishing Main App (.NET 8 Self-Contained win-x64)..." -ForegroundColor Yellow
+# 2. PUBLISH STANDALONE UPDATER TO STAGING DIRECTORY
+Write-Host "`n[2/6] Publishing Standalone Updater (VGCASignToolPro.Updater)..." -ForegroundColor Yellow
+$updaterStagingDir = Join-Path $projectDir "dist\updater_staging"
+if (Test-Path $updaterStagingDir) { Remove-Item -Path $updaterStagingDir -Recurse -Force }
+$updaterCsproj = Join-Path $projectDir "Updater\VGCASignToolPro.Updater.csproj"
+dotnet publish $updaterCsproj -c Release -r win-x64 --self-contained true -o $updaterStagingDir
+
+# 3. PUBLISH MAIN APP (SELF-CONTAINED WIN-X64)
+Write-Host "`n[3/6] Publishing Main App (.NET 8 Self-Contained win-x64)..." -ForegroundColor Yellow
 $mainCsproj = Join-Path $projectDir "VGCASignToolPro.csproj"
 dotnet publish $mainCsproj -c Release -r win-x64 --self-contained true -o $distDir
 
-# 3. PUBLISH STANDALONE UPDATER
-Write-Host "`n[3/6] Publishing Standalone Updater (VGCASignToolPro.Updater)..." -ForegroundColor Yellow
-$updaterCsproj = Join-Path $projectDir "Updater\VGCASignToolPro.Updater.csproj"
-dotnet publish $updaterCsproj -c Release -r win-x64 --self-contained true -o $distDir
+# Copy ONLY Updater binaries into dist to guarantee ZERO overwrite of shared runtime DLLs
+Write-Host "  + Integrating Updater binaries into Main App distribution..." -ForegroundColor Green
+Get-ChildItem -Path $updaterStagingDir -Filter "VGCASignToolPro.Updater.*" | Copy-Item -Destination $distDir -Force
+if (Test-Path $updaterStagingDir) { Remove-Item -Path $updaterStagingDir -Recurse -Force }
 
 # 4. COPY APP-LOCAL C++ RUNTIME DLLS (ZERO-DEPENDENCY)
 Write-Host "`n[4/6] Bundling App-Local C++ CRT DLLs (vcruntime140, msvcp140)..." -ForegroundColor Yellow
@@ -77,7 +84,7 @@ if (-not (Test-Path $innoCompiler)) {
 $issFile = Join-Path $projectDir "installer\VGCASignToolPro_Setup.iss"
 & $innoCompiler $issFile
 
-$installerExe = Join-Path $outputInstallerDir "VGCASignToolPro_Setup_v2.1.4.exe"
+$installerExe = Join-Path $outputInstallerDir "VGCASignToolPro_Setup_v2.1.5.exe"
 if (-not (Test-Path $installerExe)) {
     throw "Error: Installer output file was not found after compilation: $installerExe"
 }
@@ -87,7 +94,7 @@ $instHash = (Get-FileHash -Path $installerExe -Algorithm SHA256).Hash
 
 # 6. BUILD AUTO-UPDATE ZIP PACKAGE (EXCLUDING SENSITIVE USER DATA)
 Write-Host "`n[6/6] Building Auto-Update Package (ZIP for UpdateService)..." -ForegroundColor Yellow
-$updateZipPath = Join-Path $outputInstallerDir "VGCASignToolPro_Update_v2.1.4.zip"
+$updateZipPath = Join-Path $outputInstallerDir "VGCASignToolPro_Update_v2.1.5.zip"
 if (Test-Path $updateZipPath) {
     Remove-Item -Path $updateZipPath -Force
 }
@@ -200,22 +207,22 @@ Write-Host "   SHA256: $zipHash" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "3. FIREBASE /app_release.json METADATA PAYLOAD:" -ForegroundColor White
 $releaseObj = @{
-    version = "2.1.4"
+    version = "2.1.5"
     minSupportedVersion = "2.0.0"
     releaseDate = (Get-Date -Format "yyyy-MM-dd")
-    title = "Bản cập nhật VGCA Sign Tool Pro v2.1.4"
-    description = "Khắc phục triệt để lỗi kẹt hộp thoại nạp tệp PDF/Word, nâng cấp động cơ hiển thị Dual-Mode Base64/Streaming, triệt tiêu lỗi CORS và tích hợp hệ thống AppLogger chuyên nghiệp."
-    downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.4/VGCASignToolPro_Update_v2.1.4.zip"
-    installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.4/VGCASignToolPro_Setup_v2.1.4.exe"
+    title = "Bản cập nhật VGCA Sign Tool Pro v2.1.5"
+    description = "Khắc phục triệt để lỗi nạp file PDF/Word/Excel, đồng bộ thư viện System.Text.Json v10.0, tăng tốc xử lý tài liệu và triệt tiêu hoàn toàn lỗi kẹt popup loading."
+    downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.5/VGCASignToolPro_Update_v2.1.5.zip"
+    installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.5/VGCASignToolPro_Setup_v2.1.5.exe"
     sha256 = $zipHash
     installerSha256 = $instHash
     mandatory = $false
     status = "ACTIVE"
     changelog = @(
-        "Khắc phục triệt để lỗi treo/kẹt hộp thoại nạp tài liệu PDF và Word",
-        "Nâng cấp cơ chế nạp PDF tương tác Dual-Mode (Base64 in-memory kết hợp Virtual Streaming), triệt tiêu lỗi CORS và 404",
-        "Loại bỏ hiện tượng kẹt animation WPF Popup, tối ưu thời gian phản hồi mở tài liệu sieu toc",
-        "Tích hợp hệ thống ghi log chẩn đoán chuyên nghiệp AppLogger thời gian thực vào %LocalAppData%\VGCASignToolPro\logs"
+        "Khắc phục triệt để lỗi không nạp được file PDF, Word và Excel do xung đột phiên bản thư viện System.Text.Json",
+        "Triệt tiêu 100% hiện tượng kẹt popup loading khi xảy ra sự cố nạp tệp",
+        "Nâng cấp bộ chuyển đổi Word Native với thời gian chờ tối ưu 8 giây và cơ chế phao cứu sinh độc lập",
+        "Tối ưu hóa đa luồng chống lỗi khóa tệp school_roster.json khi khởi động và đồng bộ danh bạ"
     )
 }
 $jsonPayload = $releaseObj | ConvertTo-Json -Depth 5
@@ -227,7 +234,7 @@ $firebaseEndpoint = "https://cva-kyso-lienthong-default-rtdb.asia-southeast1.fir
 try {
     $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($jsonPayload)
     $null = Invoke-RestMethod -Uri $firebaseEndpoint -Method Put -Body $bodyBytes -ContentType "application/json; charset=utf-8"
-    Write-Host "[OK] Da dong bo thanh cong metadata v2.1.4 (UTF-8 chuan) len Firebase Control Plane!" -ForegroundColor Green
+    Write-Host "[OK] Da dong bo thanh cong metadata v2.1.5 (UTF-8 chuan) len Firebase Control Plane!" -ForegroundColor Green
 }
 catch {
     Write-Host "[WARN] Khong the tu dong dong bo Firebase: $_" -ForegroundColor Yellow

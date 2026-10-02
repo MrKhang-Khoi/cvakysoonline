@@ -381,14 +381,53 @@ namespace VGCASignToolPro.Services
         {
             try
             {
-                File.WriteAllText(_rosterFilePath, json, Encoding.UTF8);
+                int retries = 0;
+                while (true)
+                {
+                    try
+                    {
+                        using (var fs = new FileStream(_rosterFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
+                        using (var sw = new StreamWriter(fs, Encoding.UTF8))
+                        {
+                            sw.Write(json);
+                            sw.Flush();
+                        }
+                        break;
+                    }
+                    catch (IOException) when (retries < 3)
+                    {
+                        retries++;
+                        System.Threading.Thread.Sleep(100);
+                    }
+                }
+
                 string hmacPath = _rosterFilePath + ".hmac";
                 byte[] hmacKey = GetRosterHmacKey();
                 try
                 {
                     using var hmac = new HMACSHA256(hmacKey);
                     byte[] computedHmacBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(json));
-                    File.WriteAllText(hmacPath, Convert.ToBase64String(computedHmacBytes), Encoding.UTF8);
+                    string hmacBase64 = Convert.ToBase64String(computedHmacBytes);
+
+                    retries = 0;
+                    while (true)
+                    {
+                        try
+                        {
+                            using (var fsHmac = new FileStream(hmacPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
+                            using (var swHmac = new StreamWriter(fsHmac, Encoding.UTF8))
+                            {
+                                swHmac.Write(hmacBase64);
+                                swHmac.Flush();
+                            }
+                            break;
+                        }
+                        catch (IOException) when (retries < 3)
+                        {
+                            retries++;
+                            System.Threading.Thread.Sleep(100);
+                        }
+                    }
                 }
                 finally
                 {

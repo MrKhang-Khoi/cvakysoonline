@@ -272,76 +272,74 @@ namespace VGCASignToolPro
             try
             {
                 string jsonString = e.WebMessageAsJson;
-                using System.Text.Json.JsonDocument doc = System.Text.Json.JsonDocument.Parse(jsonString);
-                System.Text.Json.JsonElement root = doc.RootElement;
-                if (root.TryGetProperty("type", out System.Text.Json.JsonElement typeProp))
+                var root = Newtonsoft.Json.Linq.JObject.Parse(jsonString);
+                string? msgType = (string?)root["type"];
+                if (msgType == "stampCoordinatesChanged")
                 {
-                    string? msgType = typeProp.GetString();
-                    if (msgType == "stampCoordinatesChanged")
+                    var coords = root["coords"];
+                    if (coords != null &&
+                        coords["pageNumber"] != null &&
+                        coords["x"] != null &&
+                        coords["y"] != null &&
+                        coords["width"] != null &&
+                        coords["height"] != null)
                     {
-                        if (root.TryGetProperty("coords", out System.Text.Json.JsonElement coords) &&
-                            coords.TryGetProperty("pageNumber", out System.Text.Json.JsonElement pn) && pn.TryGetInt32(out int pageNum) &&
-                            coords.TryGetProperty("x", out System.Text.Json.JsonElement cx) && cx.TryGetDouble(out double xVal) &&
-                            coords.TryGetProperty("y", out System.Text.Json.JsonElement cy) && cy.TryGetDouble(out double yVal) &&
-                            coords.TryGetProperty("width", out System.Text.Json.JsonElement cw) && cw.TryGetDouble(out double wVal) &&
-                            coords.TryGetProperty("height", out System.Text.Json.JsonElement ch) && ch.TryGetDouble(out double hVal))
-                        {
-                            _hasUserPlacedStamp = true;
-                            _userStampPage = pageNum;
-                            _userStampX = (float)xVal;
-                            _userStampY = (float)yVal;
-                            _userStampWidth = (float)wVal;
-                            _userStampHeight = (float)hVal;
+                        int pageNum = (int)coords["pageNumber"]!;
+                        double xVal = (double)coords["x"]!;
+                        double yVal = (double)coords["y"]!;
+                        double wVal = (double)coords["width"]!;
+                        double hVal = (double)coords["height"]!;
 
-                            // Đồng bộ ngược lại các ô nhập liệu ở Tab 1 để người dùng quan sát
-                            TxtPageNumber.Text = _userStampPage.ToString();
-                            TxtCoordX.Text = Math.Round(_userStampX).ToString();
-                            TxtCoordY.Text = Math.Round(_userStampY).ToString();
-                            TxtDimensions.Text = $"{Math.Round(_userStampWidth)}x{Math.Round(_userStampHeight)}";
+                        _hasUserPlacedStamp = true;
+                        _userStampPage = pageNum;
+                        _userStampX = (float)xVal;
+                        _userStampY = (float)yVal;
+                        _userStampWidth = (float)wVal;
+                        _userStampHeight = (float)hVal;
 
-                            UpdateStatus($"Đã định vị chữ ký tại Trang {_userStampPage} (X: {Math.Round(_userStampX)}, Y: {Math.Round(_userStampY)}, {_userStampWidth:F0}x{_userStampHeight:F0} pt).");
-                        }
+                        // Đồng bộ ngược lại các ô nhập liệu ở Tab 1 để người dùng quan sát
+                        TxtPageNumber.Text = _userStampPage.ToString();
+                        TxtCoordX.Text = Math.Round(_userStampX).ToString();
+                        TxtCoordY.Text = Math.Round(_userStampY).ToString();
+                        TxtDimensions.Text = $"{Math.Round(_userStampWidth)}x{Math.Round(_userStampHeight)}";
+
+                        UpdateStatus($"Đã định vị chữ ký tại Trang {_userStampPage} (X: {Math.Round(_userStampX)}, Y: {Math.Round(_userStampY)}, {_userStampWidth:F0}x{_userStampHeight:F0} pt).");
                     }
-                    else if (msgType == "stampRemoved")
+                }
+                else if (msgType == "stampRemoved")
+                {
+                    _hasUserPlacedStamp = false;
+                    UpdateStatus("Đã hủy bỏ vị trí chèn chữ ký tương tác.");
+                }
+                else if (msgType == "pdfLoaded")
+                {
+                    if (root["totalPages"] != null)
                     {
-                        _hasUserPlacedStamp = false;
-                        UpdateStatus("Đã hủy bỏ vị trí chèn chữ ký tương tác.");
+                        int totalPages = (int)root["totalPages"]!;
+                        UpdateStatus($"Đã nạp xong tài liệu PDF tương tác ({totalPages} trang).");
                     }
-                    else if (msgType == "pdfLoaded")
-                    {
-                        if (root.TryGetProperty("totalPages", out System.Text.Json.JsonElement tp) && tp.TryGetInt32(out int totalPages))
-                        {
-                            UpdateStatus($"Đã nạp xong tài liệu PDF tương tác ({totalPages} trang).");
-                        }
-                        BtnInsertSignatureStamp.IsEnabled = true;
-                        _pdfRenderCompletionSource?.TrySetResult(true);
-                    }
-                    else if (msgType == "pdfLoadError")
-                    {
-                        string errMsg = root.TryGetProperty("message", out var msgProp) ? msgProp.GetString() ?? "Lỗi không xác định" : "Lỗi không xác định";
-                        VGCASignToolPro.Services.AppLogger.Error($"WebView2 PDF.js báo lỗi: {errMsg}", null, "WebMessageReceived");
-                        UpdateStatus($"Lỗi hiển thị PDF: {errMsg}");
-                        _pdfRenderCompletionSource?.TrySetResult(false);
-                    }
-                    else if (msgType == "excelLoaded")
-                    {
-                        int sheetCount = 1;
-                        if (root.TryGetProperty("sheetCount", out System.Text.Json.JsonElement scProp) && scProp.TryGetInt32(out int sc))
-                        {
-                            sheetCount = sc;
-                        }
-                        TxtCurrentFileStatus.Text = $"✅ Bảng tính Excel ({sheetCount} sheet). Click đúp vào ô để sửa dữ liệu, chọn khổ in và bấm 'Chuyển Qua PDF Để Ký'.";
-                        UpdateStatus($"Đã nạp thành công bảng tính Excel ({sheetCount} sheet).");
-                        _excelRenderCompletionSource?.TrySetResult(true);
-                    }
-                    else if (msgType == "excelOrientationChanged")
-                    {
-                        if (root.TryGetProperty("orientation", out System.Text.Json.JsonElement orientElem))
-                        {
-                            _currentExcelOrientation = orientElem.GetString() ?? "landscape";
-                            UpdateStatus($"Đã đổi định dạng in bảng tính sang khổ {(_currentExcelOrientation == "portrait" ? "Dọc A4" : "Ngang A4")}.");
-                        }
-                    }
+                    BtnInsertSignatureStamp.IsEnabled = true;
+                    _pdfRenderCompletionSource?.TrySetResult(true);
+                }
+                else if (msgType == "pdfLoadError")
+                {
+                    string errMsg = (string?)root["message"] ?? "Lỗi không xác định";
+                    VGCASignToolPro.Services.AppLogger.Error($"WebView2 PDF.js báo lỗi: {errMsg}", null, "WebMessageReceived");
+                    UpdateStatus($"Lỗi hiển thị PDF: {errMsg}");
+                    _pdfRenderCompletionSource?.TrySetResult(false);
+                }
+                else if (msgType == "excelLoaded")
+                {
+                    int sheetCount = (int?)root["sheetCount"] ?? 1;
+                    TxtCurrentFileStatus.Text = $"✅ Bảng tính Excel ({sheetCount} sheet). Click đúp vào ô để sửa dữ liệu, chọn khổ in và bấm 'Chuyển Qua PDF Để Ký'.";
+                    UpdateStatus($"Đã nạp thành công bảng tính Excel ({sheetCount} sheet).");
+                    _excelRenderCompletionSource?.TrySetResult(true);
+                }
+                else if (msgType == "excelOrientationChanged")
+                {
+                    _currentExcelOrientation = (string?)root["orientation"] ?? "landscape";
+                    UpdateStatus($"Đã đổi định dạng in bảng tính sang khổ {(_currentExcelOrientation == "portrait" ? "Dọc A4" : "Ngang A4")}.");
+                }
                     else if (msgType == "requestExportExcelPdf")
                     {
                         Dispatcher.Invoke(async () =>
@@ -349,7 +347,6 @@ namespace VGCASignToolPro
                             await ConvertExcelToPdfAsync();
                         });
                     }
-                }
             }
             catch (Exception ex)
             {
@@ -2194,6 +2191,7 @@ namespace VGCASignToolPro
             }
             catch (Exception ex)
             {
+                HideLoadingOverlay();
                 TxtCurrentFileStatus.Text = "Nạp tài liệu thất bại.";
                 _originalWordFilePath = null;
                 _currentWorkingPdfPath = null;
@@ -2322,9 +2320,9 @@ namespace VGCASignToolPro
 
                     _excelRenderCompletionSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-                    // Mã hóa an toàn tham số bằng JsonSerializer để triệt tiêu hoàn toàn lỗ hổng JS Injection
-                    string jsonBase64 = System.Text.Json.JsonSerializer.Serialize(base64);
-                    string jsonFileName = System.Text.Json.JsonSerializer.Serialize(Path.GetFileName(excelPath));
+                    // Mã hóa an toàn tham số bằng JsonConvert để triệt tiêu hoàn toàn lỗ hổng JS Injection
+                    string jsonBase64 = Newtonsoft.Json.JsonConvert.SerializeObject(base64);
+                    string jsonFileName = Newtonsoft.Json.JsonConvert.SerializeObject(Path.GetFileName(excelPath));
                     string script = $"loadExcelFromBase64({jsonBase64}, {jsonFileName});";
                     if (PdfPreviewControl?.CoreWebView2 != null)
                     {
@@ -2346,10 +2344,11 @@ namespace VGCASignToolPro
             }
             catch (Exception ex)
             {
+                HideLoadingOverlay();
                 TxtCurrentFileStatus.Text = "Nạp bảng tính thất bại.";
                 _originalExcelFilePath = null;
                 BtnCloseCurrentFile.Visibility = Visibility.Collapsed;
-                System.Diagnostics.Trace.TraceError($"Lỗi nạp bảng tính Excel: {ex}");
+                VGCASignToolPro.Services.AppLogger.Error($"Lỗi nạp bảng tính Excel: {excelPath}", ex, "LoadExcelDocumentAsync");
                 MessageBox.Show($"Không thể hiển thị bảng tính Excel:\n{ex.Message}", "Lỗi Nạp Bảng Tính", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
@@ -2447,6 +2446,7 @@ namespace VGCASignToolPro
             }
             catch (Exception ex)
             {
+                HideLoadingOverlay();
                 TxtCurrentFileStatus.Text = "Nạp tệp PDF thất bại.";
                 _currentWorkingPdfPath = null;
                 BtnCloseCurrentFile.Visibility = Visibility.Collapsed;
@@ -2794,7 +2794,7 @@ namespace VGCASignToolPro
                     VGCASignToolPro.Services.AppLogger.Info($"Nạp tài liệu PDF qua bộ nhớ Base64 ({fileInfo.Length / 1024:N0} KB)...", "DisplayPdfInInteractiveViewerAsync");
                     byte[] fileBytes = await File.ReadAllBytesAsync(pdfPath);
                     string base64Data = Convert.ToBase64String(fileBytes);
-                    string safeJson = System.Text.Json.JsonSerializer.Serialize(base64Data);
+                    string safeJson = Newtonsoft.Json.JsonConvert.SerializeObject(base64Data);
                     await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync($"loadPdfFromBase64({safeJson});");
                 }
                 else
@@ -2840,7 +2840,7 @@ namespace VGCASignToolPro
                     });
 
                     string pdfUrl = $"https://vgcacontent.local/{previewFileName}";
-                    string safeJsonUrl = System.Text.Json.JsonSerializer.Serialize(pdfUrl);
+                    string safeJsonUrl = Newtonsoft.Json.JsonConvert.SerializeObject(pdfUrl);
                     await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync($"loadPdfFromUrl({safeJsonUrl});");
                 }
 
@@ -2876,6 +2876,7 @@ namespace VGCASignToolPro
 
         private void RollbackViewerUiState(string errorMessage)
         {
+            HideLoadingOverlay();
             PnlPreviewPlaceholder.Visibility = Visibility.Visible;
             _hasUserPlacedStamp = false;
             BtnInsertSignatureStamp.IsEnabled = false;

@@ -109,7 +109,7 @@ namespace VGCASignToolPro.Services
                     StatusChanged?.Invoke($"Đang mở và xuất PDF qua Microsoft Word Native (100% chuẩn, 0 watermark)...");
                     
                     var nativeTask = Task.Run(() => ConvertWordToPdfViaWordNative(wordFilePath, outputPdfPath));
-                    bool finished = nativeTask.Wait(TimeSpan.FromSeconds(4.5));
+                    bool finished = nativeTask.Wait(TimeSpan.FromSeconds(8.0));
 
                     if (finished && File.Exists(outputPdfPath) && new FileInfo(outputPdfPath).Length > 0)
                     {
@@ -117,7 +117,7 @@ namespace VGCASignToolPro.Services
                     }
                     else
                     {
-                        System.Diagnostics.Trace.TraceWarning($"Word Native Direct Export vượt quá 4.5s hoặc bị treo, tự động kích hoạt ngay phao cứu sinh Syncfusion DocIO.");
+                        System.Diagnostics.Trace.TraceWarning($"Word Native Direct Export vượt quá 8.0s hoặc bị treo, tự động kích hoạt ngay phao cứu sinh Syncfusion DocIO.");
                     }
                 }
                 catch (Exception ex)
@@ -198,7 +198,7 @@ namespace VGCASignToolPro.Services
                     }
 
                     var nativeTask = Task.Run(() => ConvertWordToPdfViaWordNative(tempDocx, outputPdfPath));
-                    bool finished = nativeTask.Wait(TimeSpan.FromSeconds(4.5));
+                    bool finished = nativeTask.Wait(TimeSpan.FromSeconds(8.0));
                     if (finished && File.Exists(outputPdfPath) && new FileInfo(outputPdfPath).Length > 0)
                     {
                         return outputPdfPath;

@@ -6,9 +6,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <Version>2.1.4</Version>
-    <AssemblyVersion>2.1.4.0</AssemblyVersion>
-    <FileVersion>2.1.4.0</FileVersion>
+    <Version>2.1.5</Version>
+    <AssemblyVersion>2.1.5.0</AssemblyVersion>
+    <FileVersion>2.1.5.0</FileVersion>
     <ApplicationIcon>app_icon.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -20,6 +20,8 @@
     <PackageReference Include="QRCoder" Version="1.8.0" />
     <PackageReference Include="Syncfusion.DocToPDFConverter.Wpf" Version="28.2.9" />
     <PackageReference Include="Syncfusion.SfRichTextBoxAdv.WPF" Version="28.2.9" />
+    <PackageReference Include="System.Text.Json" Version="10.0.2" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="10.0.2" />
   </ItemGroup>
 
   <ItemGroup>
