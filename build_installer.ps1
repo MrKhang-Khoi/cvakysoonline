@@ -84,7 +84,7 @@ if (-not (Test-Path $innoCompiler)) {
 $issFile = Join-Path $projectDir "installer\VGCASignToolPro_Setup.iss"
 & $innoCompiler $issFile
 
-$installerExe = Join-Path $outputInstallerDir "VGCASignToolPro_Setup_v2.1.5.exe"
+$installerExe = Join-Path $outputInstallerDir "VGCASignToolPro_Setup_v2.1.6.exe"
 if (-not (Test-Path $installerExe)) {
     throw "Error: Installer output file was not found after compilation: $installerExe"
 }
@@ -94,7 +94,7 @@ $instHash = (Get-FileHash -Path $installerExe -Algorithm SHA256).Hash
 
 # 6. BUILD AUTO-UPDATE ZIP PACKAGE (EXCLUDING SENSITIVE USER DATA)
 Write-Host "`n[6/6] Building Auto-Update Package (ZIP for UpdateService)..." -ForegroundColor Yellow
-$updateZipPath = Join-Path $outputInstallerDir "VGCASignToolPro_Update_v2.1.5.zip"
+$updateZipPath = Join-Path $outputInstallerDir "VGCASignToolPro_Update_v2.1.6.zip"
 if (Test-Path $updateZipPath) {
     Remove-Item -Path $updateZipPath -Force
 }
@@ -169,23 +169,23 @@ Write-Host "   SHA256: $zipHash" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "3. FIREBASE /app_release.json METADATA PAYLOAD:" -ForegroundColor White
 $releaseObj = @{
-    version = "2.1.5"
+    version = "2.1.6"
     minSupportedVersion = "2.0.0"
     releaseDate = (Get-Date -Format "yyyy-MM-dd")
-    title = "Bản cập nhật VGCA Sign Tool Pro v2.1.5"
-    description = "Khắc phục triệt để lỗi nạp file PDF/Word/Excel, sửa lỗi không khởi chạy cài đặt bản cập nhật tự động sau khi tải xong, đồng bộ thư viện System.Text.Json v10.0 và tối ưu hóa xử lý tài liệu."
-    downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.5/VGCASignToolPro_Update_v2.1.5.zip"
-    installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.5/VGCASignToolPro_Setup_v2.1.5.exe"
+    title = "Bản cập nhật VGCA Sign Tool Pro v2.1.6"
+    description = "Nâng cấp tính năng Đồng Bộ Báo Cáo Thời Gian Thực (Real-Time Auto-Sync) qua Firebase Server-Sent Events, tự động cập nhật số lượng và chuông thông báo khi có báo cáo bị trả về mà không cần bấm làm mới dữ liệu."
+    downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.6/VGCASignToolPro_Update_v2.1.6.zip"
+    installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.6/VGCASignToolPro_Setup_v2.1.6.exe"
     sha256 = $zipHash
     installerSha256 = $instHash
     mandatory = $false
     status = "ACTIVE"
     changelog = @(
-        "Khắc phục triệt để lỗi không tự động cài đặt bản cập nhật sau khi tải xong trên các máy trạm",
-        "Khắc phục triệt để lỗi không nạp được file PDF, Word và Excel do xung đột phiên bản thư viện System.Text.Json",
-        "Triệt tiêu 100% hiện tượng kẹt popup loading khi xảy ra sự cố nạp tệp",
-        "Nâng cấp bộ chuyển đổi Word Native với thời gian chờ tối ưu 8 giây và cơ chế phao cứu sinh độc lập",
-        "Tối ưu hóa đa luồng chống lỗi khóa tệp school_roster.json khi khởi động và đồng bộ danh bạ"
+        "Tự động đồng bộ báo cáo và thông báo tức thời qua Firebase Server-Sent Events (SSE) trong vòng < 200ms",
+        "Tự động cập nhật số lượng badge [Tôi đã gửi], [Bị trả về] và phát chuông thông báo khi có báo cáo bị trả về",
+        "Cơ chế đồng bộ êm ái ngầm (Silent Realtime Sync) không hiện popup loading che màn hình giáo viên",
+        "Bảo tồn 100% tính năng nạp tài liệu Word, PDF, Excel và an toàn danh bạ nhà trường",
+        "Bộ nâng cấp tự động OTA Self-Contained hoàn chỉnh với cơ chế đa luồng không giật lag"
     )
 }
 $jsonPayload = $releaseObj | ConvertTo-Json -Depth 5
@@ -197,7 +197,7 @@ $firebaseEndpoint = "https://cva-kyso-lienthong-default-rtdb.asia-southeast1.fir
 try {
     $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($jsonPayload)
     $null = Invoke-RestMethod -Uri $firebaseEndpoint -Method Put -Body $bodyBytes -ContentType "application/json; charset=utf-8"
-    Write-Host "[OK] Da dong bo thanh cong metadata v2.1.5 (UTF-8 chuan) len Firebase Control Plane!" -ForegroundColor Green
+    Write-Host "[OK] Da dong bo thanh cong metadata v2.1.6 (UTF-8 chuan) len Firebase Control Plane!" -ForegroundColor Green
 }
 catch {
     Write-Host "[WARN] Khong the tu dong dong bo Firebase: $_" -ForegroundColor Yellow

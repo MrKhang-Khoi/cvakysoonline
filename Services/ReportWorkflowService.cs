@@ -199,6 +199,9 @@ namespace VGCASignToolPro.Services
         private readonly string _googleAppsScriptUrl;
         private readonly string _googleDriveFolderId;
 
+        public string FirebaseUrl => _firebaseUrl;
+        public string Secret => _secret;
+
         public ReportWorkflowService(string? firebaseUrl = null, string? secret = null)
         {
             var config = LoadConfiguration();

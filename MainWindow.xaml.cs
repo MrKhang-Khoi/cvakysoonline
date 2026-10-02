@@ -29,6 +29,7 @@ namespace VGCASignToolPro
         private readonly VgcaAuthService _vgcaAuth = new();
         private readonly ReportWorkflowService _workflowService = new();
         private readonly UpdateService _updateService = new();
+        private readonly WorkflowRealtimeWatcher _realtimeWatcher;
         private string? _activeWorkflowReportId;
         private string? _activeWorkflowExpectedBaseHash;
         private bool _isOutboxViewMode;
@@ -90,6 +91,35 @@ namespace VGCASignToolPro
             _webUploader.StatusChanged += UpdateStatus;
             _vgcaAuth.LoginStateChanged += OnVgcaLoginStateChanged;
             Activated += MainWindow_Activated;
+
+            _realtimeWatcher = new WorkflowRealtimeWatcher(_workflowService);
+            _realtimeWatcher.OnDataChanged += () =>
+            {
+                Dispatcher.InvokeAsync(async () =>
+                {
+                    await SilentRefreshWorkflowDataAsync();
+                }, System.Windows.Threading.DispatcherPriority.Background);
+            };
+
+            _realtimeWatcher.OnReportReturned += (repId, title, reason) =>
+            {
+                Dispatcher.InvokeAsync(() =>
+                {
+                    try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+                    UpdateStatus($"🔔 Báo cáo '{title}' bị trả về: {reason}");
+                }, System.Windows.Threading.DispatcherPriority.Background);
+            };
+
+            _realtimeWatcher.OnNewReportToApprove += (repId, title, senderName) =>
+            {
+                Dispatcher.InvokeAsync(() =>
+                {
+                    try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+                    UpdateStatus($"🔔 Báo cáo mới cần duyệt từ {senderName}: '{title}'");
+                }, System.Windows.Threading.DispatcherPriority.Background);
+            };
+
+            Closed += (s, e) => _realtimeWatcher.Dispose();
         }
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -4103,6 +4133,7 @@ namespace VGCASignToolPro
 
                 if (string.IsNullOrEmpty(myCccd))
                 {
+                    _realtimeWatcher.Stop();
                     LvInboxReports.ItemsSource = null;
                     LvOutboxReports.ItemsSource = null;
                     LvReturnedReports.ItemsSource = null;
@@ -4117,6 +4148,9 @@ namespace VGCASignToolPro
                     BorderWaitingSealCount.Visibility = Visibility.Collapsed;
                     return;
                 }
+
+                // Tự động khởi động kênh lắng nghe thời gian thực cho giáo viên hiện tại
+                _realtimeWatcher.Start(myCccd);
 
                 var all = await _workflowService.GetAllReportsAsync();
                 _allReports = all;
@@ -4227,6 +4261,148 @@ namespace VGCASignToolPro
             catch (Exception ex)
             {
                 System.Diagnostics.Trace.TraceError($"Lỗi làm mới dữ liệu workflow: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// Làm mới dữ liệu báo cáo trong im lặng (Silent Real-time Sync)
+        /// Không hiện overlay loading che màn hình, tự động phát hiện số lượng thay đổi để phát âm thanh & cập nhật huy hiệu
+        /// </summary>
+        public async Task SilentRefreshWorkflowDataAsync()
+        {
+            try
+            {
+                string myCccd = _vgcaAuth.CurrentTeacher?.Cccd ?? string.Empty;
+                if (string.IsNullOrEmpty(myCccd)) return;
+
+                int prevReturnedCount = 0;
+                int.TryParse(TxtCountReturned.Text, out prevReturnedCount);
+                int prevInboxCount = 0;
+                int.TryParse(TxtCountInbox.Text, out prevInboxCount);
+                int prevWaitingSealCount = 0;
+                int.TryParse(TxtCountWaitingSeal.Text, out prevWaitingSealCount);
+
+                var all = await _workflowService.GetAllReportsAsync();
+                _allReports = all;
+                var hiddenIds = GetHiddenReportIds(myCccd);
+
+                var inbox = all.Where(r => 
+                    string.Equals(r.ApproverCccd, myCccd, StringComparison.OrdinalIgnoreCase) &&
+                    (r.Status == "WAITING_OPEN" || r.Status == "ACQUIRED_LOCKED" || r.Status == "LOCK_TIMEOUT")
+                ).ToList();
+
+                var outbox = all.Where(r =>
+                    string.Equals(r.SenderCccd, myCccd, StringComparison.OrdinalIgnoreCase) &&
+                    r.Status != "RETURNED" &&
+                    !hiddenIds.Contains(r.ReportId)
+                ).ToList();
+
+                var returned = all.Where(r =>
+                    string.Equals(r.SenderCccd, myCccd, StringComparison.OrdinalIgnoreCase) &&
+                    r.Status == "RETURNED" &&
+                    !hiddenIds.Contains(r.ReportId)
+                ).OrderByDescending(r => r.ReturnedAt).ToList();
+
+                for (int i = 0; i < returned.Count; i++)
+                {
+                    returned[i].OrderIndex = i + 1;
+                }
+
+                var archive = all.Where(r => r.Status == "SIGNED_COMMITTED").ToList();
+
+                bool canSeal = _vgcaAuth.CurrentTeacher?.CanSeal ?? false;
+                List<ReportModel> waitingSeal = new();
+                if (canSeal)
+                {
+                    waitingSeal = all.Where(r => r.Status == "WAITING_SEAL").OrderByDescending(r => r.UpdatedAt).ToList();
+                    for (int i = 0; i < waitingSeal.Count; i++)
+                    {
+                        waitingSeal[i].OrderIndex = i + 1;
+                    }
+                }
+
+                var prevInboxId = (LvInboxReports.SelectedItem as ReportModel)?.ReportId;
+                var prevOutboxId = (LvOutboxReports.SelectedItem as ReportModel)?.ReportId;
+                var prevReturnedId = (LvReturnedReports.SelectedItem as ReportModel)?.ReportId;
+                var prevArchiveId = (LvArchiveReports.SelectedItem as ReportModel)?.ReportId;
+                var prevWaitingSealId = (LvWaitingSealReports.SelectedItem as ReportModel)?.ReportId;
+
+                LvInboxReports.ItemsSource = inbox;
+                LvOutboxReports.ItemsSource = outbox;
+                LvReturnedReports.ItemsSource = returned;
+                LvArchiveReports.ItemsSource = archive;
+
+                if (canSeal)
+                {
+                    LvWaitingSealReports.ItemsSource = waitingSeal;
+                    TabItemWaitingSeal.Visibility = Visibility.Visible;
+                    BorderWaitingSealCount.Visibility = Visibility.Visible;
+                    TxtCountWaitingSeal.Text = waitingSeal.Count.ToString();
+
+                    if (waitingSeal.Count > 0)
+                    {
+                        LvWaitingSealReports.SelectedItem = waitingSeal.FirstOrDefault(x => x.ReportId == prevWaitingSealId) ?? waitingSeal[0];
+                    }
+                }
+                else
+                {
+                    LvWaitingSealReports.ItemsSource = null;
+                    TabItemWaitingSeal.Visibility = Visibility.Collapsed;
+                    BorderWaitingSealCount.Visibility = Visibility.Collapsed;
+                    TxtCountWaitingSeal.Text = "0";
+                }
+
+                if (inbox.Count > 0)
+                {
+                    LvInboxReports.SelectedItem = inbox.FirstOrDefault(x => x.ReportId == prevInboxId) ?? inbox[0];
+                }
+                if (outbox.Count > 0)
+                {
+                    LvOutboxReports.SelectedItem = outbox.FirstOrDefault(x => x.ReportId == prevOutboxId) ?? outbox[0];
+                }
+                if (returned.Count > 0)
+                {
+                    LvReturnedReports.SelectedItem = returned.FirstOrDefault(x => x.ReportId == prevReturnedId) ?? returned[0];
+                }
+                if (archive.Count > 0)
+                {
+                    LvArchiveReports.SelectedItem = archive.FirstOrDefault(x => x.ReportId == prevArchiveId) ?? archive[0];
+                }
+
+                TxtCountInbox.Text = inbox.Count.ToString();
+                TxtCountOutbox.Text = outbox.Count.ToString();
+                TxtCountReturned.Text = returned.Count.ToString();
+                TxtCountCompleted.Text = archive.Count.ToString();
+
+                // Phát hiện thay đổi số lượng mới để phát chuông và cập nhật thanh trạng thái
+                if (returned.Count > prevReturnedCount)
+                {
+                    _ = Task.Run(() =>
+                    {
+                        try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+                    });
+                    UpdateStatus($"🔔 [Thời gian thực] Có {returned.Count - prevReturnedCount} báo cáo mới bị trả về!");
+                }
+                else if (inbox.Count > prevInboxCount)
+                {
+                    _ = Task.Run(() =>
+                    {
+                        try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+                    });
+                    UpdateStatus($"🔔 [Thời gian thực] Có {inbox.Count - prevInboxCount} báo cáo mới cần duyệt!");
+                }
+                else if (canSeal && waitingSeal.Count > prevWaitingSealCount)
+                {
+                    _ = Task.Run(() =>
+                    {
+                        try { System.Media.SystemSounds.Asterisk.Play(); } catch { }
+                    });
+                    UpdateStatus($"🔔 [Thời gian thực] Có {waitingSeal.Count - prevWaitingSealCount} báo cáo mới chờ đóng dấu!");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceWarning($"Lỗi đồng bộ ngầm thời gian thực: {ex.Message}");
             }
         }
 

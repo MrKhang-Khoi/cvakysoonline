@@ -5,7 +5,7 @@
 ; ==============================================================================
 
 #define MyAppName "VGCA Sign Tool Pro"
-#define MyAppVersion "2.1.5"
+#define MyAppVersion "2.1.6"
 #define MyAppPublisher "Ban Co Yeu Chinh Phu & Nha Truong"
 #define MyAppURL "https://github.com/MrKhang-Khoi/cvakysoonline"
 #define MyAppExeName "VGCASignToolPro.exe"
@@ -29,7 +29,7 @@ DisableProgramGroupPage=yes
 
 ; Xuất file cài đặt
 OutputDir=..\Output_Installer
-OutputBaseFilename=VGCASignToolPro_Setup_v2.1.5
+OutputBaseFilename=VGCASignToolPro_Setup_v2.1.6
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
