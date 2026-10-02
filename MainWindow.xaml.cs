@@ -2833,22 +2833,13 @@ namespace VGCASignToolPro
             _currentActiveCert = activeVgCa;
             _vgcaAuth.SetCurrentActiveIdentity(activeVgCa);
 
-            // 3. Nếu là Virtual CSP: kiểm tra nếu ứng dụng chưa chạy thì nhắc khởi động
+            // 3. Nếu là Virtual CSP: tự khởi động ngầm nếu ứng dụng chưa chạy (không hiện hộp thoại hỏi làm phiền hoặc treo ứng dụng)
             if (activeVgCa.IsVirtualCspCertificate)
             {
                 if (!VcspStatusService.IsProcessRunning() && VcspStatusService.IsInstalled())
                 {
-                    var launchChoice = MessageBox.Show(
-                        "Ứng dụng VGCA Virtual CSP v2.0 chưa được mở trên máy tính!\n\n" +
-                        "Bạn có muốn hệ thống tự động khởi động ứng dụng Virtual CSP ngay bây giờ không?",
-                        "Virtual CSP Chưa Khởi Động", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-
-                    if (launchChoice == MessageBoxResult.Yes)
-                    {
-                        VcspStatusService.LaunchVirtualCsp();
-                        UpdateStatus("Đã khởi động Virtual CSP. Vui lòng đăng nhập tài khoản trên cửa sổ Virtual CSP rồi bấm Ký lại.");
-                    }
-                    return;
+                    VcspStatusService.LaunchVirtualCsp();
+                    UpdateStatus("Đã khởi động nền VGCA Virtual CSP.");
                 }
             }
 
@@ -2969,10 +2960,17 @@ namespace VGCASignToolPro
             };
 
             _signingCts = new System.Threading.CancellationTokenSource();
-            SetProcessingBusyState(true, "⏳ Đang kết nối thiết bị Ban Cơ Yếu... Vui lòng xác thực trên điện thoại (Virtual CSP) hoặc nhập PIN Token...");
+            ShowLoadingOverlay(
+                "Đang tiến hành ký số...",
+                "Đang kết nối chứng thư số Ban Cơ Yếu và gửi yêu cầu xác thực tới điện thoại (Virtual CSP) hoặc USB Token...",
+                "✍️",
+                showCancelButton: true,
+                cancelButtonText: "✕ Hủy Chờ Ký");
+            SetProcessingBusyState(true, "Đang tiến hành ký số văn bản chuẩn PAdES LTV...");
 
             Action<string> onSignStatus = msg =>
             {
+                UpdateLoadingOverlay(msg);
                 UpdateStatus(msg);
             };
 
@@ -3054,6 +3052,7 @@ namespace VGCASignToolPro
             finally
             {
                 _pdfSigner.StatusChanged -= onSignStatus;
+                HideLoadingOverlay();
                 SetProcessingBusyState(false);
                 UpdateSignAndSealButtonsState(true);
                 _signingCts?.Dispose();
@@ -3373,10 +3372,17 @@ namespace VGCASignToolPro
             };
 
             _signingCts = new System.Threading.CancellationTokenSource();
-            SetProcessingBusyState(true, $"⏳ Đang kết nối USB Token và đóng dấu pháp nhân {orgCert.CommonName}... Vui lòng nhập mã PIN Token nếu được yêu cầu.");
+            ShowLoadingOverlay(
+                "Đang đóng dấu pháp nhân...",
+                $"Đang kết nối USB Token và đóng dấu pháp nhân {orgCert.CommonName}...\nVui lòng nhập mã PIN Token nếu được yêu cầu.",
+                "🔴",
+                showCancelButton: true,
+                cancelButtonText: "✕ Hủy Chờ Ký");
+            SetProcessingBusyState(true, $"Đang kết nối USB Token và đóng dấu pháp nhân {orgCert.CommonName}...");
 
             Action<string> onSealStatus = msg =>
             {
+                UpdateLoadingOverlay(msg);
                 UpdateStatus(msg);
             };
 
@@ -3452,6 +3458,7 @@ namespace VGCASignToolPro
             finally
             {
                 _pdfSigner.StatusChanged -= onSealStatus;
+                HideLoadingOverlay();
                 SetProcessingBusyState(false);
                 UpdateSignAndSealButtonsState(true);
                 _signingCts?.Dispose();

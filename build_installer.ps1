@@ -4,6 +4,7 @@
 # ==============================================================================
 
 $ErrorActionPreference = "Stop"
+$appVersion = "2.3.1"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $projectDir = $scriptDir
 $distDir = Join-Path $projectDir "dist\win-x64"
@@ -78,7 +79,7 @@ if (-not (Test-Path $innoCompiler)) {
 $issFile = Join-Path $projectDir "installer\VGCASignToolPro_Setup.iss"
 & $innoCompiler $issFile
 
-$installerExe = Join-Path $outputInstallerDir "VGCASignToolPro_Setup_v2.3.0.exe"
+$installerExe = Join-Path $outputInstallerDir "VGCASignToolPro_Setup_v$appVersion.exe"
 if (-not (Test-Path $installerExe)) {
     throw "Error: Installer output file was not found after compilation: $installerExe"
 }
@@ -88,7 +89,7 @@ $instHash = (Get-FileHash -Path $installerExe -Algorithm SHA256).Hash
 
 # 6. BUILD AUTO-UPDATE ZIP PACKAGE (EXCLUDING SENSITIVE USER DATA)
 Write-Host "`n[6/6] Building Auto-Update Package (ZIP for UpdateService)..." -ForegroundColor Yellow
-$updateZipPath = Join-Path $outputInstallerDir "VGCASignToolPro_Update_v2.3.0.zip"
+$updateZipPath = Join-Path $outputInstallerDir "VGCASignToolPro_Update_v$appVersion.zip"
 if (Test-Path $updateZipPath) {
     Remove-Item -Path $updateZipPath -Force
 }
@@ -163,23 +164,22 @@ Write-Host "   SHA256: $zipHash" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "3. FIREBASE /app_release.json METADATA PAYLOAD:" -ForegroundColor White
 $releaseObj = @{
-    version = "2.3.0"
+    version = $appVersion
     minSupportedVersion = "2.0.0"
     releaseDate = (Get-Date -Format "yyyy-MM-dd")
-    title = "Bản cập nhật VGCA Sign Tool Pro v2.3.0"
-    description = "Hoàn thiện quy trình phê duyệt đa cấp (Multi-Tier Workflow) với tính năng chuyển tiếp báo cáo đã ký duyệt lên Ban Giám Hiệu/Lãnh đạo, chế độ ký số êm ái (Native-First Signing) không che khuất màn hình ứng dụng Virtual CSP / USB Token tránh treo kẹt ứng dụng, và triệt tiêu 100% hiện tượng đọng thông tin kỹ thuật cũ trên RAM khi đóng app VGCA."
-    downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.3.0/VGCASignToolPro_Update_v2.3.0.zip"
-    installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.3.0/VGCASignToolPro_Setup_v2.3.0.exe"
+    title = "Bản cập nhật VGCA Sign Tool Pro v$appVersion"
+    description = "Sửa dứt điểm lỗi AccessViolationException (0xc0000005) khi ký số bằng cách tái cấu trúc bộ đệm KSP Ban Cơ Yếu, khôi phục hộp thoại ký Loading Overlay chuyên nghiệp có nút '✕ Hủy Chờ Ký' và tự khởi động ngầm Virtual CSP không treo ứng dụng."
+    downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v$appVersion/VGCASignToolPro_Update_v$appVersion.zip"
+    installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v$appVersion/VGCASignToolPro_Setup_v$appVersion.exe"
     sha256 = $zipHash
     installerSha256 = $instHash
     mandatory = $false
     status = "ACTIVE"
     changelog = @(
-        "Bổ sung quy trình Phê Duyệt Đa Cấp: Tổ trưởng/Giáo viên ký duyệt xong có thể chọn Chuyển Tiếp cho Ban Giám Hiệu ký lượt tiếp theo và đóng dấu cơ quan",
-        "Tệp PDF chuyển tiếp mang đầy đủ chữ ký số PAdES LTV tích lũy của các cấp duyệt trước",
-        "Chế độ ký số êm ái (Native-First Signing): Cắt bỏ hoàn toàn popup modal che khuất màn hình khi ký hoặc đóng dấu, cho phép cửa sổ Ban Cơ Yếu (Virtual CSP / PIN Token) tự do hiển thị và chiếm focus tự nhiên, triệt tiêu nguy cơ treo kẹt",
-        "Triệt tiêu 100% bug UI Residual State: Toàn bộ thông tin chi tiết kỹ thuật tự động xóa trắng về '---' ngay khi thoát app VGCA hoặc rút Token",
-        "Bảo tồn 100% tính năng nạp Word, Excel, PDF và Hộp Thư Trình Ký thời gian thực SSE"
+        "Khắc phục triệt để lỗi crash AccessViolationException (0xc0000005) trong coreclr.dll / KSP Ban Cơ Yếu: Tái cấu trúc NetX509ExternalSignature chỉ đọc Public Key trên RAM mà không đánh thức / giải phóng lặp đi lặp lại handle KSP của vgca_vcsp11_v2.dll, bảo vệ unmanaged memory 100%",
+        "Khôi phục hộp thoại tiến trình ký Loading Overlay chuyên nghiệp kèm nút '✕ Hủy Chờ Ký', thông báo rõ ràng cho giáo viên an tâm khi gửi yêu cầu tới điện thoại hoặc USB Token",
+        "Tự động chạy nền VGCA Virtual CSP không hiện hộp thoại modal chặn ngang gây treo ứng dụng",
+        "Bảo tồn 100% tính năng chuyển tiếp Ban Giám Hiệu, nạp Word, Excel, PDF và Hộp Thư Trình Ký thời gian thực SSE"
     )
 }
 $jsonPayload = $releaseObj | ConvertTo-Json -Depth 5
@@ -191,7 +191,7 @@ $firebaseEndpoint = "https://cva-kyso-lienthong-default-rtdb.asia-southeast1.fir
 try {
     $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($jsonPayload)
     $null = Invoke-RestMethod -Uri $firebaseEndpoint -Method Put -Body $bodyBytes -ContentType "application/json; charset=utf-8"
-    Write-Host "[OK] Da dong bo thanh cong metadata v2.3.0 (UTF-8 chuan) len Firebase Control Plane!" -ForegroundColor Green
+    Write-Host "[OK] Da dong bo thanh cong metadata v$appVersion (UTF-8 chuan) len Firebase Control Plane!" -ForegroundColor Green
 }
 catch {
     Write-Host "[WARN] Khong the tu dong dong bo Firebase: $_" -ForegroundColor Yellow

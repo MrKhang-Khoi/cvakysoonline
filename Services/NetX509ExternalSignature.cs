@@ -19,11 +19,11 @@ namespace VGCASignToolPro.Services
         {
             _certificate = certificate ?? throw new ArgumentNullException(nameof(certificate));
 
-            // Tự động nhận diện thuật toán băm phù hợp với kích thước khóa
+            // Tự động nhận diện thuật toán băm phù hợp với kích thước khóa qua Public Key (KHÔNG chạm vào Private Key để tránh đánh thức/giải phóng nhầm KSP handle)
             if (string.IsNullOrWhiteSpace(digestAlgorithm))
             {
-                using var ecdsa = _certificate.GetECDsaPrivateKey();
-                if (ecdsa != null && ecdsa.KeySize == 384)
+                using var ecdsaPub = _certificate.GetECDsaPublicKey();
+                if (ecdsaPub != null && ecdsaPub.KeySize == 384)
                 {
                     _digestAlgorithm = "SHA384";
                 }
@@ -42,11 +42,16 @@ namespace VGCASignToolPro.Services
 
         public string GetSignatureAlgorithmName()
         {
-            using var ecdsa = _certificate.GetECDsaPrivateKey();
-            if (ecdsa != null) return "ECDSA";
+            // Kiểm tra OID public key của chứng thư hoàn toàn trên RAM, không gọi KSP driver
+            string oidVal = _certificate.PublicKey.Oid.Value ?? "";
+            string oidName = _certificate.PublicKey.Oid.FriendlyName ?? "";
 
-            using var rsa = _certificate.GetRSAPrivateKey();
-            if (rsa != null) return "RSA";
+            if (oidVal == "1.2.840.10045.2.1" ||
+                oidName.Contains("ECC", StringComparison.OrdinalIgnoreCase) ||
+                oidName.Contains("ECDSA", StringComparison.OrdinalIgnoreCase))
+            {
+                return "ECDSA";
+            }
 
             return "RSA";
         }
@@ -55,10 +60,17 @@ namespace VGCASignToolPro.Services
 
         public byte[] Sign(byte[] message)
         {
+            string sigAlg = GetSignatureAlgorithmName();
+
             // 1. Xử lý chứng thư ECDSA (Chuẩn mới của Ban Cơ yếu Chính phủ Curve P-384)
-            var ecdsa = _certificate.GetECDsaPrivateKey();
-            if (ecdsa != null)
+            if (string.Equals(sigAlg, "ECDSA", StringComparison.OrdinalIgnoreCase))
             {
+                using var ecdsa = _certificate.GetECDsaPrivateKey();
+                if (ecdsa == null)
+                {
+                    throw new InvalidOperationException("Không thể truy cập khóa riêng tư ECDSA của chứng thư này. Vui lòng kiểm tra lại ứng dụng VGCA Virtual CSP.");
+                }
+
                 var hashAlg = _digestAlgorithm.ToUpperInvariant() switch
                 {
                     "SHA256" => HashAlgorithmName.SHA256,
@@ -67,12 +79,20 @@ namespace VGCASignToolPro.Services
                     _ => HashAlgorithmName.SHA384
                 };
 
-                // Xuất chữ ký theo định dạng RFC 3279 DER Sequence (cấu trúc ASN.1 chuẩn cho CMS / PAdES)
-                return ecdsa.SignData(message, hashAlg, DSASignatureFormat.Rfc3279DerSequence);
+                try
+                {
+                    // Xuất chữ ký theo định dạng RFC 3279 DER Sequence (cấu trúc ASN.1 chuẩn cho CMS / PAdES)
+                    return ecdsa.SignData(message, hashAlg, DSASignatureFormat.Rfc3279DerSequence);
+                }
+                finally
+                {
+                    GC.KeepAlive(ecdsa);
+                    GC.KeepAlive(_certificate);
+                }
             }
 
             // 2. Xử lý chứng thư RSA (USB Token phần cứng / PKCS#11)
-            var rsa = _certificate.GetRSAPrivateKey();
+            using var rsa = _certificate.GetRSAPrivateKey();
             if (rsa != null)
             {
                 var hashAlg = _digestAlgorithm.ToUpperInvariant() switch
@@ -84,7 +104,15 @@ namespace VGCASignToolPro.Services
                     _ => HashAlgorithmName.SHA256
                 };
 
-                return rsa.SignData(message, hashAlg, RSASignaturePadding.Pkcs1);
+                try
+                {
+                    return rsa.SignData(message, hashAlg, RSASignaturePadding.Pkcs1);
+                }
+                finally
+                {
+                    GC.KeepAlive(rsa);
+                    GC.KeepAlive(_certificate);
+                }
             }
 
             throw new InvalidOperationException("Không thể truy cập khóa riêng tư (Private Key) của chứng thư này. Vui lòng kiểm tra lại thiết bị USB Token hoặc chứng thư số.");
