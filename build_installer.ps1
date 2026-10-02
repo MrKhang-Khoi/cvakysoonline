@@ -240,4 +240,28 @@ catch {
     Write-Host "[WARN] Khong the tu dong dong bo Firebase: $_" -ForegroundColor Yellow
 }
 
+# 4. TU DONG DANG TAI LEN GITHUB RELEASES (NEU CO GH CLI VA CREDENTIAL)
+Write-Host "`nDang kiem tra va dong bo Release len GitHub Releases..." -ForegroundColor Yellow
+try {
+    $cred = echo "protocol=https`nhost=github.com" | git credential fill
+    $token = ($cred | Select-String "password=").Line.Replace("password=", "").Trim()
+    if ($token) {
+        $env:GH_TOKEN = $token
+        $tag = "v$($releaseObj.version)"
+        $notes = "- " + ($releaseObj.changelog -join "`n- ")
+        
+        $relExists = gh release view $tag -R MrKhang-Khoi/cvakysoonline 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "  + Release $tag da ton tai tren GitHub, dong bo upload/ghi de assets..." -ForegroundColor Cyan
+            gh release upload $tag $installerExe $updateZipPath --clobber -R MrKhang-Khoi/cvakysoonline
+        } else {
+            Write-Host "  + Tao moi Release $tag va upload assets..." -ForegroundColor Cyan
+            gh release create $tag $installerExe $updateZipPath --title $releaseObj.title --notes $notes -R MrKhang-Khoi/cvakysoonline
+        }
+        Write-Host "[OK] Da phat hanh tron goi thanh cong $tag len GitHub Releases!" -ForegroundColor Green
+    }
+} catch {
+    Write-Host "[WARN] Khong the tu dong phat hanh GitHub Release: $_" -ForegroundColor Yellow
+}
+
 Write-Host "=================================================================" -ForegroundColor Green
