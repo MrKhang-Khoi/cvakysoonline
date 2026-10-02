@@ -15,6 +15,7 @@ namespace VGCASignToolPro.Services
     {
         private static readonly object _syncLock = new();
         private static string? _logFilePath;
+        private static StreamWriter? _streamWriter;
         private static bool _isInitialized;
 
         public static string LogDirectory { get; private set; } = string.Empty;
@@ -40,13 +41,13 @@ namespace VGCASignToolPro.Services
                     string logFileName = $"app_{DateTime.UtcNow:yyyyMMdd}.log";
                     _logFilePath = Path.Combine(LogDirectory, logFileName);
 
-                    // Tích hợp TextWriterTraceListener để tự động gom toàn bộ Trace.TraceError/Warning vào file log
-                    var streamWriter = new StreamWriter(new FileStream(_logFilePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, 4096), Encoding.UTF8)
+                    var fs = new FileStream(_logFilePath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, 4096);
+                    _streamWriter = new StreamWriter(fs, Encoding.UTF8)
                     {
                         AutoFlush = true
                     };
 
-                    Trace.Listeners.Add(new TextWriterTraceListener(streamWriter, "AppTraceListener"));
+                    Trace.Listeners.Add(new TextWriterTraceListener(_streamWriter, "AppTraceListener"));
                     Trace.AutoFlush = true;
 
                     _isInitialized = true;
@@ -87,16 +88,18 @@ namespace VGCASignToolPro.Services
                     Initialize();
                 }
 
-                if (string.IsNullOrEmpty(_logFilePath)) return;
-
                 string timeStamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
                 int threadId = Thread.CurrentThread.ManagedThreadId;
                 string caller = string.IsNullOrWhiteSpace(memberName) ? "" : $"[{memberName}] ";
-                string logLine = $"[{timeStamp}] [{level,-5}] [Thread-{threadId:D2}] {caller}{message}{Environment.NewLine}";
+                string logLine = $"[{timeStamp}] [{level,-5}] [Thread-{threadId:D2}] {caller}{message}";
 
                 lock (_syncLock)
                 {
-                    File.AppendAllText(_logFilePath, logLine, Encoding.UTF8);
+                    if (_streamWriter != null)
+                    {
+                        _streamWriter.WriteLine(logLine);
+                        _streamWriter.Flush();
+                    }
                 }
             }
             catch (Exception ex)
