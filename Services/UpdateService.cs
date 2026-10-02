@@ -281,17 +281,31 @@ namespace VGCASignToolPro.Services
                 // 1. Giải nén gói update vào thư mục staging
                 ZipFile.ExtractToDirectory(zipFilePath, stagingDir, true);
 
-                // 2. Tìm Updater.exe trong thư mục cài đặt hiện tại hoặc trong gói staging
+                // 2. ƯU TIÊN KHỞI CHẠY UPDATER TỪ THƯ MỤC TẠM (STAGING HOẶC TEMP) ĐỂ KHÔNG BAO GIỜ KHÓA DLL TRONG APPDIR
                 string appDir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                string updaterExe = Path.Combine(appDir, "VGCASignToolPro.Updater.exe");
+                string stagingUpdater = Path.Combine(stagingDir, "VGCASignToolPro.Updater.exe");
+                string updaterToRun;
+                string workingDirToRun;
 
-                if (!File.Exists(updaterExe))
+                if (File.Exists(stagingUpdater))
                 {
-                    // Tìm trong staging
-                    string stagingUpdater = Path.Combine(stagingDir, "VGCASignToolPro.Updater.exe");
-                    if (File.Exists(stagingUpdater))
+                    // Chạy Updater từ thư mục tạm staging: Các DLL (Accessibility.dll, ...) được nạp từ stagingDir,
+                    // giải phóng hoàn toàn thư mục cài đặt gốc (appDir) để ghi đè an toàn 100%!
+                    updaterToRun = stagingUpdater;
+                    workingDirToRun = stagingDir;
+                }
+                else
+                {
+                    string fallbackUpdater = Path.Combine(appDir, "VGCASignToolPro.Updater.exe");
+                    if (File.Exists(fallbackUpdater))
                     {
-                        updaterExe = stagingUpdater;
+                        // Copy updater sang thư mục tạm độc lập để chạy
+                        string tempIsolatedUpdaterDir = Path.Combine(Path.GetTempPath(), "VGCASignToolPro", $"UpdaterIsolated_{Guid.NewGuid():N}");
+                        Directory.CreateDirectory(tempIsolatedUpdaterDir);
+                        string tempUpdaterExe = Path.Combine(tempIsolatedUpdaterDir, "VGCASignToolPro.Updater.exe");
+                        File.Copy(fallbackUpdater, tempUpdaterExe, true);
+                        updaterToRun = tempUpdaterExe;
+                        workingDirToRun = tempIsolatedUpdaterDir;
                     }
                     else
                     {
@@ -301,13 +315,13 @@ namespace VGCASignToolPro.Services
 
                 int currentPid = Environment.ProcessId;
 
-                // 3. Khởi chạy tiến trình Updater độc lập
+                // 3. Khởi chạy tiến trình Updater độc lập ngoài vùng cài đặt gốc
                 ProcessStartInfo psi = new ProcessStartInfo
                 {
-                    FileName = updaterExe,
+                    FileName = updaterToRun,
                     Arguments = $"--pid {currentPid} --source \"{stagingDir}\" --target \"{appDir}\" --restart \"{restartExePath}\"",
                     UseShellExecute = true,
-                    WorkingDirectory = appDir
+                    WorkingDirectory = workingDirToRun
                 };
 
                 Process.Start(psi);

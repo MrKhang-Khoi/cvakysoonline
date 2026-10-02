@@ -96,7 +96,39 @@ $tempZipDir = Join-Path ([System.IO.Path]::GetTempPath()) ("VGCASignToolPro_ZipS
 New-Item -ItemType Directory -Path $tempZipDir -Force | Out-Null
 
 try {
-    # Copy files excluding user configs and caches
+    # Danh sách các tệp DLL runtime cố định bị tiến trình WinForms Updater nạp và khóa cứng
+    # Loại bỏ khỏi gói cập nhật tự động để bản Updater cũ trên máy người dùng không bao giờ gặp lỗi khóa tệp
+    $lockedRuntimeDlls = @(
+        "Accessibility.dll",
+        "clrjit.dll",
+        "coreclr.dll",
+        "hostfxr.dll",
+        "hostpolicy.dll",
+        "Microsoft.Win32.Primitives.dll",
+        "Microsoft.Win32.SystemEvents.dll",
+        "System.Collections.dll",
+        "System.Collections.NonGeneric.dll",
+        "System.Collections.Specialized.dll",
+        "System.ComponentModel.dll",
+        "System.ComponentModel.EventBasedAsync.dll",
+        "System.ComponentModel.Primitives.dll",
+        "System.ComponentModel.TypeConverter.dll",
+        "System.Diagnostics.Process.dll",
+        "System.Diagnostics.TraceSource.dll",
+        "System.Drawing.Common.dll",
+        "System.Drawing.Primitives.dll",
+        "System.Memory.dll",
+        "System.Numerics.Vectors.dll",
+        "System.Private.CoreLib.dll",
+        "System.Runtime.dll",
+        "System.Runtime.InteropServices.dll",
+        "System.Threading.dll",
+        "System.Threading.Thread.dll",
+        "System.Windows.Forms.dll",
+        "System.Windows.Forms.Primitives.dll"
+    )
+
+    # Copy files excluding user configs, caches and locked runtime DLLs
     Get-ChildItem -Path $distDir -Recurse | ForEach-Object {
         $full = $_.FullName
         $relPath = $full.Substring($distDir.Length).TrimStart('\', '/')
@@ -112,8 +144,24 @@ try {
             }
         }
 
+        # Loại bỏ các DLL runtime cố định đang bị nạp
+        foreach ($dll in $lockedRuntimeDlls) {
+            if ($_.Name -ieq $dll) {
+                $shouldExclude = $true
+                break
+            }
+        }
+
         if (-not $shouldExclude) {
-            $dest = Join-Path $tempZipDir $relPath
+            # Với Updater: đổi tên sang .new để tránh xung đột với tiến trình Updater cũ đang chạy
+            $destRelPath = $relPath
+            if ($_.Name -ieq "VGCASignToolPro.Updater.exe") {
+                $destRelPath = $relPath.Replace("VGCASignToolPro.Updater.exe", "VGCASignToolPro.Updater.new.exe")
+            } elseif ($_.Name -ieq "VGCASignToolPro.Updater.dll") {
+                $destRelPath = $relPath.Replace("VGCASignToolPro.Updater.dll", "VGCASignToolPro.Updater.new.dll")
+            }
+
+            $dest = Join-Path $tempZipDir $destRelPath
             if ($_.PSIsContainer) {
                 if (-not (Test-Path $dest)) { New-Item -ItemType Directory -Path $dest -Force | Out-Null }
             } else {

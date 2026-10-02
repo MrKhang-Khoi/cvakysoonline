@@ -27,6 +27,7 @@ public partial class App : Application
         }
 
         InitializeSyncfusionLicensing();
+        PerformPostUpdateCleanup();
         base.OnStartup(e);
     }
 
@@ -62,5 +63,50 @@ public partial class App : Application
         {
             System.Diagnostics.Trace.TraceWarning($"Lỗi khởi tạo Syncfusion License: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Thực hiện hoán đổi an toàn các thành phần Updater mới (nếu có bản cập nhật chờ)
+    /// và dọn dẹp các tệp tạm pending delete sau khi tiến trình Updater cũ đã đóng hoàn toàn.
+    /// </summary>
+    private static void PerformPostUpdateCleanup()
+    {
+        try
+        {
+            string appDir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
+
+            // 1. Cập nhật Updater mới nếu có tệp chờ hoán đổi
+            string newUpdaterExe = System.IO.Path.Combine(appDir, "VGCASignToolPro.Updater.new.exe");
+            string targetUpdaterExe = System.IO.Path.Combine(appDir, "VGCASignToolPro.Updater.exe");
+            if (System.IO.File.Exists(newUpdaterExe))
+            {
+                try
+                {
+                    System.IO.File.Copy(newUpdaterExe, targetUpdaterExe, true);
+                    System.IO.File.Delete(newUpdaterExe);
+                }
+                catch { }
+            }
+
+            string newUpdaterDll = System.IO.Path.Combine(appDir, "VGCASignToolPro.Updater.new.dll");
+            string targetUpdaterDll = System.IO.Path.Combine(appDir, "VGCASignToolPro.Updater.dll");
+            if (System.IO.File.Exists(newUpdaterDll))
+            {
+                try
+                {
+                    System.IO.File.Copy(newUpdaterDll, targetUpdaterDll, true);
+                    System.IO.File.Delete(newUpdaterDll);
+                }
+                catch { }
+            }
+
+            // 2. Dọn dẹp các tệp pending delete còn sót lại
+            var pendingFiles = System.IO.Directory.GetFiles(appDir, "*.pending_delete_*", System.IO.SearchOption.TopDirectoryOnly);
+            foreach (var f in pendingFiles)
+            {
+                try { System.IO.File.Delete(f); } catch { }
+            }
+        }
+        catch { }
     }
 }
