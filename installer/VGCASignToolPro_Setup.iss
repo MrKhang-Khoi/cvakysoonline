@@ -5,7 +5,7 @@
 ; ==============================================================================
 
 #define MyAppName "VGCA Sign Tool Pro"
-#define MyAppVersion "2.1.6"
+#define MyAppVersion "2.2.0"
 #define MyAppPublisher "Ban Co Yeu Chinh Phu & Nha Truong"
 #define MyAppURL "https://github.com/MrKhang-Khoi/cvakysoonline"
 #define MyAppExeName "VGCASignToolPro.exe"
@@ -29,7 +29,7 @@ DisableProgramGroupPage=yes
 
 ; Xuất file cài đặt
 OutputDir=..\Output_Installer
-OutputBaseFilename=VGCASignToolPro_Setup_v2.1.6
+OutputBaseFilename=VGCASignToolPro_Setup_v2.2.0
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -60,7 +60,6 @@ Source: "{#MyAppSourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesub
 Source: "app_icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 ; 3. TỆP DỮ LIỆU NHÀ TRƯỜNG: BẢO VỆ TUYỆT ĐỐI (Chỉ sao chép nếu chưa tồn tại)
-Source: "{#MyAppSourceDir}\school_roster.json"; DestDir: "{app}"; Flags: skipifsourcedoesntexist onlyifdoesntexist uninsneveruninstall
 Source: "{#MyAppSourceDir}\workflow_config.json"; DestDir: "{app}"; Flags: skipifsourcedoesntexist onlyifdoesntexist uninsneveruninstall
 
 ; 4. GÓI TÍCH HỢP ALL-IN-ONE: Bộ cài đặt chính thức của Ban Cơ Yếu Chính Phủ (Virtual CSP v2.0 & Sign Tool v3.0.6)

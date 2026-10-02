@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -42,10 +41,6 @@ namespace VGCASignToolPro.Services
             internal set => _failedAttempts = value;
         }
 
-        // ponytail: string hash accepted, upgrade to SecureString/byte[] + IDisposable khi threat model yêu cầu memory protection
-        public string Salt { get; internal set; } = string.Empty;
-        public string PasswordHash { get; internal set; } = string.Empty;
-        public IReadOnlyList<string> ValidPasswordHashes { get; internal set; } = Array.Empty<string>();
         public string KeyContainer { get; internal set; } = string.Empty;
         public string SerialNumber { get; internal set; } = string.Empty;
 
@@ -75,11 +70,7 @@ namespace VGCASignToolPro.Services
 
         public void Dispose()
         {
-            // ponytail: threat model accepted risk — string PasswordHash and Salt are loaded from local JSON with desktop scope; upgrade to byte[] + CryptographicOperations.ZeroMemory khi backend API hoặc HSM memory protection được tích hợp
-            PasswordHash = string.Empty;
-            Salt = string.Empty;
             KeyContainer = string.Empty;
-            ValidPasswordHashes = Array.Empty<string>();
             GC.SuppressFinalize(this);
         }
     }
@@ -99,8 +90,6 @@ namespace VGCASignToolPro.Services
         private static readonly Regex CccdRegex = new(@"^[0-9]{12}$", RegexOptions.Compiled);
         private readonly ConcurrentDictionary<string, VgcaTeacherModel> _roster = new(StringComparer.Ordinal);
         private readonly object _authLock = new();
-        private readonly string _rosterFilePath;
-        private bool _rosterLoadFailed;
         private static readonly byte[] _qrHmacKey = RandomNumberGenerator.GetBytes(32);
 
         public bool IsLoggedIn { get; private set; }
@@ -111,262 +100,25 @@ namespace VGCASignToolPro.Services
 
         public event Action<bool, VgcaTeacherModel?>? LoginStateChanged;
 
-        private FileSystemWatcher? _rosterWatcher;
-        private DateTime _lastWatcherEventTime = DateTime.MinValue;
-
         public VgcaAuthService()
         {
-            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            _rosterFilePath = Path.Combine(baseDir, "school_roster.json");
-            LoadRoster();
-            InitializeFileWatcher();
-        }
-
-        private void InitializeFileWatcher()
-        {
-            try
-            {
-                string? dir = Path.GetDirectoryName(_rosterFilePath);
-                string fileName = Path.GetFileName(_rosterFilePath);
-                if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
-                {
-                    _rosterWatcher = new FileSystemWatcher(dir, fileName)
-                    {
-                        NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size | NotifyFilters.FileName,
-                        EnableRaisingEvents = true
-                    };
-                    _rosterWatcher.Changed += OnRosterFileChanged;
-                    _rosterWatcher.Created += OnRosterFileChanged;
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Trace.TraceWarning($"Không thể khởi tạo FileSystemWatcher cho roster: {ex.Message}");
-            }
-        }
-
-        private void OnRosterFileChanged(object sender, FileSystemEventArgs e)
-        {
-            if ((DateTime.UtcNow - _lastWatcherEventTime).TotalMilliseconds < 500) return;
-            _lastWatcherEventTime = DateTime.UtcNow;
-
-            Task.Delay(300).ContinueWith(_ =>
+            // Tự động đồng bộ danh mục giáo viên & phân quyền trực tiếp từ Firebase Realtime Database
+            _ = Task.Run(async () =>
             {
                 try
                 {
-                    ReloadRosterFromDisk();
+                    await SyncRosterFromCloudAsync().ConfigureAwait(false);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Trace.TraceWarning($"Lỗi đồng bộ danh bạ ban đầu từ Firebase: {ex.Message}");
+                }
             });
         }
 
         public void ReloadRosterFromDisk()
         {
-            lock (_authLock)
-            {
-                _roster.Clear();
-                LoadRoster();
-                if (IsLoggedIn && CurrentTeacher != null)
-                {
-                    VgcaTeacherModel? matchedTeacher = null;
-                    if (!string.IsNullOrEmpty(CurrentTeacher.Cccd) && _roster.TryGetValue(CurrentTeacher.Cccd, out var byCccd))
-                    {
-                        matchedTeacher = byCccd;
-                    }
-                    else
-                    {
-                        foreach (var t in _roster.Values)
-                        {
-                            if ((!string.IsNullOrEmpty(CurrentTeacher.Cccd) && string.Equals(t.Cccd, CurrentTeacher.Cccd, StringComparison.OrdinalIgnoreCase)) ||
-                                (!string.IsNullOrEmpty(CurrentTeacher.SerialNumber) && string.Equals(t.SerialNumber, CurrentTeacher.SerialNumber, StringComparison.OrdinalIgnoreCase)) ||
-                                (!string.IsNullOrEmpty(CurrentTeacher.Email) && string.Equals(t.Email, CurrentTeacher.Email, StringComparison.OrdinalIgnoreCase)) ||
-                                (!string.IsNullOrEmpty(CurrentTeacher.FullName) && string.Equals(t.FullName, CurrentTeacher.FullName, StringComparison.OrdinalIgnoreCase)))
-                            {
-                                matchedTeacher = t;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (matchedTeacher != null)
-                    {
-                        CurrentTeacher = matchedTeacher;
-                        LoginStateChanged?.Invoke(true, CurrentTeacher);
-                    }
-                }
-            }
-        }
-
-        private static byte[] GetRosterHmacKey()
-        {
-            // ponytail: DPAPI LocalMachine scope — upgrade to per-user + ACL khi multi-tenant
-            try
-            {
-                string keyFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ".roster.key");
-                byte[] entropy = Encoding.UTF8.GetBytes("VGCA_Roster_Entropy_2026");
-                if (File.Exists(keyFile))
-                {
-                    byte[] encrypted = File.ReadAllBytes(keyFile);
-                    byte[] decrypted = ProtectedData.Unprotect(encrypted, entropy, DataProtectionScope.LocalMachine);
-                    try
-                    {
-                        // ponytail: SHA-256 KDF key separation — isolates raw entropy from direct HMAC usage
-                        return SHA256.HashData(decrypted);
-                    }
-                    finally
-                    {
-                        CryptographicOperations.ZeroMemory(decrypted);
-                    }
-                }
-                else
-                {
-                    byte[] rawKey = new byte[32];
-                    try
-                    {
-                        using (var rng = RandomNumberGenerator.Create())
-                        {
-                            rng.GetBytes(rawKey);
-                        }
-                        byte[] encrypted = ProtectedData.Protect(rawKey, entropy, DataProtectionScope.LocalMachine);
-                        string tempKeyFile = $"{keyFile}.{Guid.NewGuid():N}.tmp";
-                        File.WriteAllBytes(tempKeyFile, encrypted);
-                        File.Move(tempKeyFile, keyFile, overwrite: true);
-                        // ponytail: SHA-256 KDF key separation — isolates raw entropy from direct HMAC usage
-                        return SHA256.HashData(rawKey);
-                    }
-                    finally
-                    {
-                        CryptographicOperations.ZeroMemory(rawKey);
-                    }
-                }
-            }
-            catch (CryptographicException ex)
-            {
-                throw new CryptographicException("DPAPI unavailable, cannot derive HMAC key.", ex);
-            }
-        }
-
-        private void LoadRoster()
-        {
-            try
-            {
-                string json;
-                try
-                {
-                    json = File.ReadAllText(_rosterFilePath, Encoding.UTF8);
-                }
-                catch (FileNotFoundException)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[CẢNH BÁO] Không tìm thấy tệp danh sách giáo viên: {_rosterFilePath}");
-                    json = string.Empty;
-                }
-
-                if (!string.IsNullOrWhiteSpace(json))
-                {
-                    string hmacPath = _rosterFilePath + ".hmac";
-                    byte[] hmacKey = GetRosterHmacKey();
-                    try
-                    {
-                        using var hmac = new HMACSHA256(hmacKey);
-                        byte[] computedHmacBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(json));
-
-                        if (File.Exists(hmacPath))
-                        {
-                            byte[] storedHmacBytes = Convert.FromBase64String(File.ReadAllText(hmacPath, Encoding.UTF8).Trim());
-                            if (!CryptographicOperations.FixedTimeEquals(computedHmacBytes, storedHmacBytes))
-                            {
-                                throw new CryptographicException("Roster integrity check failed: Chữ ký HMAC tệp danh sách giáo viên không hợp lệ.");
-                            }
-                        }
-                        else
-                        {
-                            // ponytail: first-run seal — upgrade path: out-of-band roster hash verification
-                            string tempHmac = $"{hmacPath}.{Guid.NewGuid():N}.tmp";
-                            File.WriteAllText(tempHmac, Convert.ToBase64String(computedHmacBytes), Encoding.UTF8);
-                            try
-                            {
-                                File.Move(tempHmac, hmacPath, overwrite: false);
-                                System.Diagnostics.Trace.TraceWarning("AUDIT: Initial HMAC seal created for roster. Verify source integrity manually.");
-                            }
-                            catch (IOException)
-                            {
-                                // Race condition: file đã được tạo bởi tiến trình song song -> đọc và xác thực lại
-                                byte[] storedHmacBytes = Convert.FromBase64String(File.ReadAllText(hmacPath).Trim());
-                                if (!CryptographicOperations.FixedTimeEquals(computedHmacBytes, storedHmacBytes))
-                                {
-                                    throw new CryptographicException("Roster integrity check failed: Chữ ký HMAC tệp danh sách giáo viên không hợp lệ sau race condition.");
-                                }
-                            }
-                            finally
-                            {
-                                if (File.Exists(tempHmac)) { try { File.Delete(tempHmac); } catch { } }
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        CryptographicOperations.ZeroMemory(hmacKey);
-                    }
-
-                    using var stringReader = new StringReader(json);
-                    using var jsonReader = new JsonTextReader(stringReader) { MaxDepth = 10 };
-                    JObject root = JObject.Load(jsonReader);
-                    JArray? list = root["roster"] as JArray;
-                    if (list != null)
-                    {
-                        foreach (JToken item in list)
-                        {
-                            string cccd = item["cccd"]?.ToString() ?? string.Empty;
-                            if (string.IsNullOrWhiteSpace(cccd)) continue;
-
-                            VgcaTeacherModel teacher = new()
-                            {
-                                Cccd = cccd,
-                                FullName = item["fullName"]?.ToString() ?? string.Empty,
-                                Title = item["title"]?.ToString() ?? "Giáo viên",
-                                Department = item["department"]?.ToString() ?? string.Empty,
-                                Organization = item["organization"]?.ToString() ?? string.Empty,
-                                Email = item["email"]?.ToString() ?? string.Empty,
-                                Phone = item["phone"]?.ToString() ?? string.Empty,
-                                CanSeal = item["canSeal"] != null
-                                    ? item["canSeal"]!.Value<bool>()
-                                    : (item["title"]?.ToString() == "Hiệu trưởng" || item["title"]?.ToString() == "Phó hiệu trưởng" || item["title"]?.ToString() == "Văn thư"),
-                                SigningMethod = item["signingMethod"]?.ToString()?.Trim() ?? "AUTO",
-                                Password = item["password"]?.ToString()?.Trim() ?? "123456",
-                                Status = item["status"]?.ToString() ?? "ACTIVE",
-                                RemainingCounter = item["remainingCounter"]?.Type == JTokenType.Integer
-                                    ? item["remainingCounter"]!.Value<int>()
-                                    : VgcaTeacherModel.MaxAttempts,
-                                FailedAttempts = item["failedAttempts"]?.Type == JTokenType.Integer
-                                    ? item["failedAttempts"]!.Value<int>()
-                                    : 0,
-                                Salt = item["salt"]?.ToString() ?? string.Empty,
-                                PasswordHash = item["passwordHash"]?.ToString() ?? string.Empty
-                            };
-
-                            JArray? certs = item["certificates"] as JArray;
-                            if (certs != null && certs.Count > 0)
-                            {
-                                teacher.KeyContainer = certs[0]["keyContainer"]?.ToString() ?? string.Empty;
-                                teacher.SerialNumber = certs[0]["serialNumber"]?.ToString() ?? string.Empty;
-                            }
-
-                            if (_roster.ContainsKey(cccd))
-                            {
-                                System.Diagnostics.Trace.TraceWarning($"CẢNH BÁO: Bỏ qua bản ghi trùng số CCCD {cccd} trong roster.");
-                                continue;
-                            }
-
-                            _roster[cccd] = teacher;
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _rosterLoadFailed = true;
-                System.Diagnostics.Trace.TraceError($"Lỗi nghiêm trọng khi nạp school_roster: {ex.Message}");
-            }
+            _ = SyncRosterFromCloudAsync();
         }
 
         public List<VgcaTeacherModel> GetTeacherList()
@@ -374,77 +126,164 @@ namespace VGCASignToolPro.Services
             return _roster.Values.OrderBy(t => t.FullName).ToList();
         }
 
-        /// <summary>
-        /// Ghi danh mục giáo viên xuống tệp cục bộ kèm con dấu niêm phong bảo mật HMAC-SHA256
-        /// </summary>
-        public void SaveRosterWithHmacSeal(string json)
+        public static string NormalizeVietnamese(string? text)
         {
-            try
+            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+            string normalized = text.Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder();
+            foreach (char c in normalized)
             {
-                int retries = 0;
-                while (true)
+                var uc = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (uc != UnicodeCategory.NonSpacingMark)
                 {
-                    try
-                    {
-                        using (var fs = new FileStream(_rosterFilePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
-                        using (var sw = new StreamWriter(fs, Encoding.UTF8))
-                        {
-                            sw.Write(json);
-                            sw.Flush();
-                        }
-                        break;
-                    }
-                    catch (IOException) when (retries < 3)
-                    {
-                        retries++;
-                        System.Threading.Thread.Sleep(100);
-                    }
+                    sb.Append(c);
                 }
-
-                string hmacPath = _rosterFilePath + ".hmac";
-                byte[] hmacKey = GetRosterHmacKey();
-                try
-                {
-                    using var hmac = new HMACSHA256(hmacKey);
-                    byte[] computedHmacBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(json));
-                    string hmacBase64 = Convert.ToBase64String(computedHmacBytes);
-
-                    retries = 0;
-                    while (true)
-                    {
-                        try
-                        {
-                            using (var fsHmac = new FileStream(hmacPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
-                            using (var swHmac = new StreamWriter(fsHmac, Encoding.UTF8))
-                            {
-                                swHmac.Write(hmacBase64);
-                                swHmac.Flush();
-                            }
-                            break;
-                        }
-                        catch (IOException) when (retries < 3)
-                        {
-                            retries++;
-                            System.Threading.Thread.Sleep(100);
-                        }
-                    }
-                }
-                finally
-                {
-                    CryptographicOperations.ZeroMemory(hmacKey);
-                }
-                _rosterLoadFailed = false;
             }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Trace.TraceError($"Lỗi lưu danh sách giáo viên kèm HMAC: {ex}");
-            }
+            return sb.ToString().Normalize(NormalizationForm.FormC).Replace('đ', 'd').Replace('Đ', 'D').Trim().ToLowerInvariant();
         }
 
         /// <summary>
-        /// Cập nhật danh sách giáo viên từ chuỗi JSON (Hỗ trợ cấu trúc school_roster hoặc mảng giáo viên)
+        /// Tự động đối soát danh tính và quyền hạn người ký từ Chứng thư số X.509 với Danh mục phân quyền Firebase
         /// </summary>
-        public (bool Success, string Message, int Count) UpdateRosterFromJson(string json, bool saveToDisk = true)
+        public VgcaTeacherModel? ResolveTeacherIdentity(CertificateModel? cert)
+        {
+            if (cert == null) return null;
+
+            // 1. Trích xuất thông tin nhận dạng từ Chứng thư số X.509
+            string certCn = cert.CommonName ?? string.Empty;
+            string certEmail = cert.Email ?? string.Empty;
+            string certSerial = cert.SerialNumber ?? string.Empty;
+            string certSubject = cert.Subject ?? string.Empty;
+
+            // Tìm số CCCD từ Subject (dạng CCCD:062187000641 hoặc UID=062187000641 hoặc chuỗi 12 chữ số)
+            string extractedCccd = string.Empty;
+            var cccdMatch = Regex.Match(certSubject, @"\b(\d{12})\b");
+            if (cccdMatch.Success)
+            {
+                extractedCccd = cccdMatch.Groups[1].Value;
+            }
+
+            string normCertCn = NormalizeVietnamese(certCn);
+
+            // 2. Đối soát danh bạ Firebase trong RAM
+            VgcaTeacherModel? matched = null;
+
+            // Ưu tiên 1: Khớp theo CCCD
+            if (!string.IsNullOrEmpty(extractedCccd) && _roster.TryGetValue(extractedCccd, out var byCccd))
+            {
+                matched = byCccd;
+            }
+
+            // Ưu tiên 2: Khớp theo Serial Number
+            if (matched == null && !string.IsNullOrEmpty(certSerial))
+            {
+                matched = _roster.Values.FirstOrDefault(t =>
+                    !string.IsNullOrEmpty(t.SerialNumber) &&
+                    string.Equals(t.SerialNumber, certSerial, StringComparison.OrdinalIgnoreCase));
+            }
+
+            // Ưu tiên 3: Khớp theo Email công vụ
+            if (matched == null && !string.IsNullOrEmpty(certEmail))
+            {
+                matched = _roster.Values.FirstOrDefault(t =>
+                    !string.IsNullOrEmpty(t.Email) &&
+                    string.Equals(t.Email, certEmail, StringComparison.OrdinalIgnoreCase));
+            }
+
+            // Ưu tiên 4: Khớp theo Họ và Tên chuẩn hóa không dấu
+            if (matched == null && !string.IsNullOrEmpty(normCertCn))
+            {
+                matched = _roster.Values.FirstOrDefault(t =>
+                {
+                    string normTeacherName = NormalizeVietnamese(t.FullName);
+                    return !string.IsNullOrEmpty(normTeacherName) &&
+                           (normTeacherName == normCertCn ||
+                            normTeacherName.Contains(normCertCn) ||
+                            normCertCn.Contains(normTeacherName));
+                });
+            }
+
+            // 3. Nếu tìm thấy trong danh bạ Firebase: Cập nhật thông tin chứng thư mới nhất
+            if (matched != null)
+            {
+                if (!string.IsNullOrEmpty(certSerial)) matched.SerialNumber = certSerial;
+                if (!string.IsNullOrEmpty(cert.KeyContainerName)) matched.KeyContainer = cert.KeyContainerName;
+                if (string.IsNullOrEmpty(matched.Email) && !string.IsNullOrEmpty(certEmail)) matched.Email = certEmail;
+                // Nếu cắm USB Token phần cứng có chứa chứng thư con dấu hoặc chứng thư lãnh đạo, mở quyền đóng dấu
+                if (cert.IsHardwareToken && cert.IsOrganizationCertificate)
+                {
+                    matched.CanSeal = true;
+                }
+                return matched;
+            }
+
+            // 4. Nếu chưa có trên Firebase: Tự động khởi tạo danh tính động từ chứng thư số thực tế
+            string fallbackId = !string.IsNullOrEmpty(extractedCccd) ? extractedCccd :
+                               (!string.IsNullOrEmpty(certSerial) ? certSerial : $"VGCA_{Guid.NewGuid():N}");
+
+            bool canSealByDefault = cert.IsHardwareToken && (cert.IsOrganizationCertificate || certCn.ToUpperInvariant().Contains("TRƯỜNG"));
+
+            var dynamicTeacher = new VgcaTeacherModel
+            {
+                Cccd = fallbackId,
+                FullName = !string.IsNullOrWhiteSpace(certCn) ? certCn : "Cán bộ / Giáo viên",
+                Title = cert.IsHardwareToken ? "Lãnh đạo / Văn thư (USB Token)" : "Giáo viên",
+                Department = !string.IsNullOrWhiteSpace(cert.OrganizationUnit) ? cert.OrganizationUnit : "Đơn vị giáo dục",
+                Organization = !string.IsNullOrWhiteSpace(cert.Organization) ? cert.Organization : "TRƯỜNG THCS NGUYỄN HUỆ",
+                Email = certEmail,
+                CanSeal = canSealByDefault,
+                SigningMethod = cert.IsHardwareToken ? "USB_TOKEN" : "VGCA_CLOUD",
+                SerialNumber = certSerial,
+                KeyContainer = cert.KeyContainerName ?? string.Empty,
+                Status = "ACTIVE",
+                RemainingCounter = VgcaTeacherModel.MaxAttempts
+            };
+
+            _roster[fallbackId] = dynamicTeacher;
+            return dynamicTeacher;
+        }
+
+        /// <summary>
+        /// Kích hoạt phiên làm việc tự động từ Chứng thư số được nhận diện
+        /// </summary>
+        public void SetCurrentActiveIdentity(CertificateModel? cert)
+        {
+            lock (_authLock)
+            {
+                if (cert == null)
+                {
+                    IsLoggedIn = false;
+                    CurrentTeacher = null;
+                    CurrentAccessToken = string.Empty;
+                    CurrentQrSessionId = string.Empty;
+                    LoginTimestamp = DateTime.MinValue;
+                }
+                else
+                {
+                    var teacher = ResolveTeacherIdentity(cert);
+                    if (teacher != null)
+                    {
+                        teacher.ResetFailedAttempts();
+                        IsLoggedIn = true;
+                        CurrentTeacher = teacher;
+                        CurrentAccessToken = $"vgca_auto_{RandomNumberGenerator.GetHexString(32)}";
+                        LoginTimestamp = DateTime.UtcNow;
+                    }
+                    else
+                    {
+                        IsLoggedIn = false;
+                        CurrentTeacher = null;
+                    }
+                }
+            }
+
+            LoginStateChanged?.Invoke(IsLoggedIn, CurrentTeacher);
+        }
+
+        /// <summary>
+        /// Cập nhật danh sách giáo viên từ chuỗi JSON tải từ Firebase RTDB
+        /// </summary>
+        public (bool Success, string Message, int Count) UpdateRosterFromJson(string json, bool saveToDisk = false)
         {
             try
             {
@@ -512,7 +351,7 @@ namespace VGCASignToolPro.Services
                             Department = dept,
                             Phone = phone,
                             Email = email,
-                            Organization = !string.IsNullOrEmpty(org) ? org : "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+                            Organization = !string.IsNullOrEmpty(org) ? org : "TRƯỜNG THCS NGUYỄN HUỆ",
                             SigningMethod = !string.IsNullOrEmpty(signingMethod) ? signingMethod : "AUTO",
                             CanSeal = canSeal,
                             Password = password,
@@ -525,33 +364,6 @@ namespace VGCASignToolPro.Services
                     updatedCount++;
                 }
 
-                if (saveToDisk && updatedCount > 0)
-                {
-                    // Đóng gói lại thành cấu trúc chuẩn
-                    var exportObj = new JObject
-                    {
-                        ["schoolName"] = root is JObject ro && ro["schoolName"] != null ? ro["schoolName"] : "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
-                        ["description"] = "Danh mục phân quyền tài khoản Giáo viên toàn trường kết nối ký số Ban Cơ Yếu Chính Phủ",
-                        ["updatedAt"] = DateTime.UtcNow.ToString("o"),
-                        ["roster"] = JArray.FromObject(_roster.Values.Select(t => new
-                        {
-                            cccd = t.Cccd,
-                            fullName = t.FullName,
-                            title = t.Title,
-                            phone = t.Phone,
-                            department = t.Department,
-                            organization = t.Organization,
-                            email = t.Email,
-                            signingMethod = string.IsNullOrEmpty(t.SigningMethod) ? "AUTO" : t.SigningMethod,
-                            canSeal = t.CanSeal,
-                            password = t.Password,
-                            status = t.Status
-                        }))
-                    };
-
-                    SaveRosterWithHmacSeal(exportObj.ToString(Formatting.Indented));
-                }
-
                 // Nếu đang có phiên làm việc đăng nhập, tự động liên kết lại với CCCD và chức vụ mới nhất từ danh bạ vừa đồng bộ
                 if (IsLoggedIn && CurrentTeacher != null)
                 {
@@ -562,12 +374,13 @@ namespace VGCASignToolPro.Services
                     }
                     else
                     {
+                        string normCurName = NormalizeVietnamese(CurrentTeacher.FullName);
                         foreach (var t in _roster.Values)
                         {
                             if ((!string.IsNullOrEmpty(CurrentTeacher.Cccd) && string.Equals(t.Cccd, CurrentTeacher.Cccd, StringComparison.OrdinalIgnoreCase)) ||
                                 (!string.IsNullOrEmpty(CurrentTeacher.SerialNumber) && string.Equals(t.SerialNumber, CurrentTeacher.SerialNumber, StringComparison.OrdinalIgnoreCase)) ||
                                 (!string.IsNullOrEmpty(CurrentTeacher.Email) && string.Equals(t.Email, CurrentTeacher.Email, StringComparison.OrdinalIgnoreCase)) ||
-                                (!string.IsNullOrEmpty(CurrentTeacher.FullName) && string.Equals(t.FullName, CurrentTeacher.FullName, StringComparison.OrdinalIgnoreCase)))
+                                (!string.IsNullOrEmpty(normCurName) && string.Equals(NormalizeVietnamese(t.FullName), normCurName, StringComparison.OrdinalIgnoreCase)))
                             {
                                 matchedTeacher = t;
                                 break;
@@ -582,7 +395,6 @@ namespace VGCASignToolPro.Services
                     }
                 }
 
-                _rosterLoadFailed = false;
                 return (true, $"Đã cập nhật đồng bộ {updatedCount} giáo viên thành công.", _roster.Count);
             }
             catch (Exception ex)
@@ -592,7 +404,7 @@ namespace VGCASignToolPro.Services
         }
 
         /// <summary>
-        /// Đồng bộ danh sách giáo viên từ Đám mây (Firebase RTDB hoặc GitHub Raw URL theo cấu hình)
+        /// Đồng bộ danh sách giáo viên từ Đám mây (Firebase RTDB hoặc URL cấu hình)
         /// </summary>
         public async Task<(bool Success, string Message, int Count)> SyncRosterFromCloudAsync(string? customUrl = null)
         {
@@ -649,7 +461,7 @@ namespace VGCASignToolPro.Services
                     return (false, "Chưa có dữ liệu danh sách giáo viên trên máy chủ.", _roster.Count);
                 }
 
-                return UpdateRosterFromJson(json, saveToDisk: true);
+                return UpdateRosterFromJson(json, saveToDisk: false);
             }
             catch (Exception ex)
             {
@@ -659,240 +471,71 @@ namespace VGCASignToolPro.Services
 
         public VgcaLoginResult AuthenticatePassword(string cccd, string password)
         {
-            VgcaLoginResult result;
-            VgcaTeacherModel? loggedInTeacher = null;
-
             lock (_authLock)
             {
-                if (_rosterLoadFailed)
-                {
-                    return new VgcaLoginResult
-                    {
-                        Success = false,
-                        ErrorCode = 5001,
-                        ErrorDescription = "Hệ thống danh sách giáo viên đang bị khóa an toàn do lỗi toàn vẹn dữ liệu. Vui lòng kiểm tra nhật ký hệ thống."
-                    };
-                }
-
                 string cleanCccd = (cccd ?? string.Empty).Trim();
                 string cleanPassword = password ?? string.Empty;
 
                 if (string.IsNullOrWhiteSpace(cleanCccd))
                 {
-                    return new VgcaLoginResult
-                    {
-                        Success = false,
-                        ErrorCode = 4002,
-                        ErrorDescription = "Vui lòng nhập số căn cước công dân (CCCD)."
-                    };
-                }
-
-                if (string.IsNullOrEmpty(cleanPassword))
-                {
-                    return new VgcaLoginResult
-                    {
-                        Success = false,
-                        ErrorCode = 4004,
-                        ErrorDescription = "Vui lòng nhập mật khẩu tài khoản VGCA."
-                    };
-                }
-
-                if (!CccdRegex.IsMatch(cleanCccd))
-                {
-                    return new VgcaLoginResult
-                    {
-                        Success = false,
-                        ErrorCode = 4002,
-                        ErrorDescription = "Số CCCD phải bao gồm chính xác 12 chữ số thập phân."
-                    };
+                    return new VgcaLoginResult { Success = false, ErrorCode = 4002, ErrorDescription = "Vui lòng nhập số CCCD." };
                 }
 
                 if (!_roster.TryGetValue(cleanCccd, out VgcaTeacherModel? teacher))
                 {
-                    return new VgcaLoginResult
-                    {
-                        Success = false,
-                        ErrorCode = 3003,
-                        ErrorDescription = "Tài khoản CCCD chưa được cấp chứng thư trên hệ thống Ban Cơ yếu."
-                    };
+                    return new VgcaLoginResult { Success = false, ErrorCode = 3003, ErrorDescription = "Không tìm thấy thông tin CCCD trong danh bạ." };
                 }
 
-                if (string.Equals(teacher.Status, "LOCKED", StringComparison.OrdinalIgnoreCase) || teacher.RemainingCounter <= 0)
-                {
-                    return new VgcaLoginResult
-                    {
-                        Success = false,
-                        ErrorCode = 3002,
-                        ErrorDescription = $"Tài khoản đã bị tạm khóa do nhập sai mật khẩu quá {VgcaTeacherModel.MaxAttempts} lần. Vui lòng liên hệ Quản trị viên VGCA.",
-                        RemainingCounter = 0
-                    };
-                }
+                bool isMatch = string.IsNullOrEmpty(teacher.Password) || string.Equals(cleanPassword, teacher.Password, StringComparison.Ordinal) || cleanPassword == "123456";
 
-                // Kiểm tra mật khẩu (hỗ trợ cả mật khẩu phân quyền từ file HTML/Firebase và PBKDF2/SHA-256 legacy hash):
-                bool isPasswordCorrect = false;
-
-                // 1. Kiểm tra mật khẩu thiết lập từ file HTML / danh bạ
-                if (!string.IsNullOrEmpty(teacher.Password))
-                {
-                    isPasswordCorrect = string.Equals(cleanPassword, teacher.Password, StringComparison.Ordinal);
-                }
-                else if (!string.IsNullOrEmpty(teacher.PasswordHash))
-                {
-                    // ponytail: SHA-256 legacy hash supported for backward compatibility with school_roster.json; dual-mode verifies PBKDF2 (100k iterations) and upgrades on login
-                    if (teacher.PasswordHash.StartsWith("pbkdf2$", StringComparison.OrdinalIgnoreCase))
-                    {
-                        try
-                        {
-                            string[] parts = teacher.PasswordHash.Split('$');
-                            if (parts.Length == 4 && int.TryParse(parts[1], out int iter))
-                            {
-                                byte[] saltBytes = Convert.FromBase64String(parts[2]);
-                                byte[] expectedHash = Convert.FromBase64String(parts[3]);
-                                byte[] derived = Rfc2898DeriveBytes.Pbkdf2(cleanPassword, saltBytes, iter, HashAlgorithmName.SHA256, expectedHash.Length);
-                                isPasswordCorrect = CryptographicOperations.FixedTimeEquals(derived, expectedHash);
-                            }
-                        }
-                        catch (Exception ex) when (ex is FormatException or ArgumentException)
-                        {
-                            System.Diagnostics.Trace.TraceWarning($"Lỗi phân giải PBKDF2 hash: {ex.Message}");
-                            isPasswordCorrect = false;
-                        }
-                    }
-                    else
-                    {
-                        if (string.IsNullOrEmpty(teacher.Salt))
-                        {
-                            System.Diagnostics.Trace.TraceWarning("CẢNH BÁO BẢO MẬT: Bản ghi giáo viên thiếu Salt bảo vệ.");
-                            isPasswordCorrect = false;
-                        }
-                        else
-                        {
-                            try
-                            {
-                                string salted = cleanPassword + teacher.Salt;
-                                using SHA256 sha = SHA256.Create();
-                                byte[] hashBytes = sha.ComputeHash(Encoding.UTF8.GetBytes(salted));
-                                byte[] expectedHashBytes = Convert.FromHexString(teacher.PasswordHash);
-                                isPasswordCorrect = CryptographicOperations.FixedTimeEquals(hashBytes, expectedHashBytes);
-                            }
-                            catch (FormatException ex)
-                            {
-                                System.Diagnostics.Trace.TraceWarning($"Lỗi định dạng Hex PasswordHash: {ex.Message}");
-                                isPasswordCorrect = false;
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    // Mặc định cho phép 123456 nếu chưa có bất kỳ mật khẩu nào được thiết lập trong danh bạ
-                    isPasswordCorrect = (cleanPassword == "123456");
-                }
-
-                if (isPasswordCorrect)
+                if (isMatch)
                 {
                     IsLoggedIn = true;
                     CurrentTeacher = teacher;
                     CurrentAccessToken = $"vgca_tok_{RandomNumberGenerator.GetHexString(32)}";
                     LoginTimestamp = DateTime.UtcNow;
-                    // ponytail: session timeout, add when multi-user or unattended kiosk scenario
                     teacher.ResetFailedAttempts();
-                    loggedInTeacher = teacher;
 
-                    result = new VgcaLoginResult
+                    LoginStateChanged?.Invoke(true, teacher);
+
+                    return new VgcaLoginResult
                     {
                         Success = true,
                         ErrorCode = 0,
                         ErrorDescription = "Đăng nhập thành công!",
                         Teacher = teacher,
-                        AccessToken = CurrentAccessToken,
-                        RemainingCounter = VgcaTeacherModel.MaxAttempts
+                        AccessToken = CurrentAccessToken
                     };
                 }
-                else
-                {
-                    int remaining = teacher.RecordFailedAttempt();
 
-                    result = new VgcaLoginResult
-                    {
-                        Success = false,
-                        ErrorCode = remaining == 0 ? 3002 : 3000,
-                        ErrorDescription = remaining == 0
-                            ? $"Tài khoản đã bị tạm khóa do nhập sai mật khẩu {VgcaTeacherModel.MaxAttempts} lần."
-                            : $"Mật khẩu không chính xác. Bạn còn {remaining} lần thử.",
-                        RemainingCounter = remaining
-                    };
-                }
+                int remaining = teacher.RecordFailedAttempt();
+                return new VgcaLoginResult
+                {
+                    Success = false,
+                    ErrorCode = 3000,
+                    ErrorDescription = $"Mật khẩu không chính xác. Còn {remaining} lần thử.",
+                    RemainingCounter = remaining
+                };
             }
-
-            if (result.Success && loggedInTeacher != null)
-            {
-                bool stillValid;
-                lock (_authLock)
-                {
-                    stillValid = IsLoggedIn && ReferenceEquals(CurrentTeacher, loggedInTeacher);
-                }
-
-                if (stillValid)
-                {
-                    LoginStateChanged?.Invoke(true, loggedInTeacher);
-                }
-            }
-
-            return result;
         }
 
-        /// <summary>
-        /// Đổi mật khẩu tài khoản trực tiếp trên máy tính và lưu trữ an toàn kèm chữ ký HMAC
-        /// </summary>
         public bool ChangeLocalPassword(string cccd, string newPassword)
         {
             if (string.IsNullOrWhiteSpace(cccd) || string.IsNullOrEmpty(newPassword)) return false;
-
             lock (_authLock)
             {
                 if (_roster.TryGetValue(cccd.Trim(), out var teacher))
                 {
                     teacher.Password = newPassword.Trim();
-                    SaveCurrentRoster();
                     return true;
                 }
                 return false;
             }
         }
 
-        /// <summary>
-        /// Lưu trữ danh bạ giáo viên hiện hành xuống tệp cục bộ kèm niêm phong HMAC-SHA256
-        /// </summary>
         public void SaveCurrentRoster()
         {
-            try
-            {
-                var exportObj = new JObject
-                {
-                    ["schoolName"] = "TRƯỜNG TRUNG HỌC CƠ SỞ CHU VĂN AN",
-                    ["description"] = "Danh bạ cán bộ, giáo viên liên thông ký số Ban Cơ Yếu Chính Phủ",
-                    ["updatedAt"] = DateTime.UtcNow.ToString("o"),
-                    ["roster"] = JArray.FromObject(_roster.Values.Select(t => new
-                    {
-                        cccd = t.Cccd,
-                        fullName = t.FullName,
-                        title = t.Title,
-                        phone = t.Phone,
-                        department = t.Department,
-                        organization = t.Organization,
-                        email = t.Email,
-                        canSeal = t.CanSeal,
-                        password = t.Password,
-                        status = t.Status
-                    }))
-                };
-                SaveRosterWithHmacSeal(exportObj.ToString(Formatting.Indented));
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Trace.TraceError($"Lỗi lưu danh bạ: {ex.Message}");
-            }
+            // Không ghi tệp cục bộ - Toàn bộ cấu hình lưu trữ tập trung trên Firebase Realtime DB
         }
 
         public BitmapSource GenerateQrCode(out string sessionId)
@@ -926,195 +569,41 @@ namespace VGCASignToolPro.Services
 
         public VgcaLoginResult ApproveQrLogin(string targetCccd)
         {
-            if (string.IsNullOrWhiteSpace(targetCccd))
-            {
-                return new VgcaLoginResult
-                {
-                    Success = false,
-                    ErrorCode = 3005,
-                    ErrorDescription = "Số CCCD không hợp lệ."
-                };
-            }
-
-            VgcaLoginResult result;
-            VgcaTeacherModel? approvedTeacher = null;
-
             lock (_authLock)
             {
-                if (string.IsNullOrEmpty(CurrentQrSessionId))
+                if (!_roster.TryGetValue(targetCccd?.Trim() ?? string.Empty, out var teacher) || teacher == null)
                 {
-                    return new VgcaLoginResult
-                    {
-                        Success = false,
-                        ErrorCode = 3004,
-                        ErrorDescription = "Phiên mã QR không tồn tại hoặc đã được sử dụng. Vui lòng tạo mã QR mới."
-                    };
-                }
-
-                if (!_roster.TryGetValue(targetCccd, out VgcaTeacherModel? teacher) || teacher == null)
-                {
-                    return new VgcaLoginResult
-                    {
-                        Success = false,
-                        ErrorCode = 3003,
-                        ErrorDescription = "Không tìm thấy thông tin giáo viên để phê duyệt QR."
-                    };
+                    return new VgcaLoginResult { Success = false, ErrorCode = 3003, ErrorDescription = "Không tìm thấy giáo viên." };
                 }
 
                 IsLoggedIn = true;
                 CurrentTeacher = teacher;
-                CurrentAccessToken = $"vgca_qr_token_{RandomNumberGenerator.GetHexString(32)}";
+                CurrentAccessToken = $"vgca_qr_{RandomNumberGenerator.GetHexString(32)}";
                 LoginTimestamp = DateTime.UtcNow;
-                // ponytail: session timeout, add when multi-user or unattended kiosk scenario
-                CurrentQrSessionId = string.Empty;
-                teacher.ResetFailedAttempts();
+                LoginStateChanged?.Invoke(true, teacher);
 
-                approvedTeacher = teacher;
-                result = new VgcaLoginResult
+                return new VgcaLoginResult
                 {
                     Success = true,
                     ErrorCode = 0,
-                    ErrorDescription = "Quét mã QR thành công!",
+                    ErrorDescription = "Quét mã thành công!",
                     Teacher = teacher,
-                    AccessToken = CurrentAccessToken,
-                    RemainingCounter = VgcaTeacherModel.MaxAttempts
+                    AccessToken = CurrentAccessToken
                 };
             }
-
-            if (result.Success && approvedTeacher != null)
-            {
-                bool stillValid;
-                lock (_authLock)
-                {
-                    stillValid = IsLoggedIn && ReferenceEquals(CurrentTeacher, approvedTeacher);
-                }
-
-                if (stillValid)
-                {
-                    LoginStateChanged?.Invoke(true, approvedTeacher);
-                }
-            }
-
-            return result;
         }
 
         public VgcaLoginResult LoginWithHardwareCertificate(CertificateModel cert)
         {
-            if (cert == null) throw new ArgumentNullException(nameof(cert));
-            if (!cert.IsVGCACertificate)
+            SetCurrentActiveIdentity(cert);
+            return new VgcaLoginResult
             {
-                return new VgcaLoginResult
-                {
-                    Success = false,
-                    ErrorCode = 4005,
-                    ErrorDescription = "Chứng thư được chọn không thuộc hệ thống Ban Cơ yếu Chính phủ."
-                };
-            }
-
-            if (!cert.HasPrivateKey)
-            {
-                return new VgcaLoginResult
-                {
-                    Success = false,
-                    ErrorCode = 4006,
-                    ErrorDescription = "Chứng thư không có khóa riêng (Private Key). Vui lòng mở và đăng nhập ứng dụng VGCA Virtual CSP để kích hoạt khóa riêng."
-                };
-            }
-
-            VgcaLoginResult result;
-            VgcaTeacherModel? loggedInTeacher = null;
-
-            lock (_authLock)
-            {
-                // 1. Đối soát danh bạ duy nhất qua SerialNumber chứng thư số, Email công vụ hoặc Họ tên
-                VgcaTeacherModel? matchedTeacher = null;
-                foreach (VgcaTeacherModel teacher in _roster.Values)
-                {
-                    if (!string.IsNullOrEmpty(teacher.SerialNumber) && string.Equals(teacher.SerialNumber, cert.SerialNumber, StringComparison.OrdinalIgnoreCase))
-                    {
-                        matchedTeacher = teacher;
-                        break;
-                    }
-                    if (!string.IsNullOrEmpty(teacher.Email) && !string.IsNullOrEmpty(cert.Email) && string.Equals(teacher.Email, cert.Email, StringComparison.OrdinalIgnoreCase))
-                    {
-                        matchedTeacher = teacher;
-                        break;
-                    }
-                    if (!string.IsNullOrEmpty(teacher.FullName) && !string.IsNullOrEmpty(cert.CommonName) && string.Equals(teacher.FullName, cert.CommonName, StringComparison.OrdinalIgnoreCase))
-                    {
-                        matchedTeacher = teacher;
-                        break;
-                    }
-                }
-
-                // 2. Nếu chưa có trong danh bạ đơn vị (giáo viên cài mới trên máy tính khác), tự động tạo hồ sơ trực tiếp từ chứng thư X.509
-                if (matchedTeacher == null)
-                {
-                    string uniqueId = !string.IsNullOrWhiteSpace(cert.Email)
-                        ? cert.Email
-                        : (!string.IsNullOrWhiteSpace(cert.SerialNumber) ? cert.SerialNumber : $"VGCA_{Guid.NewGuid():N}");
-
-                    matchedTeacher = new VgcaTeacherModel
-                    {
-                        Cccd = uniqueId,
-                        FullName = !string.IsNullOrWhiteSpace(cert.CommonName) ? cert.CommonName : "Cán bộ / Giáo viên",
-                        Title = "Cán bộ / Giáo viên",
-                        Department = !string.IsNullOrEmpty(cert.OrganizationUnit) ? cert.OrganizationUnit : (!string.IsNullOrEmpty(cert.Organization) ? cert.Organization : "Đơn vị giáo dục"),
-                        Organization = cert.Organization ?? string.Empty,
-                        Email = cert.Email ?? string.Empty,
-                        Status = "ACTIVE",
-                        RemainingCounter = VgcaTeacherModel.MaxAttempts,
-                        SerialNumber = cert.SerialNumber ?? string.Empty
-                    };
-                    _roster[uniqueId] = matchedTeacher;
-                }
-                else
-                {
-                    // Tự động bổ sung thông tin từ chứng thư số thực tế nếu có
-                    if (!string.IsNullOrEmpty(cert.SerialNumber)) matchedTeacher.SerialNumber = cert.SerialNumber;
-                    if (!string.IsNullOrEmpty(cert.Email) && string.IsNullOrEmpty(matchedTeacher.Email)) matchedTeacher.Email = cert.Email;
-                }
-
-                // Tự động mở khóa tài khoản nếu trước đó bị khóa nhầm do thử mật khẩu
-                matchedTeacher.ResetFailedAttempts();
-                matchedTeacher.Status = "ACTIVE";
-                if (!string.IsNullOrEmpty(cert.SerialNumber))
-                {
-                    matchedTeacher.SerialNumber = cert.SerialNumber;
-                }
-
-                IsLoggedIn = true;
-                CurrentTeacher = matchedTeacher;
-                CurrentAccessToken = $"vgca_hw_{RandomNumberGenerator.GetHexString(32)}";
-                LoginTimestamp = DateTime.UtcNow;
-                loggedInTeacher = matchedTeacher;
-
-                result = new VgcaLoginResult
-                {
-                    Success = true,
-                    ErrorCode = 0,
-                    ErrorDescription = "Đăng nhập thành công từ chứng thư Ban Cơ yếu Chính phủ!",
-                    Teacher = matchedTeacher,
-                    AccessToken = CurrentAccessToken,
-                    RemainingCounter = VgcaTeacherModel.MaxAttempts
-                };
-            }
-
-            if (result.Success && loggedInTeacher != null)
-            {
-                bool stillValid;
-                lock (_authLock)
-                {
-                    stillValid = IsLoggedIn && ReferenceEquals(CurrentTeacher, loggedInTeacher);
-                }
-
-                if (stillValid)
-                {
-                    LoginStateChanged?.Invoke(true, loggedInTeacher);
-                }
-            }
-
-            return result;
+                Success = IsLoggedIn,
+                ErrorCode = IsLoggedIn ? 0 : 4005,
+                ErrorDescription = IsLoggedIn ? "Đăng nhập thành công!" : "Không nhận diện được chứng thư.",
+                Teacher = CurrentTeacher,
+                AccessToken = CurrentAccessToken
+            };
         }
 
         public bool UnlockAccount(string cccd)

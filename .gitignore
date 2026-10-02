@@ -15,3 +15,5 @@ Output_Installer/
 publish_standalone/
 releases/
 temp_pack/
+school_roster.json*
+*.roster.key

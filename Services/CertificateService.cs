@@ -98,54 +98,24 @@ namespace VGCASignToolPro.Services
                 .Where(c => c.IsVGCACertificate && !c.IsOrganizationCertificate && c.HasPrivateKey && c.IsValidNow)
                 .ToList();
 
-            string method = (signingMethod ?? "AUTO").ToUpperInvariant();
-
-            // 1. Nếu có thông tin người dùng cụ thể (BGH / Giáo viên đăng nhập): BẮT BUỘC ĐỐI SOÁT CHÍNH XÁC DANH TÍNH
+            // 1. Nếu có thông tin người dùng cụ thể: đối soát chính xác danh tính
             if (!string.IsNullOrWhiteSpace(fullName) || !string.IsNullOrWhiteSpace(cccd))
             {
                 var matchedCerts = personalCerts.Where(c => c.MatchesPerson(fullName ?? string.Empty, cccd)).ToList();
-
-                // Nếu không tìm thấy chứng thư nào của người này -> Trả về null ngay (tuyệt đối không lấy nhầm người khác!)
-                if (matchedCerts.Count == 0)
+                if (matchedCerts.Count > 0)
                 {
-                    return null;
-                }
-
-                if (method == "USB_TOKEN")
-                {
-                    // Yêu cầu USB Token: Chỉ trả về nếu là Token phần cứng của người này
-                    return matchedCerts.FirstOrDefault(c => c.IsHardwareToken);
-                }
-                else if (method == "VGCA_CLOUD")
-                {
-                    // Yêu cầu Ký số từ xa: Chỉ trả về nếu là Virtual CSP của người này
-                    return matchedCerts.FirstOrDefault(c => c.IsVirtualCspCertificate);
-                }
-                else // AUTO: Ưu tiên USB Token phần cứng nếu cắm, ngược lại dùng Cloud của người này
-                {
+                    // Luôn ưu tiên trả về thiết bị sẵn sàng của người này (Ưu tiên Hardware Token nếu cắm, ngược lại Virtual CSP)
                     return matchedCerts.FirstOrDefault(c => c.IsHardwareToken)
                         ?? matchedCerts.FirstOrDefault(c => c.IsVirtualCspCertificate)
                         ?? matchedCerts[0];
                 }
             }
 
-            // 2. Không chỉ định người dùng hoặc không khớp người cụ thể: Lọc theo phương thức ký
-            if (method == "USB_TOKEN")
-            {
-                var tokenCert = personalCerts.FirstOrDefault(c => c.IsHardwareToken);
-                if (tokenCert != null) return tokenCert;
-            }
-            else if (method == "VGCA_CLOUD")
-            {
-                var cloudCert = personalCerts.FirstOrDefault(c => c.IsVirtualCspCertificate);
-                if (cloudCert != null) return cloudCert;
-            }
-
-            // Fallback: Ưu tiên Token cắm máy -> Cloud -> chứng thư cá nhân bất kỳ
+            // 2. Không chỉ định người dùng cụ thể: Tự động nhận diện thiết bị sẵn sàng (Token cắm máy -> Cloud -> chứng thư cá nhân bất kỳ)
             return personalCerts.FirstOrDefault(c => c.IsHardwareToken)
                 ?? personalCerts.FirstOrDefault(c => c.IsVirtualCspCertificate)
                 ?? personalCerts.FirstOrDefault()
-                ?? certs.FirstOrDefault(c => c.IsVGCACertificate && !c.IsOrganizationCertificate && c.HasPrivateKey);
+                ?? certs.FirstOrDefault(c => c.IsVGCACertificate && c.HasPrivateKey && c.IsValidNow);
         }
 
         /// <summary>

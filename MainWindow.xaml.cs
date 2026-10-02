@@ -142,11 +142,21 @@ namespace VGCASignToolPro
                     OverlayLoadingPopup.PlacementTarget = MainRootGrid;
                 }
 
+                try
+                {
+                    var asmVer = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                    if (asmVer != null && TxtAppVersion != null)
+                    {
+                        TxtAppVersion.Text = $"Phiên bản v{asmVer.Major}.{asmVer.Minor}.{asmVer.Build} • .NET 8 x64";
+                    }
+                }
+                catch { }
+
                 await InitializePreviewEngineAsync();
 
                 InitializeVgcaAuthRoster();
                 LoadCertificatesAndVerifyVGCALogin();
-                LoadSavedLoginCredentialsIfAny();
+                MainTabControl.SelectedIndex = 1;
                 LoadProfiles();
 
                 // Kiểm tra cập nhật ngầm sau khi app khởi động 2.5 giây (không block UI)
@@ -418,9 +428,7 @@ namespace VGCASignToolPro
             {
                 if (isLoggedIn && teacher != null)
                 {
-                    GrpVgcaLoginBox.Visibility = Visibility.Collapsed;
                     GrpVgcaActiveCard.Visibility = Visibility.Visible;
-                    BorderVgcaAuthError.Visibility = Visibility.Collapsed;
 
                     BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(6, 95, 70));
                     TxtVgcaGlobalStatusIcon.Text = "✅";
@@ -454,20 +462,21 @@ namespace VGCASignToolPro
                     // Cập nhật Chức vụ và Quyền hạn đóng dấu
                     if (TxtDetailRoleAndSeal != null)
                     {
+                        string cccdPart = !string.IsNullOrWhiteSpace(teacher.Cccd) ? $"CCCD: {teacher.Cccd} • " : "";
                         if (teacher.CanSeal)
                         {
-                            TxtDetailRoleAndSeal.Text = $"{teacher.Title} • 🔴 ĐƯỢC PHÂN QUYỀN ĐÓNG DẤU CƠ QUAN (USB TOKEN)";
+                            TxtDetailRoleAndSeal.Text = $"{teacher.Title} • {cccdPart}🔴 ĐƯỢC PHÂN QUYỀN ĐÓNG DẤU CƠ QUAN (USB TOKEN)";
                             TxtDetailRoleAndSeal.Foreground = new SolidColorBrush(Color.FromRgb(185, 28, 28)); // Đỏ nổi bật
                         }
                         else
                         {
-                            TxtDetailRoleAndSeal.Text = $"{teacher.Title} • 🔵 Ký Số Cá Nhân Giáo Viên";
+                            TxtDetailRoleAndSeal.Text = $"{teacher.Title} • {cccdPart}🔵 Ký Số Cá Nhân Giáo Viên";
                             TxtDetailRoleAndSeal.Foreground = new SolidColorBrush(Color.FromRgb(37, 99, 235)); // Xanh Royal Blue
                         }
                     }
 
                     // Đồng bộ chứng thư trong kho Windows Store theo đối soát danh tính
-                    CertificateModel? matchedCert = _certService.GetActiveVGCACertificate(teacher.FullName, teacher.Cccd, teacher.SigningMethod);
+                    CertificateModel? matchedCert = _currentActiveCert ?? _certService.GetActiveVGCACertificate(teacher.FullName, teacher.Cccd, teacher.SigningMethod);
                     if (matchedCert != null)
                     {
                         _currentActiveCert = matchedCert;
@@ -486,71 +495,19 @@ namespace VGCASignToolPro
                         {
                             if (matchedCert.IsVirtualCspCertificate)
                             {
-                                var vcspInfo = VcspStatusService.CheckStatus();
-                                if (vcspInfo.State == VcspState.NotRunning)
-                                {
-                                    TxtDetailBannerIcon.Text = "⚠️";
-                                    TxtDetailBannerTitle.Text = "CHƯA KHỞI ĐỘNG VGCA VIRTUAL CSP";
-                                    TxtDetailBannerTitle.Foreground = new SolidColorBrush(Color.FromRgb(220, 38, 38));
-                                    TxtDetailBannerSubtitle.Text = "Ứng dụng Virtual CSP v2.0 chưa được mở trên máy tính. Cần mở ứng dụng để kích hoạt khóa riêng ký số.";
-                                    BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(254, 242, 242));
-                                    BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(252, 165, 165));
-                                    BtnDetailOpenVcsp.Visibility = Visibility.Visible;
+                                TxtDetailBannerIcon.Text = "🛡️";
+                                TxtDetailBannerTitle.Text = "ĐÃ NHẬN DIỆN VGCA VIRTUAL CSP";
+                                TxtDetailBannerTitle.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
+                                TxtDetailBannerSubtitle.Text = "Sẵn sàng ký số từ xa qua ứng dụng VGCA Mobile trên điện thoại.";
+                                BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(240, 253, 244));
+                                BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(134, 239, 172));
 
-                                    TxtDetailUsbStatus.Text = "⚠️ Ứng dụng VGCA Virtual CSP chưa khởi động trên máy tính. Khóa riêng chưa kích hoạt.";
-                                    TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(220, 38, 38));
+                                TxtDetailUsbStatus.Text = $"✅ Đã phát hiện chứng thư Ban Cơ yếu ({matchedCert.CommonName}) & Virtual CSP đã sẵn sàng ký số!";
+                                TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
 
-                                    BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(217, 119, 6));
-                                    TxtVgcaGlobalStatusIcon.Text = "⚠️";
-                                    TxtVgcaGlobalStatusText.Text = $"VGCA: Chưa Mở CSP ({teacher.FullName})";
-                                }
-                                else if (vcspInfo.State == VcspState.LoggedOut)
-                                {
-                                    TxtDetailBannerIcon.Text = "⚠️";
-                                    TxtDetailBannerTitle.Text = "VIRTUAL CSP ĐANG CHẠY NHƯNG CHƯA ĐĂNG NHẬP";
-                                    TxtDetailBannerTitle.Foreground = new SolidColorBrush(Color.FromRgb(217, 119, 6));
-                                    TxtDetailBannerSubtitle.Text = "Phiên làm việc trên Virtual CSP chưa đăng nhập hoặc Bearer Token đã hết hạn. Vui lòng đăng nhập trên cửa sổ Virtual CSP.";
-                                    BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(255, 251, 235));
-                                    BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(253, 230, 138));
-                                    BtnDetailOpenVcsp.Visibility = Visibility.Visible;
-
-                                    TxtDetailUsbStatus.Text = "⚠️ Virtual CSP đang chạy nhưng chưa đăng nhập tài khoản. Vui lòng chuyển sang cửa sổ Virtual CSP để đăng nhập.";
-                                    TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(217, 119, 6));
-
-                                    BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(217, 119, 6));
-                                    TxtVgcaGlobalStatusIcon.Text = "⚠️";
-                                    TxtVgcaGlobalStatusText.Text = $"VGCA: CSP Chưa Đăng Nhập ({teacher.FullName})";
-                                }
-                                else if (vcspInfo.State == VcspState.LoggedIn)
-                                {
-                                    TxtDetailBannerIcon.Text = "🛡️";
-                                    TxtDetailBannerTitle.Text = "PHIÊN ĐĂNG NHẬP ĐÃ XÁC THỰC";
-                                    TxtDetailBannerTitle.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
-                                    TxtDetailBannerSubtitle.Text = "Đã kết nối VGCA Virtual CSP và sẵn sàng ký số tài liệu chuẩn PAdES LTV.";
-                                    BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(240, 253, 244));
-                                    BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(134, 239, 172));
-                                    BtnDetailOpenVcsp.Visibility = Visibility.Collapsed;
-
-                                    TxtDetailUsbStatus.Text = $"✅ Đã phát hiện chứng thư Ban Cơ yếu ({matchedCert.CommonName}) & Virtual CSP đã sẵn sàng ký số!";
-                                    TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
-
-                                    BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(6, 95, 70));
-                                    TxtVgcaGlobalStatusIcon.Text = "✅";
-                                    TxtVgcaGlobalStatusText.Text = $"VGCA: {teacher.FullName}";
-                                }
-                                else
-                                {
-                                    TxtDetailBannerIcon.Text = "⚠️";
-                                    TxtDetailBannerTitle.Text = "CHƯA CÀI ĐẶT VGCA VIRTUAL CSP";
-                                    TxtDetailBannerTitle.Foreground = new SolidColorBrush(Color.FromRgb(220, 38, 38));
-                                    TxtDetailBannerSubtitle.Text = "Không tìm thấy phần mềm VGCA Virtual CSP v2.0 của Ban Cơ Yếu Chính Phủ trên máy tính.";
-                                    BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(254, 242, 242));
-                                    BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(252, 165, 165));
-                                    BtnDetailOpenVcsp.Visibility = Visibility.Collapsed;
-
-                                    TxtDetailUsbStatus.Text = "❌ Chưa cài đặt ứng dụng VGCA Virtual CSP v2.0 trên máy tính.";
-                                    TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(220, 38, 38));
-                                }
+                                BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(6, 95, 70));
+                                TxtVgcaGlobalStatusIcon.Text = "✅";
+                                TxtVgcaGlobalStatusText.Text = $"VGCA: {teacher.FullName}";
                             }
                             else
                             {
@@ -564,7 +521,6 @@ namespace VGCASignToolPro
                                 TxtDetailBannerSubtitle.Text = $"Thiết bị {tokenDesc} đã sẵn sàng ký số trực tiếp.";
                                 BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(240, 253, 244));
                                 BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(134, 239, 172));
-                                BtnDetailOpenVcsp.Visibility = Visibility.Collapsed;
 
                                 TxtDetailUsbStatus.Text = $"✅ {tokenDesc}. Sẵn sàng ký số!";
                                 TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
@@ -576,7 +532,7 @@ namespace VGCASignToolPro
                         }
                         else
                         {
-                            TxtDetailUsbStatus.Text = "ℹ️ Chưa cắm USB Token cá nhân (Thầy/Cô vẫn xem, soạn thảo giáo án bình thường. Khi bấm Ký sẽ yêu cầu cắm USB).";
+                            TxtDetailUsbStatus.Text = "ℹ️ Đang quét kết nối chữ ký số Ban Cơ Yếu...";
                             TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(217, 119, 6)); // Amber
                         }
                     }
@@ -594,47 +550,37 @@ namespace VGCASignToolPro
                 }
                 else
                 {
-                    GrpVgcaLoginBox.Visibility = Visibility.Visible;
-                    GrpVgcaActiveCard.Visibility = Visibility.Collapsed;
-                    LoadSavedLoginCredentialsIfAny();
+                    GrpVgcaActiveCard.Visibility = Visibility.Visible;
 
-                    BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(185, 28, 28));
-                    TxtVgcaGlobalStatusIcon.Text = "🔒";
-                    TxtVgcaGlobalStatusText.Text = "VGCA: Chưa Đăng Nhập";
-                    TxtQuickCertNotice.Text = "Chưa kết nối chứng thư VGCA";
+                    BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(217, 119, 6));
+                    TxtVgcaGlobalStatusIcon.Text = "⚠️";
+                    TxtVgcaGlobalStatusText.Text = "VGCA: Chưa Kết Nối Chữ Ký Số";
+                    TxtQuickCertNotice.Text = "Chưa kết nối chứng thư VGCA (Vui lòng cắm USB hoặc mở Virtual CSP)";
 
-                    // Xóa dữ liệu Hộp thư Tab 3
-                    TxtWorkflowUserGreeting.Text = "Cán bộ / Giáo viên: Chưa kết nối chứng thư";
-                    TxtWorkflowUserUnit.Text = "Đơn vị giáo dục";
-                    CboWorkflowApprover.ItemsSource = null;
-                    LvInboxReports.ItemsSource = null;
-                    LvOutboxReports.ItemsSource = null;
-                    LvReturnedReports.ItemsSource = null;
-                    LvArchiveReports.ItemsSource = null;
-                    LvWaitingSealReports.ItemsSource = null;
-                    TxtCountInbox.Text = "0";
-                    TxtCountOutbox.Text = "0";
-                    TxtCountReturned.Text = "0";
-                    TxtCountCompleted.Text = "0";
-                    TxtCountWaitingSeal.Text = "0";
-                    TabItemWaitingSeal.Visibility = Visibility.Collapsed;
-                    BorderWaitingSealCount.Visibility = Visibility.Collapsed;
+                    TxtDetailBannerIcon.Text = "⚠️";
+                    TxtDetailBannerTitle.Text = "CHƯA KẾT NỐI THIẾT BỊ KÝ SỐ BAN CƠ YẾU";
+                    TxtDetailBannerTitle.Foreground = new SolidColorBrush(Color.FromRgb(217, 119, 6));
+                    TxtDetailBannerSubtitle.Text = "Vui lòng mở ứng dụng VGCA Virtual CSP (ký từ xa qua điện thoại) hoặc cắm USB Token Ban Cơ Yếu vào máy tính.";
+                    BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(255, 251, 235));
+                    BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(253, 230, 138));
 
-                    // Khóa Tab 2
-                    TabItemSignWorkspace.Header = "  2. ✍️ Soạn Thảo & Ký Số ( 🔒 Khóa )  ";
-                    TabItemSignWorkspace.IsEnabled = false;
-                    OverlayTab2Locked.Visibility = Visibility.Visible;
+                    TxtDetailSignerName.Text = "Chưa phát hiện thiết bị";
+                    TxtDetailRoleAndSeal.Text = "Vui lòng mở Virtual CSP hoặc cắm USB Token để tự động nhận diện danh tính và phân quyền";
+                    TxtDetailRoleAndSeal.Foreground = new SolidColorBrush(Color.FromRgb(100, 116, 139));
+                    TxtDetailUsbStatus.Text = "⚠️ Chưa cắm USB Token hoặc chưa khởi động Virtual CSP.";
+                    TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(217, 119, 6));
+
+                    // Mở sẵn Tab 2 để giáo viên mở file Word, Excel, PDF xem bình thường
+                    TabItemSignWorkspace.Header = "  2. ✍️ Soạn Thảo & Ký Số  ";
+                    TabItemSignWorkspace.IsEnabled = true;
+                    OverlayTab2Locked.Visibility = Visibility.Collapsed;
                     if (PdfPreviewControl != null)
                     {
-                        PdfPreviewControl.Visibility = Visibility.Hidden;
+                        PdfPreviewControl.Visibility = Visibility.Visible;
                     }
                     UpdateSignAndSealButtonsState(false);
-                    if (MainTabControl.SelectedIndex == 1)
-                    {
-                        MainTabControl.SelectedIndex = 0;
-                    }
 
-                    UpdateStatus("Tài khoản VGCA chưa đăng nhập. Tab 2 bị khóa để đảm bảo an toàn.");
+                    UpdateStatus("Chưa phát hiện thiết bị chữ ký số Ban Cơ Yếu. Vui lòng cắm USB Token hoặc mở Virtual CSP.");
                 }
             });
         }
@@ -642,8 +588,8 @@ namespace VGCASignToolPro
         private async void BtnVgcaLogout_Click(object sender, RoutedEventArgs e)
         {
             var choice = MessageBox.Show(
-                "Bạn có chắc chắn muốn đăng xuất tài khoản chữ ký số VGCA không?\n(Sau khi đăng xuất, tài liệu đang mở sẽ được đóng lại an toàn để bảo mật phiên làm việc)",
-                "Xác Nhận Đăng Xuất", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                "Bạn có chắc chắn muốn làm mới phiên làm việc chữ ký số VGCA không?\n(Sau khi làm mới, hệ thống sẽ quét lại chứng thư và tải lại phân quyền từ đám mây)",
+                "Làm Mới Phiên Làm Việc", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (choice == MessageBoxResult.Yes)
             {
@@ -653,7 +599,6 @@ namespace VGCASignToolPro
                     return;
                 }
 
-                // Dọn dẹp an toàn phiên làm việc của người dùng hiện tại (chống lộ dữ liệu giữa các giáo viên dùng chung máy)
                 await ConfirmAndCloseCurrentDocumentAsync(isManualClose: true);
                 _activeWorkflowReportId = null;
                 _activeWorkflowExpectedBaseHash = null;
@@ -665,8 +610,8 @@ namespace VGCASignToolPro
                 BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
 
                 _vgcaAuth.Logout();
-                LoadSavedLoginCredentialsIfAny();
-                UpdateStatus("Đã đăng xuất tài khoản VGCA Virtual CSP an toàn.");
+                LoadCertificatesAndVerifyVGCALogin();
+                UpdateStatus("Đã làm mới phiên làm việc VGCA an toàn.");
             }
         }
 
@@ -686,16 +631,13 @@ namespace VGCASignToolPro
                 if (_certificates == null || _certificates.Count == 0)
                 {
                     UpdateStatus("Không tìm thấy chứng thư số nào có khóa riêng trong hệ thống.");
-                    OnVgcaLoginStateChanged(false, null);
+                    _currentActiveCert = null;
+                    _vgcaAuth.SetCurrentActiveIdentity(null);
                     return;
                 }
 
-                // Tìm chứng thư VGCA chuyên dùng của Ban Cơ yếu Chính phủ (Ưu tiên theo tài khoản đang đăng nhập)
-                string? curFullName = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.FullName : null;
-                string? curCccd = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.Cccd : null;
-                string? curMethod = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.SigningMethod : "AUTO";
-
-                CertificateModel? vgcaCert = _certService.GetActiveVGCACertificate(curFullName, curCccd, curMethod);
+                // Tìm chứng thư VGCA chuyên dùng của Ban Cơ yếu Chính phủ
+                CertificateModel? vgcaCert = _certService.GetActiveVGCACertificate();
 
                 if (vgcaCert != null)
                 {
@@ -708,52 +650,12 @@ namespace VGCASignToolPro
                     TxtDetailAlgorithm.Text = vgcaCert.KeyAlgorithm ?? "";
                     TxtDetailThumbprint.Text = vgcaCert.Thumbprint ?? "";
 
-                    if (_vgcaAuth.IsLoggedIn && _vgcaAuth.CurrentTeacher != null)
-                    {
-                        OnVgcaLoginStateChanged(true, _vgcaAuth.CurrentTeacher);
-                    }
-                    else
-                    {
-                        OnVgcaLoginStateChanged(false, null);
-                        if (vgcaCert.IsVirtualCspCertificate)
-                        {
-                            var vcspCheck = VcspStatusService.CheckStatus();
-                            if (vcspCheck.State == VcspState.NotRunning)
-                            {
-                                UpdateStatus($"Đã phát hiện chứng thư Ban Cơ yếu: {vgcaCert.CommonName}. [LƯU Ý: Virtual CSP chưa khởi động trên máy]");
-                            }
-                            else if (vcspCheck.State == VcspState.LoggedOut)
-                            {
-                                UpdateStatus($"Đã phát hiện chứng thư Ban Cơ yếu: {vgcaCert.CommonName}. [LƯU Ý: Virtual CSP chưa đăng nhập tài khoản]");
-                            }
-                            else
-                            {
-                                UpdateStatus($"Đã phát hiện chứng thư Ban Cơ yếu: {vgcaCert.CommonName}. Virtual CSP đã sẵn sàng kết nối.");
-                            }
-                        }
-                        else if (vgcaCert.IsHardwareToken)
-                        {
-                            UpdateStatus($"Đã phát hiện USB Token cá nhân: {vgcaCert.CommonName}. Sẵn sàng ký số.");
-                        }
-                        else
-                        {
-                            UpdateStatus($"Đã phát hiện chứng thư Ban Cơ yếu: {vgcaCert.CommonName ?? "VGCA"}. Sẵn sàng ký số.");
-                        }
-                    }
+                    _vgcaAuth.SetCurrentActiveIdentity(vgcaCert);
                 }
                 else
                 {
                     _currentActiveCert = null;
-
-                    if (_vgcaAuth.IsLoggedIn && _vgcaAuth.CurrentTeacher != null)
-                    {
-                        OnVgcaLoginStateChanged(true, _vgcaAuth.CurrentTeacher);
-                    }
-                    else
-                    {
-                        OnVgcaLoginStateChanged(false, null);
-                        UpdateStatus("Vui lòng nhập số CCCD và Mật khẩu để đăng nhập hệ thống.");
-                    }
+                    _vgcaAuth.SetCurrentActiveIdentity(null);
                 }
             }
             catch (Exception ex)
@@ -776,10 +678,7 @@ namespace VGCASignToolPro
             {
                 try
                 {
-                    string? curFullName = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.FullName : null;
-                    string? curCccd = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.Cccd : null;
-                    string? curMethod = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.SigningMethod : "AUTO";
-                    CertificateModel? activeVgCa = _certService.GetActiveVGCACertificate(curFullName, curCccd, curMethod);
+                    CertificateModel? activeVgCa = _certService.GetActiveVGCACertificate();
                     string activeThumbprint = activeVgCa?.Thumbprint ?? string.Empty;
                     string currentThumbprint = _currentActiveCert?.Thumbprint ?? string.Empty;
 
@@ -820,8 +719,6 @@ namespace VGCASignToolPro
 
             if (_currentActiveCert != null && _currentActiveCert.IsVGCACertificate)
             {
-                BorderVgcaAuthError.Visibility = Visibility.Collapsed;
-
                 if (_currentActiveCert.IsVirtualCspCertificate)
                 {
                     var vcspInfo = VcspStatusService.CheckStatus();
@@ -829,10 +726,9 @@ namespace VGCASignToolPro
                     {
                         var launchChoice = MessageBox.Show(
                             $"Đã tìm thấy chứng thư Ban Cơ yếu: {_currentActiveCert.CommonName}\n\n" +
-                            "⚠️ TUY NHIÊN: Ứng dụng VGCA Virtual CSP v2.0 CHƯA ĐƯỢC MỞ trên máy tính!\n" +
-                            "Khóa riêng chưa kích hoạt nên không thể ký số.\n\n" +
+                            "⚠️ Ứng dụng VGCA Virtual CSP v2.0 chưa được mở trên máy tính.\n\n" +
                             "Bạn có muốn hệ thống tự động khởi động ứng dụng Virtual CSP ngay bây giờ không?",
-                            "Virtual CSP Chưa Khởi Động", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                            "Khởi Động Virtual CSP", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
                         if (launchChoice == MessageBoxResult.Yes)
                         {
@@ -841,39 +737,27 @@ namespace VGCASignToolPro
                         }
                         return;
                     }
-                    else if (vcspInfo.State == VcspState.LoggedOut)
-                    {
-                        MessageBox.Show(
-                            $"Đã tìm thấy chứng thư Ban Cơ yếu: {_currentActiveCert.CommonName}\n\n" +
-                            "⚠️ CẢNH BÁO: Ứng dụng Virtual CSP đang mở nhưng CHƯA ĐĂNG NHẬP (hoặc phiên làm việc Bearer Token đã hết hạn)!\n\n" +
-                            "Vui lòng chuyển sang cửa sổ Virtual CSP, nhập Mật khẩu để đăng nhập tài khoản trước khi ký số.",
-                            "Virtual CSP Chưa Đăng Nhập", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        UpdateStatus("Virtual CSP chưa đăng nhập hoặc phiên làm việc đã hết hạn.");
-                        return;
-                    }
-                    else if (vcspInfo.State == VcspState.NotInstalled)
-                    {
-                        MessageBox.Show(
-                            "Không tìm thấy phần mềm VGCA Virtual CSP v2.0 trên máy tính này!",
-                            "Chưa Cài Đặt Virtual CSP", MessageBoxButton.OK, MessageBoxImage.Error);
-                        return;
-                    }
                 }
 
+                string teacherName = _vgcaAuth.CurrentTeacher?.FullName ?? _currentActiveCert.CommonName;
+                string roleText = _vgcaAuth.CurrentTeacher?.CanSeal == true ? "🔴 Có quyền đóng dấu cơ quan" : "🔵 Ký số cá nhân giáo viên";
                 MessageBox.Show(
                     $"Đã nhận diện thành công Chứng thư số Ban Cơ yếu Chính phủ!\n\n" +
-                    $"• Chủ sở hữu: {_currentActiveCert.CommonName}\n" +
+                    $"• Chủ sở hữu: {teacherName}\n" +
+                    $"• Chức vụ & Phân quyền: {roleText}\n" +
                     $"• Đơn vị: {_currentActiveCert.OrganizationUnit}\n" +
                     $"• Cơ quan cấp: {_currentActiveCert.IssuerCommonName}\n" +
-                    $"• Trạng thái CSP: Đã kết nối và phiên làm việc hợp lệ.\n" +
                     $"• Thời hạn: {_currentActiveCert.NotAfter:dd/MM/yyyy} ({(_currentActiveCert.IsValidNow ? "Còn hiệu lực" : "Đã hết hạn")})\n\n" +
-                    "Hệ thống đã tự động kích hoạt phiên làm việc và mở khóa toàn bộ Phân hệ Soạn thảo & Ký số (Tab 2).",
+                    "Hệ thống đã tự động kích hoạt phiên làm việc và sẵn sàng ký số tài liệu.",
                     "Đồng Bộ Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             else
             {
-                BorderVgcaAuthError.Visibility = Visibility.Visible;
-                TxtVgcaAuthError.Text = "Chưa phát hiện chứng thư Ban Cơ yếu Chính phủ có khóa riêng trong hệ thống. Vui lòng mở ứng dụng VGCA Virtual CSP trên máy để đăng nhập trước, sau đó bấm nút này lần nữa.";
+                MessageBox.Show(
+                    "Chưa phát hiện chứng thư Ban Cơ yếu Chính phủ có khóa riêng trong hệ thống Windows.\n\n" +
+                    "• Nếu dùng Ký Từ Xa qua điện thoại: Vui lòng mở ứng dụng VGCA Virtual CSP trên máy tính.\n" +
+                    "• Nếu dùng USB Token: Vui lòng cắm USB Token Ban Cơ Yếu vào máy tính.",
+                    "Chưa Phát Hiện Chữ Ký Số", MessageBoxButton.OK, MessageBoxImage.Warning);
                 UpdateStatus("Chưa tìm thấy chứng thư Ban Cơ yếu hợp lệ trong kho Windows.");
             }
         }
@@ -1051,205 +935,10 @@ namespace VGCASignToolPro
             }
         }
 
-        private void TxtLoginInput_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter)
-            {
-                BtnSubmitLogin_Click(sender, e);
-            }
-        }
-
-        private void BtnSubmitLogin_Click(object sender, RoutedEventArgs e)
-        {
-            string cccd = TxtLoginCccd.Text.Trim();
-            string password = TxtLoginPassword.Password;
-
-            if (string.IsNullOrWhiteSpace(cccd))
-            {
-                BorderVgcaAuthError.Visibility = Visibility.Visible;
-                TxtVgcaAuthError.Text = "Vui lòng nhập số Căn cước công dân (12 số).";
-                TxtLoginCccd.Focus();
-                return;
-            }
-
-            if (string.IsNullOrEmpty(password))
-            {
-                BorderVgcaAuthError.Visibility = Visibility.Visible;
-                TxtVgcaAuthError.Text = "Vui lòng nhập mật khẩu tài khoản (Mặc định: 123456).";
-                TxtLoginPassword.Focus();
-                return;
-            }
-
-            var result = _vgcaAuth.AuthenticatePassword(cccd, password);
-            if (result.Success && result.Teacher != null)
-            {
-                BorderVgcaAuthError.Visibility = Visibility.Collapsed;
-
-                // Tự động lưu hoặc xóa thông tin đăng nhập theo lựa chọn của giáo viên
-                if (ChkRememberLogin != null && ChkRememberLogin.IsChecked == true)
-                {
-                    CredentialStorageService.SaveCredentials(cccd, password);
-                }
-                else
-                {
-                    CredentialStorageService.ClearCredentials();
-                    TxtLoginPassword.Password = string.Empty;
-                }
-
-                OnVgcaLoginStateChanged(true, result.Teacher);
-                UpdateStatus($"Đăng nhập thành công: {result.Teacher.FullName} ({result.Teacher.Title}) - Phân quyền: {(result.Teacher.CanSeal ? "Đóng dấu cơ quan" : "Ký số cá nhân")}.");
-            }
-            else
-            {
-                BorderVgcaAuthError.Visibility = Visibility.Visible;
-                TxtVgcaAuthError.Text = result.ErrorDescription ?? "Số CCCD hoặc Mật khẩu không chính xác.";
-                UpdateStatus($"Đăng nhập thất bại: {result.ErrorDescription}");
-            }
-        }
-
-        private void LoadSavedLoginCredentialsIfAny()
-        {
-            try
-            {
-                var saved = CredentialStorageService.LoadCredentials();
-                if (saved.HasSaved && !string.IsNullOrEmpty(saved.Cccd))
-                {
-                    if (TxtLoginCccd != null) TxtLoginCccd.Text = saved.Cccd;
-                    if (TxtLoginPassword != null) TxtLoginPassword.Password = saved.Password;
-                    if (ChkRememberLogin != null)
-                    {
-                        ChkRememberLogin.IsChecked = true;
-                    }
-                }
-                else
-                {
-                    if (TxtLoginPassword != null)
-                    {
-                        TxtLoginPassword.Password = string.Empty;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Trace.TraceWarning($"Lỗi nạp thông tin ghi nhớ đăng nhập: {ex.Message}");
-            }
-        }
-
         private void BtnChangePasswordLocal_Click(object sender, RoutedEventArgs e)
         {
-            if (!_vgcaAuth.IsLoggedIn || _vgcaAuth.CurrentTeacher == null)
-            {
-                MessageBox.Show("Vui lòng đăng nhập trước khi đổi mật khẩu.", "Chưa Đăng Nhập", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var teacher = _vgcaAuth.CurrentTeacher;
-
-            var dlg = new Window
-            {
-                Title = $"Đổi Mật Khẩu - {teacher.FullName}",
-                Width = 400,
-                Height = 310,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Owner = this,
-                ResizeMode = ResizeMode.NoResize,
-                Background = new SolidColorBrush(Color.FromRgb(248, 250, 252))
-            };
-
-            var stack = new StackPanel { Margin = new Thickness(20) };
-
-            stack.Children.Add(new TextBlock
-            {
-                Text = "Mật khẩu hiện tại:",
-                FontWeight = FontWeights.Bold,
-                FontSize = 12,
-                Foreground = new SolidColorBrush(Color.FromRgb(30, 41, 59)),
-                Margin = new Thickness(0, 0, 0, 4)
-            });
-            var txtOldPass = new PasswordBox { FontSize = 13, Padding = new Thickness(6), Margin = new Thickness(0, 0, 0, 10) };
-            stack.Children.Add(txtOldPass);
-
-            stack.Children.Add(new TextBlock
-            {
-                Text = "Mật khẩu mới:",
-                FontWeight = FontWeights.Bold,
-                FontSize = 12,
-                Foreground = new SolidColorBrush(Color.FromRgb(30, 41, 59)),
-                Margin = new Thickness(0, 0, 0, 4)
-            });
-            var txtNewPass = new PasswordBox { FontSize = 13, Padding = new Thickness(6), Margin = new Thickness(0, 0, 0, 10) };
-            stack.Children.Add(txtNewPass);
-
-            stack.Children.Add(new TextBlock
-            {
-                Text = "Xác nhận mật khẩu mới:",
-                FontWeight = FontWeights.Bold,
-                FontSize = 12,
-                Foreground = new SolidColorBrush(Color.FromRgb(30, 41, 59)),
-                Margin = new Thickness(0, 0, 0, 4)
-            });
-            var txtConfirmPass = new PasswordBox { FontSize = 13, Padding = new Thickness(6), Margin = new Thickness(0, 0, 0, 16) };
-            stack.Children.Add(txtConfirmPass);
-
-            var btnPanel = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-            var btnCancel = new Button
-            {
-                Content = "Hủy Bỏ",
-                Padding = new Thickness(14, 6, 14, 6),
-                Margin = new Thickness(0, 0, 10, 0),
-                Cursor = Cursors.Hand
-            };
-            btnCancel.Click += (_, _) => dlg.Close();
-
-            var btnSave = new Button
-            {
-                Content = "Lưu Mật Khẩu",
-                Background = new SolidColorBrush(Color.FromRgb(37, 99, 235)),
-                Foreground = Brushes.White,
-                FontWeight = FontWeights.Bold,
-                Padding = new Thickness(16, 6, 16, 6),
-                Cursor = Cursors.Hand
-            };
-            btnSave.Click += (_, _) =>
-            {
-                if (txtOldPass.Password != teacher.Password && (teacher.Password != null || txtOldPass.Password != "123456"))
-                {
-                    MessageBox.Show("Mật khẩu hiện tại không chính xác!", "Lỗi Xác Thực", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    txtOldPass.Focus();
-                    return;
-                }
-                if (string.IsNullOrWhiteSpace(txtNewPass.Password))
-                {
-                    MessageBox.Show("Mật khẩu mới không được để trống!", "Lỗi Dữ Liệu", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    txtNewPass.Focus();
-                    return;
-                }
-                if (txtNewPass.Password != txtConfirmPass.Password)
-                {
-                    MessageBox.Show("Xác nhận mật khẩu mới không trùng khớp!", "Lỗi Xác Nhận", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    txtConfirmPass.Focus();
-                    return;
-                }
-
-                bool changed = _vgcaAuth.ChangeLocalPassword(teacher.Cccd, txtNewPass.Password);
-                if (changed)
-                {
-                    MessageBox.Show("Đã đổi mật khẩu thành công trên máy tính này!", "Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
-                    UpdateStatus("Đã đổi mật khẩu tài khoản cá nhân thành công.");
-                    dlg.Close();
-                }
-                else
-                {
-                    MessageBox.Show("Không thể lưu mật khẩu. Vui lòng thử lại.", "Lỗi Hệ Thống", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            };
-
-            btnPanel.Children.Add(btnCancel);
-            btnPanel.Children.Add(btnSave);
-            stack.Children.Add(btnPanel);
-
-            dlg.Content = stack;
-            dlg.ShowDialog();
+            MessageBox.Show("Hệ thống tự động nhận diện danh tính và phân quyền qua chữ ký số VGCA. Không cần sử dụng mật khẩu ứng dụng riêng.",
+                "Tự Động Nhận Diện VGCA", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private async void BtnSyncRosterCloud_Click(object sender, RoutedEventArgs e)
@@ -3073,61 +2762,43 @@ namespace VGCASignToolPro
                 }
             }
 
-            // CHỐT CHẶN AN TOÀN TRƯỚC KHI KÝ (Pre-Sign Identity Guard):
-            // Kiểm tra tức thì xem chứng thư trong Windows Store có còn kết nối khóa riêng và có bị thay đổi tài khoản hay không
-            string? curFullName = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.FullName : null;
-            string? curCccd = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.Cccd : null;
-            string? curMethod = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.SigningMethod : "AUTO";
+            // 1. Tự động nhận diện thiết bị chữ ký số VGCA đang kết nối (USB Token hoặc Virtual CSP)
+            CertificateModel? activeVgCa = _certService.GetActiveVGCACertificate();
+            if (activeVgCa == null || !activeVgCa.HasPrivateKey)
+            {
+                // Thử quét lại kho chứng thư Windows Store
+                _certificates = _certService.LoadCertificates(onlyWithPrivateKey: true);
+                activeVgCa = _certService.GetActiveVGCACertificate();
+            }
 
-            CertificateModel? activeVgCa = _certService.GetActiveVGCACertificate(curFullName, curCccd, curMethod);
             if (activeVgCa == null || !activeVgCa.HasPrivateKey)
             {
                 var retryChoice = MessageBox.Show(
-                    "Chưa phát hiện thiết bị USB Token Ban Cơ yếu (hoặc chưa đăng nhập VGCA Virtual CSP)!\n\n" +
-                    "Vui lòng cắm thiết bị USB Token vào cổng USB máy tính (hoặc mở ứng dụng VGCA Virtual CSP để đăng nhập).\n\n" +
-                    "Sau khi đã cắm thiết bị, bạn có muốn thử quét và ký ngay không?",
-                    "Yêu Cầu Cắm USB Token Ký Số", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    "Chưa phát hiện thiết bị chữ ký số Ban Cơ Yếu đang hoạt động!\n\n" +
+                    "• Nếu dùng Ký Từ Xa (VGCA Mobile): Vui lòng mở ứng dụng VGCA Virtual CSP trên máy tính.\n" +
+                    "• Nếu dùng USB Token: Vui lòng cắm USB Token Ban Cơ Yếu vào máy tính.\n\n" +
+                    "Bạn có muốn hệ thống hỗ trợ mở ứng dụng VGCA Virtual CSP ngay bây giờ không?",
+                    "Yêu Cầu Kết Nối Chữ Ký Số VGCA", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
                 if (retryChoice == MessageBoxResult.Yes)
                 {
-                    _certificates = _certService.LoadCertificates(onlyWithPrivateKey: true);
-                    activeVgCa = _certService.GetActiveVGCACertificate(curFullName, curCccd, curMethod);
+                    VcspStatusService.LaunchVirtualCsp();
+                    UpdateStatus("Đã yêu cầu mở VGCA Virtual CSP. Vui lòng đăng nhập trên Virtual CSP và thử ký lại.");
                 }
-
-                if (activeVgCa == null || !activeVgCa.HasPrivateKey)
-                {
-                    UpdateStatus("Hủy thao tác ký số do chưa có thiết bị USB Token Ban Cơ yếu.");
-                    return;
-                }
+                return;
             }
 
-            // ĐỐI SOÁT CHÍNH XÁC DANH TÍNH CÁ NHÂN KHI ĐÃ ĐĂNG NHẬP (Chống ký lẫn lộn giữa các BGH / Giáo viên)
-            if (_vgcaAuth.IsLoggedIn && _vgcaAuth.CurrentTeacher != null)
-            {
-                var loggedTeacher = _vgcaAuth.CurrentTeacher;
-                bool isMatched = activeVgCa.MatchesPerson(loggedTeacher.FullName, loggedTeacher.Cccd);
-                if (!isMatched)
-                {
-                    MessageBox.Show(
-                        $"Thiết bị chữ ký số đang kết nối KHÔNG PHÙ HỢP với tài khoản đăng nhập!\n\n" +
-                        $"• Người đăng nhập: {loggedTeacher.FullName} (CCCD: {loggedTeacher.Cccd})\n" +
-                        $"• Chứng thư trên thiết bị: {activeVgCa.CommonName}\n\n" +
-                        $"Theo quy định an toàn số, bạn phải cắm đúng USB Token cá nhân hoặc đăng nhập tài khoản Virtual CSP của {loggedTeacher.FullName} để ký tài liệu này.",
-                        "Sai Thiết Bị Ký Số Cá Nhân", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    UpdateStatus($"Từ chối ký: Chứng thư {activeVgCa.CommonName} không khớp với tài khoản {loggedTeacher.FullName}.");
-                    return;
-                }
-            }
+            // 2. Tự động kích hoạt danh tính người ký hiện hành đồng bộ theo chứng thư phát hiện
+            _currentActiveCert = activeVgCa;
+            _vgcaAuth.SetCurrentActiveIdentity(activeVgCa);
 
-            // KIỂM TRA ĐẶC THÙ CHO VGCA VIRTUAL CSP (Chỉ áp dụng khi chứng thư là Virtual CSP Cloud)
+            // 3. Nếu là Virtual CSP: kiểm tra nếu ứng dụng chưa chạy thì nhắc khởi động
             if (activeVgCa.IsVirtualCspCertificate)
             {
-                var vcspStatus = VcspStatusService.CheckStatus();
-                if (vcspStatus.State == VcspState.NotRunning)
+                if (!VcspStatusService.IsProcessRunning() && VcspStatusService.IsInstalled())
                 {
                     var launchChoice = MessageBox.Show(
                         "Ứng dụng VGCA Virtual CSP v2.0 chưa được mở trên máy tính!\n\n" +
-                        "Để ký số bằng tài khoản Ban Cơ yếu Chính phủ, bạn cần mở ứng dụng Virtual CSP và đăng nhập tài khoản.\n\n" +
                         "Bạn có muốn hệ thống tự động khởi động ứng dụng Virtual CSP ngay bây giờ không?",
                         "Virtual CSP Chưa Khởi Động", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
@@ -3136,40 +2807,6 @@ namespace VGCASignToolPro
                         VcspStatusService.LaunchVirtualCsp();
                         UpdateStatus("Đã khởi động Virtual CSP. Vui lòng đăng nhập tài khoản trên cửa sổ Virtual CSP rồi bấm Ký lại.");
                     }
-                    return;
-                }
-                else if (vcspStatus.State == VcspState.LoggedOut)
-                {
-                    MessageBox.Show(
-                        "Ứng dụng VGCA Virtual CSP đang chạy nhưng CHƯA ĐĂNG NHẬP (hoặc phiên làm việc Bearer Token đã hết hạn)!\n\n" +
-                        "Vui lòng chuyển sang cửa sổ ứng dụng Virtual CSP, nhập Tên đăng nhập và Mật khẩu để kích hoạt phiên ký số, sau đó thử lại.",
-                        "Virtual CSP Chưa Đăng Nhập", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    UpdateStatus("Tài khoản Virtual CSP chưa đăng nhập hoặc phiên làm việc đã hết hạn.");
-                    return;
-                }
-                else if (vcspStatus.State == VcspState.NotInstalled)
-                {
-                    MessageBox.Show(
-                        "Không tìm thấy phần mềm VGCA Virtual CSP v2.0 trên máy tính này!\n\n" +
-                        "Vui lòng cài đặt ứng dụng VGCA Virtual CSP v2.0 của Ban Cơ Yếu Chính Phủ.",
-                        "Chưa Cài Đặt Virtual CSP", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-            }
-
-            if (_currentActiveCert == null || !string.Equals(activeVgCa.Thumbprint, _currentActiveCert.Thumbprint, StringComparison.OrdinalIgnoreCase))
-            {
-                LoadCertificatesAndVerifyVGCALogin();
-                MessageBoxResult reConfirm = MessageBox.Show(
-                    $"Hệ thống phát hiện tài khoản chữ ký số trong Windows vừa thay đổi:\n\n" +
-                    $"• Chủ sở hữu: {activeVgCa.CommonName}\n" +
-                    $"• Đơn vị: {activeVgCa.OrganizationUnit}\n" +
-                    $"• Serial: {activeVgCa.SerialNumber}\n\n" +
-                    $"Bạn có muốn tiếp tục ký số với tài khoản của {activeVgCa.CommonName} không?",
-                    "Xác Nhận Đổi Tài Khoản Ký Số", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-                if (reConfirm != MessageBoxResult.Yes)
-                {
                     return;
                 }
             }
