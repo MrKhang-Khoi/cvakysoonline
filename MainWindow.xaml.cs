@@ -106,8 +106,8 @@ namespace VGCASignToolPro
                 await InitializePreviewEngineAsync();
 
                 InitializeVgcaAuthRoster();
-                LoadSavedLoginCredentialsIfAny();
                 LoadCertificatesAndVerifyVGCALogin();
+                LoadSavedLoginCredentialsIfAny();
                 LoadProfiles();
 
                 // Kiểm tra cập nhật ngầm sau khi app khởi động 2.5 giây (không block UI)
@@ -529,7 +529,7 @@ namespace VGCASignToolPro
                 {
                     GrpVgcaLoginBox.Visibility = Visibility.Visible;
                     GrpVgcaActiveCard.Visibility = Visibility.Collapsed;
-                    if (TxtLoginPassword != null) TxtLoginPassword.Password = string.Empty;
+                    LoadSavedLoginCredentialsIfAny();
 
                     BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(185, 28, 28));
                     TxtVgcaGlobalStatusIcon.Text = "🔒";
@@ -885,11 +885,18 @@ namespace VGCASignToolPro
                 var saved = CredentialStorageService.LoadCredentials();
                 if (saved.HasSaved && !string.IsNullOrEmpty(saved.Cccd))
                 {
-                    TxtLoginCccd.Text = saved.Cccd;
-                    TxtLoginPassword.Password = saved.Password;
+                    if (TxtLoginCccd != null) TxtLoginCccd.Text = saved.Cccd;
+                    if (TxtLoginPassword != null) TxtLoginPassword.Password = saved.Password;
                     if (ChkRememberLogin != null)
                     {
                         ChkRememberLogin.IsChecked = true;
+                    }
+                }
+                else
+                {
+                    if (TxtLoginPassword != null)
+                    {
+                        TxtLoginPassword.Password = string.Empty;
                     }
                 }
             }

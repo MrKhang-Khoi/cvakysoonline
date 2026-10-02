@@ -113,18 +113,27 @@ namespace VGCASignToolPro.Services
         private static string DecryptString(string cipherText)
         {
             if (string.IsNullOrEmpty(cipherText)) return string.Empty;
-            byte[] fullBytes = Convert.FromBase64String(cipherText);
-            byte[] key = SHA256.HashData(Entropy);
-            using var aes = Aes.Create();
-            aes.Key = key;
-            byte[] iv = new byte[aes.BlockSize / 8];
-            Array.Copy(fullBytes, 0, iv, 0, iv.Length);
-            aes.IV = iv;
-            using var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
-            using var ms = new MemoryStream(fullBytes, iv.Length, fullBytes.Length - iv.Length);
-            using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
-            using var sr = new StreamReader(cs, Encoding.UTF8);
-            return sr.ReadToEnd();
+            try
+            {
+                byte[] fullBytes = Convert.FromBase64String(cipherText);
+                if (fullBytes.Length < 16) return string.Empty;
+                byte[] key = SHA256.HashData(Entropy);
+                using var aes = Aes.Create();
+                aes.Key = key;
+                byte[] iv = new byte[aes.BlockSize / 8];
+                Array.Copy(fullBytes, 0, iv, 0, iv.Length);
+                aes.IV = iv;
+                using var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+                using var ms = new MemoryStream(fullBytes, iv.Length, fullBytes.Length - iv.Length);
+                using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
+                using var sr = new StreamReader(cs, Encoding.UTF8);
+                return sr.ReadToEnd();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceWarning($"Lỗi giải mã mật khẩu đã lưu: {ex.Message}");
+                return string.Empty;
+            }
         }
     }
 }
