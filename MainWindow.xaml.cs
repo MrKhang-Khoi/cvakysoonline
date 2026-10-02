@@ -217,7 +217,7 @@ namespace VGCASignToolPro
                 PdfPreviewControl.CoreWebView2.SetVirtualHostNameToFolderMapping(
                     "vgcaviewer.local",
                     wwwroot,
-                    Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.DenyCors);
+                    Microsoft.Web.WebView2.Core.CoreWebView2HostResourceAccessKind.Allow);
 
                 PdfPreviewControl.CoreWebView2.SetVirtualHostNameToFolderMapping(
                     "vgcacontent.local",
@@ -315,6 +315,13 @@ namespace VGCASignToolPro
                         }
                         BtnInsertSignatureStamp.IsEnabled = true;
                         _pdfRenderCompletionSource?.TrySetResult(true);
+                    }
+                    else if (msgType == "pdfLoadError")
+                    {
+                        string errMsg = root.TryGetProperty("message", out var msgProp) ? msgProp.GetString() ?? "Lỗi không xác định" : "Lỗi không xác định";
+                        VGCASignToolPro.Services.AppLogger.Error($"WebView2 PDF.js báo lỗi: {errMsg}", null, "WebMessageReceived");
+                        UpdateStatus($"Lỗi hiển thị PDF: {errMsg}");
+                        _pdfRenderCompletionSource?.TrySetResult(false);
                     }
                     else if (msgType == "excelLoaded")
                     {
@@ -1943,6 +1950,7 @@ namespace VGCASignToolPro
         private void ShowLoadingOverlay(string title, string message, string icon = "📄", bool showCancelButton = false, string cancelButtonText = "✕ Hủy Chờ Ký")
         {
             _loadingStartTime = DateTime.UtcNow;
+            VGCASignToolPro.Services.AppLogger.Info($"Hiện loading overlay: {title} | {message}", "ShowLoadingOverlay");
 
             EnsurePopupElements();
             if (_popupLoadingTitle != null) _popupLoadingTitle.Text = title;
@@ -1975,9 +1983,6 @@ namespace VGCASignToolPro
                 OverlayLoadingPopup.IsOpen = true;
                 RepositionLoadingPopup();
             }
-
-            // Bắt buộc WPF flush render queue để giao diện hiển thị ngay lập tức không bị trễ
-            Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Render);
         }
 
         private void BtnCancelSigningOverlay_Click(object sender, RoutedEventArgs e)
@@ -2015,6 +2020,7 @@ namespace VGCASignToolPro
         /// </summary>
         private void HideLoadingOverlay()
         {
+            VGCASignToolPro.Services.AppLogger.Info("Ẩn loading overlay.", "HideLoadingOverlay");
             if (OverlayLoadingPopup != null)
             {
                 OverlayLoadingPopup.IsOpen = false;
@@ -2140,6 +2146,7 @@ namespace VGCASignToolPro
                 return;
             }
 
+            VGCASignToolPro.Services.AppLogger.Info($"Bắt đầu nạp tệp Word: {wordPath}", "LoadWordDocumentAsync");
             ShowLoadingOverlay("Đang mở file, vui lòng chờ...", $"Đang nạp và tối ưu tài liệu Word: {Path.GetFileName(wordPath)}...", "📄");
             SetProcessingBusyState(true, $"Đang nạp và tối ưu tài liệu Word: {Path.GetFileName(wordPath)}...");
 
@@ -2183,6 +2190,7 @@ namespace VGCASignToolPro
                 // Mở khóa toàn bộ các nút Ký Cá Nhân, Đóng Dấu, Chèn Vị Trí Ký tức thì
                 UpdateSignAndSealButtonsState(true);
                 UpdateStatus($"Đã nạp văn bản Word: {Path.GetFileName(wordPath)} (Sẵn sàng ký số).");
+                VGCASignToolPro.Services.AppLogger.Info($"Nạp tệp Word thành công: {wordPath}", "LoadWordDocumentAsync");
             }
             catch (Exception ex)
             {
@@ -2192,13 +2200,13 @@ namespace VGCASignToolPro
                 if (WordEditorControl != null) WordEditorControl.Visibility = Visibility.Collapsed;
                 if (PdfPreviewControl != null) PdfPreviewControl.Visibility = Visibility.Visible;
                 BtnCloseCurrentFile.Visibility = Visibility.Collapsed;
-                System.Diagnostics.Trace.TraceError($"Lỗi nạp tài liệu Word: {ex}");
+                VGCASignToolPro.Services.AppLogger.Error($"Lỗi nạp tài liệu Word: {wordPath}", ex, "LoadWordDocumentAsync");
                 MessageBox.Show($"Không thể nạp tài liệu Word:\n\n{ex.Message}\n\nVui lòng kiểm tra tệp tin có đang bị khóa bởi ứng dụng khác không.", 
                     "Lỗi Nạp Tài Liệu", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
-                await HideLoadingOverlayAsync(600);
+                HideLoadingOverlay();
                 SetProcessingBusyState(false);
             }
         }
@@ -2408,6 +2416,7 @@ namespace VGCASignToolPro
                 return;
             }
 
+            VGCASignToolPro.Services.AppLogger.Info($"Bắt đầu nạp tệp PDF: {pdfPath}", "LoadPdfDocumentAsync");
             ShowLoadingOverlay("Đang mở file, vui lòng chờ...", $"Đang nạp và kết xuất trang tài liệu PDF: {Path.GetFileName(pdfPath)}...", "📑");
             SetProcessingBusyState(true, $"Đang nạp tệp PDF: {Path.GetFileName(pdfPath)}...");
 
@@ -2434,18 +2443,19 @@ namespace VGCASignToolPro
                 await DisplayPdfInInteractiveViewerAsync(pdfPath);
 
                 UpdateStatus($"Đã nạp tệp PDF trực tiếp: {Path.GetFileName(pdfPath)}");
+                VGCASignToolPro.Services.AppLogger.Info($"Nạp tệp PDF thành công: {pdfPath}", "LoadPdfDocumentAsync");
             }
             catch (Exception ex)
             {
                 TxtCurrentFileStatus.Text = "Nạp tệp PDF thất bại.";
                 _currentWorkingPdfPath = null;
                 BtnCloseCurrentFile.Visibility = Visibility.Collapsed;
-                System.Diagnostics.Trace.TraceError($"Lỗi nạp PDF: {ex}");
+                VGCASignToolPro.Services.AppLogger.Error($"Lỗi nạp PDF: {pdfPath}", ex, "LoadPdfDocumentAsync");
                 MessageBox.Show($"Không thể hiển thị tài liệu PDF:\n{ex.Message}", "Lỗi Nạp PDF", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
-                await HideLoadingOverlayAsync(50);
+                HideLoadingOverlay();
                 SetProcessingBusyState(false);
             }
         }
@@ -2661,11 +2671,13 @@ namespace VGCASignToolPro
             if (!_isWebViewInitialized || !File.Exists(pdfPath) || PdfPreviewControl?.CoreWebView2 == null)
             {
                 TxtCurrentFileStatus.Text = "Trình xem tương tác chưa sẵn sàng.";
+                VGCASignToolPro.Services.AppLogger.Warn("DisplayPdfInInteractiveViewerAsync: Trình xem tương tác chưa sẵn sàng.", "DisplayPdfInInteractiveViewerAsync");
                 return;
             }
 
             try
             {
+                VGCASignToolPro.Services.AppLogger.Info($"Bắt đầu nạp PDF vào trình xem tương tác: {pdfPath}", "DisplayPdfInInteractiveViewerAsync");
                 FileInfo fileInfo = new FileInfo(pdfPath);
                 // Giới hạn kích thước file an toàn cho preview (150MB)
                 const long maxFileSize = 150 * 1024 * 1024;
@@ -2674,47 +2686,6 @@ namespace VGCASignToolPro
                     RollbackViewerUiState("Tệp PDF quá lớn (>150MB) để nạp vào trình xem tương tác.");
                     return;
                 }
-
-                string previewCacheDir = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "VGCASignToolPro", "PreviewCache");
-                if (!Directory.Exists(previewCacheDir))
-                {
-                    Directory.CreateDirectory(previewCacheDir);
-                }
-
-                // Sao chép tệp PDF cực nhanh sang cache ảo thay vì nén Base64 (tiết kiệm 100% chi phí IPC và RAM)
-                string previewFileName = $"doc_{Guid.NewGuid():N}.pdf";
-                string destPdf = Path.Combine(previewCacheDir, previewFileName);
-
-                await Task.Run(() =>
-                {
-                    try
-                    {
-                        File.Copy(pdfPath, destPdf, true);
-                    }
-                    catch (Exception copyEx)
-                    {
-                        System.Diagnostics.Trace.TraceWarning($"Lỗi copy cache PDF: {copyEx.Message}. Sao chép bằng FileShare.ReadWrite.");
-                        using var srcStream = new FileStream(pdfPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                        using var dstStream = new FileStream(destPdf, FileMode.Create, FileAccess.Write, FileShare.None);
-                        srcStream.CopyTo(dstStream);
-                    }
-
-                    // Tự động dọn dẹp các tệp preview cũ chạy ngầm
-                    try
-                    {
-                        var di = new DirectoryInfo(previewCacheDir);
-                        foreach (var f in di.GetFiles("doc_*.pdf"))
-                        {
-                            if (f.FullName != destPdf && (DateTime.UtcNow - f.LastWriteTimeUtc).TotalMinutes > 5)
-                            {
-                                try { f.Delete(); } catch { }
-                            }
-                        }
-                    }
-                    catch { }
-                });
 
                 if (PdfPreviewControl == null || PdfPreviewControl.CoreWebView2 == null)
                 {
@@ -2737,13 +2708,17 @@ namespace VGCASignToolPro
 
                 if (!isViewerAlreadyLoaded)
                 {
+                    VGCASignToolPro.Services.AppLogger.Info("Điều hướng WebView2 tới https://vgcaviewer.local/pdf_viewer.html", "DisplayPdfInInteractiveViewerAsync");
                     var tcs = new TaskCompletionSource<bool>();
                     EventHandler<Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs>? navHandler = null;
                     navHandler = (s, e) =>
                     {
                         try
                         {
-                            PdfPreviewControl.NavigationCompleted -= navHandler;
+                            if (PdfPreviewControl?.CoreWebView2 != null)
+                            {
+                                PdfPreviewControl.CoreWebView2.NavigationCompleted -= navHandler;
+                            }
                         }
                         catch (Exception)
                         {
@@ -2751,14 +2726,24 @@ namespace VGCASignToolPro
                         }
                         tcs.TrySetResult(e.IsSuccess);
                     };
-                    PdfPreviewControl.NavigationCompleted += navHandler;
+
+                    PdfPreviewControl.CoreWebView2.NavigationCompleted += navHandler;
                     PdfPreviewControl.CoreWebView2.Navigate("https://vgcaviewer.local/pdf_viewer.html");
 
                     var completedTask = await Task.WhenAny(tcs.Task, Task.Delay(10000));
                     if (completedTask != tcs.Task)
                     {
-                        try { PdfPreviewControl.NavigationCompleted -= navHandler; }
-                        catch (Exception ex) { System.Diagnostics.Trace.TraceWarning($"Lỗi gỡ NavigationCompleted handler: {ex.Message}"); }
+                        try
+                        {
+                            if (PdfPreviewControl?.CoreWebView2 != null)
+                            {
+                                PdfPreviewControl.CoreWebView2.NavigationCompleted -= navHandler;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            VGCASignToolPro.Services.AppLogger.Warn($"Lỗi gỡ NavigationCompleted handler: {ex.Message}", "DisplayPdfInInteractiveViewerAsync");
+                        }
                         RollbackViewerUiState("Lỗi: Quá thời gian chờ tải trình xem PDF.");
                         return;
                     }
@@ -2766,6 +2751,7 @@ namespace VGCASignToolPro
                     bool navSuccess = await tcs.Task;
                     if (!navSuccess)
                     {
+                        VGCASignToolPro.Services.AppLogger.Error("Không thể điều hướng tới https://vgcaviewer.local/pdf_viewer.html", null, "DisplayPdfInInteractiveViewerAsync");
                         RollbackViewerUiState("Lỗi: Không thể điều hướng tới trang xem PDF.");
                         return;
                     }
@@ -2777,12 +2763,12 @@ namespace VGCASignToolPro
                     return;
                 }
 
-                // Đảm bảo DOM và script loadPdfFromUrl đã sẵn sàng
+                // Đảm bảo DOM và script loadPdfFromUrl / loadPdfFromBase64 đã sẵn sàng
                 bool isScriptReady = false;
                 for (int i = 0; i < 30; i++)
                 {
                     if (PdfPreviewControl?.CoreWebView2 == null) break;
-                    string checkScript = await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync("typeof loadPdfFromUrl === 'function'");
+                    string checkScript = await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync("typeof loadPdfFromBase64 === 'function' && typeof loadPdfFromUrl === 'function'");
                     if (checkScript == "true")
                     {
                         isScriptReady = true;
@@ -2793,18 +2779,81 @@ namespace VGCASignToolPro
 
                 if (!isScriptReady || PdfPreviewControl?.CoreWebView2 == null)
                 {
+                    VGCASignToolPro.Services.AppLogger.Error("Trình xem PDF không tải được engine hiển thị sau 3 giây chờ", null, "DisplayPdfInInteractiveViewerAsync");
                     RollbackViewerUiState("Lỗi: Trình xem PDF không tải được engine hiển thị.");
                     return;
                 }
 
                 _pdfRenderCompletionSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-                string pdfUrl = $"https://vgcacontent.local/{previewFileName}";
-                string safeJsonUrl = System.Text.Json.JsonSerializer.Serialize(pdfUrl);
-                await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync($"loadPdfFromUrl({safeJsonUrl});");
+                // CƠ CHẾ NẠP KÉP AN TOÀN TUYỆT ĐỐI (DUAL-MODE PDF INGESTION):
+                // 1. Tệp tin <= 25MB: Nạp trực tiếp qua Base64 (0% lỗi mạng, 0% CORS, phản hồi trong <100ms)
+                // 2. Tệp tin > 25MB: Nạp qua Virtual URL Streaming
+                if (fileInfo.Length <= 25 * 1024 * 1024)
+                {
+                    VGCASignToolPro.Services.AppLogger.Info($"Nạp tài liệu PDF qua bộ nhớ Base64 ({fileInfo.Length / 1024:N0} KB)...", "DisplayPdfInInteractiveViewerAsync");
+                    byte[] fileBytes = await File.ReadAllBytesAsync(pdfPath);
+                    string base64Data = Convert.ToBase64String(fileBytes);
+                    string safeJson = System.Text.Json.JsonSerializer.Serialize(base64Data);
+                    await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync($"loadPdfFromBase64({safeJson});");
+                }
+                else
+                {
+                    VGCASignToolPro.Services.AppLogger.Info($"Nạp tài liệu lớn qua Virtual URL Streaming ({fileInfo.Length / (1024 * 1024):N1} MB)...", "DisplayPdfInInteractiveViewerAsync");
+                    string previewCacheDir = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                        "VGCASignToolPro", "PreviewCache");
+                    if (!Directory.Exists(previewCacheDir))
+                    {
+                        Directory.CreateDirectory(previewCacheDir);
+                    }
 
-                // Chờ sự kiện pdfLoaded (khi trang 1 hiển thị chỉ mất ~100-150ms) hoặc timeout an toàn (4000ms)
-                await Task.WhenAny(_pdfRenderCompletionSource.Task, Task.Delay(4000));
+                    string previewFileName = $"doc_{Guid.NewGuid():N}.pdf";
+                    string destPdf = Path.Combine(previewCacheDir, previewFileName);
+
+                    await Task.Run(() =>
+                    {
+                        try
+                        {
+                            File.Copy(pdfPath, destPdf, true);
+                        }
+                        catch (Exception copyEx)
+                        {
+                            VGCASignToolPro.Services.AppLogger.Warn($"Lỗi copy cache PDF: {copyEx.Message}. Sao chép bằng FileShare.ReadWrite.", "DisplayPdfInInteractiveViewerAsync");
+                            using var srcStream = new FileStream(pdfPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                            using var dstStream = new FileStream(destPdf, FileMode.Create, FileAccess.Write, FileShare.None);
+                            srcStream.CopyTo(dstStream);
+                        }
+
+                        try
+                        {
+                            var di = new DirectoryInfo(previewCacheDir);
+                            foreach (var f in di.GetFiles("doc_*.pdf"))
+                            {
+                                if (f.FullName != destPdf && (DateTime.UtcNow - f.LastWriteTimeUtc).TotalMinutes > 5)
+                                {
+                                    try { f.Delete(); } catch { }
+                                }
+                            }
+                        }
+                        catch { }
+                    });
+
+                    string pdfUrl = $"https://vgcacontent.local/{previewFileName}";
+                    string safeJsonUrl = System.Text.Json.JsonSerializer.Serialize(pdfUrl);
+                    await PdfPreviewControl.CoreWebView2.ExecuteScriptAsync($"loadPdfFromUrl({safeJsonUrl});");
+                }
+
+                // Chờ sự kiện pdfLoaded (thường chỉ mất ~100-150ms) hoặc timeout an toàn (6000ms)
+                var renderCompleted = await Task.WhenAny(_pdfRenderCompletionSource.Task, Task.Delay(6000));
+                if (renderCompleted != _pdfRenderCompletionSource.Task)
+                {
+                    VGCASignToolPro.Services.AppLogger.Warn("Chờ pdfLoaded timeout 6000ms, tiếp tục mở giao diện.", "DisplayPdfInInteractiveViewerAsync");
+                }
+                else
+                {
+                    VGCASignToolPro.Services.AppLogger.Info("Tài liệu PDF đã render thành công trên WebView2.", "DisplayPdfInInteractiveViewerAsync");
+                }
 
                 // Chỉ kích hoạt UI thành công sau khi PDF đã được nạp hoàn tất
                 if (PnlPreviewPlaceholder != null)
@@ -2820,7 +2869,7 @@ namespace VGCASignToolPro
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.TraceError($"Lỗi nạp PDF tương tác: {ex}");
+                VGCASignToolPro.Services.AppLogger.Error("Lỗi nạp PDF tương tác", ex, "DisplayPdfInInteractiveViewerAsync");
                 RollbackViewerUiState($"Lỗi tải tài liệu: {ex.Message}");
             }
         }

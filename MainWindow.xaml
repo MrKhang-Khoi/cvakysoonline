@@ -1563,7 +1563,7 @@
                Placement="Center" 
                PlacementTarget="{Binding ElementName=MainRootGrid}" 
                AllowsTransparency="True" 
-               PopupAnimation="Fade" 
+               PopupAnimation="None" 
                StaysOpen="True">
             <Grid Margin="24">
                 <Border Background="White" BorderBrush="#94A3B8" BorderThickness="1.5" CornerRadius="16" 
@@ -1623,7 +1623,7 @@
                Placement="Center" 
                PlacementTarget="{Binding ElementName=MainRootGrid}" 
                AllowsTransparency="True" 
-               PopupAnimation="Fade" 
+               PopupAnimation="None" 
                StaysOpen="True"
                Focusable="True">
             <Grid Margin="24">

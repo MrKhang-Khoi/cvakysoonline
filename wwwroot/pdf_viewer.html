@@ -725,6 +725,9 @@
             } catch (err) {
                 console.error("Lỗi nạp PDF từ Base64:", err);
                 if (loadingOverlay) loadingOverlay.style.display = 'none';
+                if (window.chrome && window.chrome.webview) {
+                    window.chrome.webview.postMessage({ type: 'pdfLoadError', message: err.message });
+                }
             }
         }
 

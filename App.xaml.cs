@@ -14,6 +14,28 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // Khởi tạo hệ thống ghi log chẩn đoán thời gian thực chuẩn doanh nghiệp
+        VGCASignToolPro.Services.AppLogger.Initialize();
+
+        // Đăng ký bắt toàn bộ ngoại lệ chưa được xử lý để ghi vào log
+        AppDomain.CurrentDomain.UnhandledException += (s, args) =>
+        {
+            if (args.ExceptionObject is Exception ex)
+            {
+                VGCASignToolPro.Services.AppLogger.Error("Unhandled AppDomain Exception", ex, "App");
+            }
+        };
+
+        DispatcherUnhandledException += (s, args) =>
+        {
+            VGCASignToolPro.Services.AppLogger.Error("Unhandled Dispatcher Exception", args.Exception, "App");
+        };
+
+        System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (s, args) =>
+        {
+            VGCASignToolPro.Services.AppLogger.Error("Unobserved Task Exception", args.Exception, "App");
+        };
+
         if (e.Args != null)
         {
             foreach (var arg in e.Args)
@@ -26,6 +48,7 @@ public partial class App : Application
             }
         }
 
+        VGCASignToolPro.Services.AppLogger.Info($"Ứng dụng khởi động (AutoStart: {IsAutoStartMode})", "App");
         InitializeSyncfusionLicensing();
         PerformPostUpdateCleanup();
         base.OnStartup(e);
