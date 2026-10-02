@@ -30,6 +30,9 @@ namespace VGCASignToolPro.Models
         [JsonProperty("downloadUrl")]
         public string DownloadUrl { get; set; } = string.Empty;
 
+        [JsonProperty("fallbackDownloadUrl")]
+        public string? FallbackDownloadUrl { get; set; }
+
         [JsonProperty("sha256")]
         public string Sha256 { get; set; } = string.Empty;
 

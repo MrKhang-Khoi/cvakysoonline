@@ -131,6 +131,7 @@ namespace VGCASignToolPro
 
                 downloadedZip = await _updateService.DownloadUpdatePackageAsync(
                     _checkResult.Release.DownloadUrl,
+                    _checkResult.Release.FallbackDownloadUrl,
                     progress,
                     _downloadCts.Token);
 

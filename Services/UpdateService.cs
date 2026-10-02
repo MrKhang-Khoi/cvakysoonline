@@ -149,25 +149,56 @@ namespace VGCASignToolPro.Services
         }
 
         /// <summary>
-        /// Tải gói cập nhật nhị phân từ GitHub Releases / Cloud Storage với báo cáo tiến trình
+        /// Tải gói cập nhật nhị phân từ GitHub Releases / Cloud Storage với báo cáo tiến trình (hỗ trợ chuyển hướng máy chủ dự phòng)
         /// </summary>
         public async Task<string> DownloadUpdatePackageAsync(
             string downloadUrl,
+            string? fallbackUrl,
             IProgress<UpdateDownloadProgress>? progress,
             CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(downloadUrl))
+            if (string.IsNullOrWhiteSpace(downloadUrl) && string.IsNullOrWhiteSpace(fallbackUrl))
             {
                 throw new ArgumentException("Đường dẫn tải gói cập nhật không hợp lệ.", nameof(downloadUrl));
             }
 
+            string primaryUrl = !string.IsNullOrWhiteSpace(downloadUrl) ? downloadUrl : fallbackUrl!;
+            string? secondaryUrl = !string.IsNullOrWhiteSpace(downloadUrl) && !string.IsNullOrWhiteSpace(fallbackUrl) && downloadUrl != fallbackUrl
+                ? fallbackUrl
+                : null;
+
+            try
+            {
+                return await DownloadInternalAsync(primaryUrl, progress, ct);
+            }
+            catch (Exception ex) when (secondaryUrl != null && !ct.IsCancellationRequested)
+            {
+                System.Diagnostics.Trace.TraceWarning($"Tải từ máy chủ chính ({primaryUrl}) thất bại: {ex.Message}. Đang chuyển sang máy chủ dự phòng: {secondaryUrl}");
+                return await DownloadInternalAsync(secondaryUrl, progress, ct);
+            }
+        }
+
+        public Task<string> DownloadUpdatePackageAsync(
+            string downloadUrl,
+            IProgress<UpdateDownloadProgress>? progress,
+            CancellationToken ct = default)
+        {
+            return DownloadUpdatePackageAsync(downloadUrl, null, progress, ct);
+        }
+
+        private async Task<string> DownloadInternalAsync(
+            string downloadUrl,
+            IProgress<UpdateDownloadProgress>? progress,
+            CancellationToken ct)
+        {
             string tempDir = Path.Combine(Path.GetTempPath(), "VGCASignToolPro", "Updates");
             if (!Directory.Exists(tempDir))
             {
                 Directory.CreateDirectory(tempDir);
             }
 
-            string targetZipPath = Path.Combine(tempDir, $"update_package_{DateTime.Now:yyyyMMdd_HHmmss}.zip");
+            string randSuffix = Guid.NewGuid().ToString("N").Substring(0, 6);
+            string targetZipPath = Path.Combine(tempDir, $"update_package_{DateTime.Now:yyyyMMdd_HHmmss}_{randSuffix}.zip");
 
             using var response = await _httpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, ct);
             response.EnsureSuccessStatusCode();

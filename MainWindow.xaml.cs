@@ -225,6 +225,36 @@ namespace VGCASignToolPro
                 _isWebViewInitialized = false;
                 BtnInsertSignatureStamp.IsEnabled = false;
                 UpdateStatus($"Lỗi khởi tạo WebView2: {ex.Message}");
+
+                // Cảnh báo thông minh nếu máy tính Windows cũ bị thiếu Microsoft Edge WebView2 Evergreen Runtime
+                bool isWebView2Missing = ex is Microsoft.Web.WebView2.Core.WebView2RuntimeNotFoundException ||
+                                         ex is System.IO.FileNotFoundException ||
+                                         ex.GetType().Name.Contains("WebView2", StringComparison.OrdinalIgnoreCase) ||
+                                         ex.Message.Contains("WebView2", StringComparison.OrdinalIgnoreCase);
+
+                if (isWebView2Missing)
+                {
+                    var msgResult = MessageBox.Show(
+                        "Máy tính của bạn chưa có thư viện 'Microsoft Edge WebView2 Runtime' (thường gặp trên Windows 10 bản cũ).\n\n" +
+                        "Phần mềm cần thư viện này để hiển thị văn bản PDF và căn chỉnh vị trí chữ ký số trực quan.\n\n" +
+                        "Bạn có muốn mở trang tải chính thức của Microsoft để cài đặt không?",
+                        "Cần Cài Đặt Microsoft Edge WebView2 Runtime",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning);
+
+                    if (msgResult == MessageBoxResult.Yes)
+                    {
+                        try
+                        {
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = "https://go.microsoft.com/fwlink/p/?LinkId=2124703",
+                                UseShellExecute = true
+                            });
+                        }
+                        catch { }
+                    }
+                }
             }
         }
 

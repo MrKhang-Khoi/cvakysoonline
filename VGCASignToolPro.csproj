@@ -46,8 +46,17 @@
     <MSBuild Projects="Updater\VGCASignToolPro.Updater.csproj" Targets="Build" Properties="Configuration=$(Configuration);Platform=AnyCPU" />
     <ItemGroup>
       <UpdaterFiles Include="Updater\bin\$(Configuration)\net8.0-windows\VGCASignToolPro.Updater.*" />
+      <UpdaterFiles Include="Updater\bin\$(Configuration)\net8.0-windows\$(RuntimeIdentifier)\VGCASignToolPro.Updater.*" Condition="'$(RuntimeIdentifier)' != ''" />
     </ItemGroup>
     <Copy SourceFiles="@(UpdaterFiles)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" />
   </Target>
 
+  <Target Name="CopyUpdaterToPublishDir" AfterTargets="Publish">
+    <MSBuild Projects="Updater\VGCASignToolPro.Updater.csproj" Targets="Build" Properties="Configuration=$(Configuration);Platform=AnyCPU;RuntimeIdentifier=$(RuntimeIdentifier)" />
+    <ItemGroup>
+      <UpdaterPublishFiles Include="Updater\bin\$(Configuration)\net8.0-windows\VGCASignToolPro.Updater.*" />
+      <UpdaterPublishFiles Include="Updater\bin\$(Configuration)\net8.0-windows\$(RuntimeIdentifier)\VGCASignToolPro.Updater.*" Condition="'$(RuntimeIdentifier)' != ''" />
+    </ItemGroup>
+    <Copy SourceFiles="@(UpdaterPublishFiles)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+  </Target>
 </Project>

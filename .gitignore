@@ -12,3 +12,6 @@ test_run.log
 tests/
 dist/
 Output_Installer/
+publish_standalone/
+releases/
+temp_pack/
