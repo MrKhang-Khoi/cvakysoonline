@@ -9,6 +9,25 @@ namespace VGCASignToolPro.Updater
 {
     internal static class Program
     {
+        private static readonly object LogLock = new();
+
+        public static void Log(string message)
+        {
+            try
+            {
+                lock (LogLock)
+                {
+                    string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                    string logDir = Path.Combine(localAppData, "VGCASignToolPro", "logs");
+                    if (!Directory.Exists(logDir)) Directory.CreateDirectory(logDir);
+                    string logFile = Path.Combine(logDir, $"updater_{DateTime.Now:yyyyMMdd}.log");
+                    string line = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}{Environment.NewLine}";
+                    File.AppendAllText(logFile, line);
+                }
+            }
+            catch { }
+        }
+
         private static readonly HashSet<string> ProtectedFiles = new(StringComparer.OrdinalIgnoreCase)
         {
             "school_roster.json",
@@ -28,6 +47,8 @@ namespace VGCASignToolPro.Updater
         private static void Main(string[] args)
         {
             ApplicationConfiguration.Initialize();
+            Log($"=== KHỞI ĐỘNG VGCASignToolPro.Updater (PID: {Environment.ProcessId}) ===");
+            Log($"Args ({args.Length}): {string.Join(" ", args)}");
 
             int targetPid = -1;
             string sourceDir = string.Empty;
@@ -54,9 +75,12 @@ namespace VGCASignToolPro.Updater
                 }
             }
 
+            Log($"Phân tích tham số: targetPid={targetPid}, sourceDir='{sourceDir}', targetDir='{targetDir}', restartExe='{restartExe}'");
+
             if (string.IsNullOrWhiteSpace(sourceDir) || !Directory.Exists(sourceDir) ||
                 string.IsNullOrWhiteSpace(targetDir) || !Directory.Exists(targetDir))
             {
+                Log($"[LỖI] Tham số không hợp lệ hoặc thư mục không tồn tại. sourceDir Exists={Directory.Exists(sourceDir)}, targetDir Exists={Directory.Exists(targetDir)}");
                 MessageBox.Show(
                     "Tham số cập nhật không hợp lệ hoặc thư mục nguồn/đích không tồn tại.",
                     "Lỗi Cập Nhật", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -70,9 +94,11 @@ namespace VGCASignToolPro.Updater
 
         public static void ApplyUpdate(int targetPid, string sourceDir, string targetDir, string restartExe, Action<string, int> reportProgress)
         {
+            Log($"[ApplyUpdate] Bắt đầu chu trình cập nhật từ '{sourceDir}' sang '{targetDir}', targetPid={targetPid}");
             reportProgress("Đang chờ ứng dụng chính hoàn tất phiên làm việc...", 10);
 
             // 1. Chờ và cưỡng chế tắt triệt để TOÀN BỘ các tiến trình VGCASignToolPro đang chạy
+            Log($"[ApplyUpdate] Đang chờ và tắt tiến trình chính (PID {targetPid})...");
             TerminateAllAppProcesses(targetPid);
 
             Thread.Sleep(1000); // Đảm bảo Windows giải phóng toàn bộ file handle và Memory-Mapped DLL
@@ -85,28 +111,39 @@ namespace VGCASignToolPro.Updater
                 if (!Directory.Exists(backupDir))
                 {
                     Directory.CreateDirectory(backupDir);
+                    Log($"[ApplyUpdate] Đã tạo thư mục sao lưu dự phòng: '{backupDir}'");
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log($"[ApplyUpdate] [Cảnh báo] Không thể tạo thư mục sao lưu: {ex.Message}");
+            }
 
             // 3. Thực hiện ghi đè các tệp chương trình mới (Bảo tồn danh bạ và cấu hình)
             reportProgress("Đang cập nhật các tệp tin chương trình mới...", 50);
             try
             {
+                Log($"[ApplyUpdate] Bắt đầu sao chép tệp mới từ '{sourceDir}' sang '{targetDir}'...");
                 CopyDirectoryRecursive(sourceDir, targetDir, sourceDir, backupDir);
+                Log("[ApplyUpdate] Đã sao chép toàn bộ tệp mới thành công.");
             }
             catch (Exception ex)
             {
+                Log($"[ApplyUpdate] [LỖI] Xảy ra ngoại lệ trong khi sao chép: {ex}");
                 // Rollback nếu xảy ra lỗi ghi đè
                 reportProgress("Gặp sự cố, đang khôi phục bản sao lưu...", 75);
                 try
                 {
                     if (Directory.Exists(backupDir))
                     {
+                        Log("[ApplyUpdate] Đang phục hồi dữ liệu từ thư mục sao lưu...");
                         CopyDirectoryRecursive(backupDir, targetDir, backupDir, string.Empty);
                     }
                 }
-                catch { }
+                catch (Exception rbEx)
+                {
+                    Log($"[ApplyUpdate] [LỖI ROLLBACK] {rbEx}");
+                }
 
                 throw new InvalidOperationException($"Lỗi trong quá trình sao chép tệp mới: {ex.Message}", ex);
             }
@@ -119,6 +156,7 @@ namespace VGCASignToolPro.Updater
             {
                 try
                 {
+                    Log($"[ApplyUpdate] Khởi động lại ứng dụng: '{restartExe}' trong thư mục '{targetDir}'");
                     Process.Start(new ProcessStartInfo
                     {
                         FileName = restartExe,
@@ -128,6 +166,7 @@ namespace VGCASignToolPro.Updater
                 }
                 catch (Exception ex)
                 {
+                    Log($"[ApplyUpdate] [LỖI] Không thể tự khởi động ứng dụng: {ex}");
                     MessageBox.Show(
                         $"Đã cập nhật thành công nhưng không thể tự khởi động lại ứng dụng:\n{ex.Message}\n\nVui lòng mở lại ứng dụng từ Desktop.",
                         "Thông Báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -141,9 +180,14 @@ namespace VGCASignToolPro.Updater
             try
             {
                 Directory.Delete(sourceDir, true);
+                Log($"[ApplyUpdate] Đã dọn dẹp thư mục staging '{sourceDir}'");
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log($"[ApplyUpdate] Thư mục staging tạm chưa xóa được ngay (sẽ dọn dẹp sau): {ex.Message}");
+            }
 
+            Log("[ApplyUpdate] Hoàn tất toàn bộ chu trình nâng cấp 100%!");
             reportProgress("Hoàn tất!", 100);
         }
 
@@ -387,6 +431,7 @@ namespace VGCASignToolPro.Updater
                 }
                 catch (Exception ex)
                 {
+                    Program.Log($"[UpdaterProgressForm] [LỖI NGOẠI LỆ] Cập nhật thất bại: {ex}");
                     Invoke(new Action(() =>
                     {
                         MessageBox.Show(

@@ -103,39 +103,8 @@ $tempZipDir = Join-Path ([System.IO.Path]::GetTempPath()) ("VGCASignToolPro_ZipS
 New-Item -ItemType Directory -Path $tempZipDir -Force | Out-Null
 
 try {
-    # Danh sách các tệp DLL runtime cố định bị tiến trình WinForms Updater nạp và khóa cứng
-    # Loại bỏ khỏi gói cập nhật tự động để bản Updater cũ trên máy người dùng không bao giờ gặp lỗi khóa tệp
-    $lockedRuntimeDlls = @(
-        "Accessibility.dll",
-        "clrjit.dll",
-        "coreclr.dll",
-        "hostfxr.dll",
-        "hostpolicy.dll",
-        "Microsoft.Win32.Primitives.dll",
-        "Microsoft.Win32.SystemEvents.dll",
-        "System.Collections.dll",
-        "System.Collections.NonGeneric.dll",
-        "System.Collections.Specialized.dll",
-        "System.ComponentModel.dll",
-        "System.ComponentModel.EventBasedAsync.dll",
-        "System.ComponentModel.Primitives.dll",
-        "System.ComponentModel.TypeConverter.dll",
-        "System.Diagnostics.Process.dll",
-        "System.Diagnostics.TraceSource.dll",
-        "System.Drawing.Common.dll",
-        "System.Drawing.Primitives.dll",
-        "System.Memory.dll",
-        "System.Numerics.Vectors.dll",
-        "System.Private.CoreLib.dll",
-        "System.Runtime.dll",
-        "System.Runtime.InteropServices.dll",
-        "System.Threading.dll",
-        "System.Threading.Thread.dll",
-        "System.Windows.Forms.dll",
-        "System.Windows.Forms.Primitives.dll"
-    )
-
-    # Copy files excluding user configs, caches and locked runtime DLLs
+    # Sao chép toàn bộ tệp tin phân phối Self-Contained x64 vào gói cập nhật,
+    # bảo vệ tuyệt đối dữ liệu người dùng (danh bạ nhà trường, cấu hình ký số, cache).
     Get-ChildItem -Path $distDir -Recurse | ForEach-Object {
         $full = $_.FullName
         $relPath = $full.Substring($distDir.Length).TrimStart('\', '/')
@@ -151,30 +120,23 @@ try {
             }
         }
 
-        # Loại bỏ các DLL runtime cố định đang bị nạp
-        foreach ($dll in $lockedRuntimeDlls) {
-            if ($_.Name -ieq $dll) {
-                $shouldExclude = $true
-                break
-            }
-        }
-
         if (-not $shouldExclude) {
-            # Với Updater: đổi tên sang .new để tránh xung đột với tiến trình Updater cũ đang chạy
-            $destRelPath = $relPath
-            if ($_.Name -ieq "VGCASignToolPro.Updater.exe") {
-                $destRelPath = $relPath.Replace("VGCASignToolPro.Updater.exe", "VGCASignToolPro.Updater.new.exe")
-            } elseif ($_.Name -ieq "VGCASignToolPro.Updater.dll") {
-                $destRelPath = $relPath.Replace("VGCASignToolPro.Updater.dll", "VGCASignToolPro.Updater.new.dll")
-            }
-
-            $dest = Join-Path $tempZipDir $destRelPath
+            $dest = Join-Path $tempZipDir $relPath
             if ($_.PSIsContainer) {
                 if (-not (Test-Path $dest)) { New-Item -ItemType Directory -Path $dest -Force | Out-Null }
             } else {
                 $destParent = Split-Path -Parent $dest
                 if (-not (Test-Path $destParent)) { New-Item -ItemType Directory -Path $destParent -Force | Out-Null }
                 Copy-Item -Path $full -Destination $dest -Force
+
+                # Tạo thêm bản sao dự phòng .new.exe và .new.dll để tương thích 100% với các phiên bản cũ
+                if ($_.Name -ieq "VGCASignToolPro.Updater.exe") {
+                    $newExePath = Join-Path $destParent "VGCASignToolPro.Updater.new.exe"
+                    Copy-Item -Path $full -Destination $newExePath -Force
+                } elseif ($_.Name -ieq "VGCASignToolPro.Updater.dll") {
+                    $newDllPath = Join-Path $destParent "VGCASignToolPro.Updater.new.dll"
+                    Copy-Item -Path $full -Destination $newDllPath -Force
+                }
             }
         }
     }
@@ -211,7 +173,7 @@ $releaseObj = @{
     minSupportedVersion = "2.0.0"
     releaseDate = (Get-Date -Format "yyyy-MM-dd")
     title = "Bản cập nhật VGCA Sign Tool Pro v2.1.5"
-    description = "Khắc phục triệt để lỗi nạp file PDF/Word/Excel, đồng bộ thư viện System.Text.Json v10.0, tăng tốc xử lý tài liệu và triệt tiêu hoàn toàn lỗi kẹt popup loading."
+    description = "Khắc phục triệt để lỗi nạp file PDF/Word/Excel, sửa lỗi không khởi chạy cài đặt bản cập nhật tự động sau khi tải xong, đồng bộ thư viện System.Text.Json v10.0 và tối ưu hóa xử lý tài liệu."
     downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.5/VGCASignToolPro_Update_v2.1.5.zip"
     installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.5/VGCASignToolPro_Setup_v2.1.5.exe"
     sha256 = $zipHash
@@ -219,6 +181,7 @@ $releaseObj = @{
     mandatory = $false
     status = "ACTIVE"
     changelog = @(
+        "Khắc phục triệt để lỗi không tự động cài đặt bản cập nhật sau khi tải xong trên các máy trạm",
         "Khắc phục triệt để lỗi không nạp được file PDF, Word và Excel do xung đột phiên bản thư viện System.Text.Json",
         "Triệt tiêu 100% hiện tượng kẹt popup loading khi xảy ra sự cố nạp tệp",
         "Nâng cấp bộ chuyển đổi Word Native với thời gian chờ tối ưu 8 giây và cơ chế phao cứu sinh độc lập",

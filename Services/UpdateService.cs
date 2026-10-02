@@ -278,37 +278,72 @@ namespace VGCASignToolPro.Services
                 if (Directory.Exists(stagingDir)) Directory.Delete(stagingDir, true);
                 Directory.CreateDirectory(stagingDir);
 
+                AppLogger.Info($"[UpdateService] Bắt đầu giải nén gói cập nhật '{zipFilePath}' vào thư mục tạm '{stagingDir}'...", "UpdateService");
+
                 // 1. Giải nén gói update vào thư mục staging
                 ZipFile.ExtractToDirectory(zipFilePath, stagingDir, true);
 
                 // 2. ƯU TIÊN KHỞI CHẠY UPDATER TỪ THƯ MỤC TẠM (STAGING HOẶC TEMP) ĐỂ KHÔNG BAO GIỜ KHÓA DLL TRONG APPDIR
                 string appDir = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
                 string stagingUpdater = Path.Combine(stagingDir, "VGCASignToolPro.Updater.exe");
+                string stagingNewUpdater = Path.Combine(stagingDir, "VGCASignToolPro.Updater.new.exe");
                 string updaterToRun;
                 string workingDirToRun;
 
                 if (File.Exists(stagingUpdater))
                 {
-                    // Chạy Updater từ thư mục tạm staging: Các DLL (Accessibility.dll, ...) được nạp từ stagingDir,
-                    // giải phóng hoàn toàn thư mục cài đặt gốc (appDir) để ghi đè an toàn 100%!
                     updaterToRun = stagingUpdater;
                     workingDirToRun = stagingDir;
+                    AppLogger.Info($"[UpdateService] Phát hiện VGCASignToolPro.Updater.exe trong staging: '{updaterToRun}'", "UpdateService");
+                }
+                else if (File.Exists(stagingNewUpdater))
+                {
+                    // Hỗ trợ gói patch có tiền tố .new
+                    try
+                    {
+                        File.Copy(stagingNewUpdater, stagingUpdater, true);
+                        string stagingNewDll = Path.Combine(stagingDir, "VGCASignToolPro.Updater.new.dll");
+                        string stagingDll = Path.Combine(stagingDir, "VGCASignToolPro.Updater.dll");
+                        if (File.Exists(stagingNewDll)) File.Copy(stagingNewDll, stagingDll, true);
+                    }
+                    catch { }
+
+                    updaterToRun = File.Exists(stagingUpdater) ? stagingUpdater : stagingNewUpdater;
+                    workingDirToRun = stagingDir;
+                    AppLogger.Info($"[UpdateService] Kích hoạt Updater từ tệp patch staging: '{updaterToRun}'", "UpdateService");
                 }
                 else
                 {
                     string fallbackUpdater = Path.Combine(appDir, "VGCASignToolPro.Updater.exe");
                     if (File.Exists(fallbackUpdater))
                     {
-                        // Copy updater sang thư mục tạm độc lập để chạy
+                        // Copy updater VÀ TOÀN BỘ CÁC TỆP PHỤ TRỢ (DLL, JSON RUNTIME) sang thư mục tạm để không bị lỗi HostFxr 0x8000809A
                         string tempIsolatedUpdaterDir = Path.Combine(Path.GetTempPath(), "VGCASignToolPro", $"UpdaterIsolated_{Guid.NewGuid():N}");
                         Directory.CreateDirectory(tempIsolatedUpdaterDir);
+
+                        foreach (var f in Directory.GetFiles(appDir, "*.*"))
+                        {
+                            string fname = Path.GetFileName(f);
+                            if (fname.StartsWith("VGCASignToolPro.Updater", StringComparison.OrdinalIgnoreCase) ||
+                                fname.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
+                                fname.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+                            {
+                                try
+                                {
+                                    File.Copy(f, Path.Combine(tempIsolatedUpdaterDir, fname), true);
+                                }
+                                catch { }
+                            }
+                        }
+
                         string tempUpdaterExe = Path.Combine(tempIsolatedUpdaterDir, "VGCASignToolPro.Updater.exe");
-                        File.Copy(fallbackUpdater, tempUpdaterExe, true);
                         updaterToRun = tempUpdaterExe;
                         workingDirToRun = tempIsolatedUpdaterDir;
+                        AppLogger.Info($"[UpdateService] Khởi chạy Updater qua vùng cách ly độc lập: '{updaterToRun}'", "UpdateService");
                     }
                     else
                     {
+                        AppLogger.Error("[UpdateService] Không tìm thấy tệp VGCASignToolPro.Updater.exe ở cả staging lẫn appDir!", null, "UpdateService");
                         throw new FileNotFoundException("Không tìm thấy tệp VGCASignToolPro.Updater.exe để thực hiện cập nhật.");
                     }
                 }
@@ -324,11 +359,13 @@ namespace VGCASignToolPro.Services
                     WorkingDirectory = workingDirToRun
                 };
 
+                AppLogger.Info($"[UpdateService] Khởi động tiến trình Updater: '{updaterToRun}' với đối số '{psi.Arguments}'", "UpdateService");
                 Process.Start(psi);
                 return true;
             }
             catch (Exception ex)
             {
+                AppLogger.Error("[UpdateService] Lỗi nghiêm trọng khi kích hoạt Updater độc lập", ex, "UpdateService");
                 System.Diagnostics.Trace.TraceError($"Lỗi kích hoạt Updater độc lập: {ex}");
                 return false;
             }
