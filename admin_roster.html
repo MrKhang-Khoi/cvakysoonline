@@ -227,6 +227,7 @@
           <th>Số Điện Thoại</th>
           <th>Email Công Vụ</th>
           <th style="width: 120px; text-align: center;">Mật Khẩu App</th>
+          <th style="width: 130px; text-align: center;">Thiết Bị Ký</th>
           <th style="width: 140px; text-align: center;">Đóng Dấu Cơ Quan</th>
           <th style="width: 140px; text-align: center;">Thao Tác</th>
         </tr>
@@ -307,6 +308,18 @@
           </div>
           <p style="font-size: 11px; color: #64748B; margin: 6px 0 0 2px;">
             Mật khẩu này dùng để giáo viên đăng nhập phần mềm Desktop (kết hợp với số CCCD). Quản trị viên có thể thiết lập mật khẩu riêng cho BGH hoặc đặt lại về 123456 khi giáo viên quên.
+          </p>
+        </div>
+
+        <div class="form-group" style="grid-column: span 2; background: #F0FDF4; padding: 12px 16px; border-radius: 8px; border: 1px solid #BBF7D0;">
+          <label for="inpSigningMethod" style="font-weight: 600; color: #166534;">🔏 Phương Thức Ký Số VGCA:</label>
+          <select id="inpSigningMethod" class="form-control" style="margin-top: 6px; font-weight: 600;">
+            <option value="AUTO">🔄 Tự động (Ưu tiên USB Token nếu cắm, ngược lại dùng VGCA Cloud)</option>
+            <option value="USB_TOKEN">🔑 Bắt buộc USB Token Phần cứng (Cắm thiết bị Bit4id / Smart Card)</option>
+            <option value="VGCA_CLOUD">☁️ Bắt buộc Ký số từ xa VGCA Cloud (Virtual CSP v2.0)</option>
+          </select>
+          <p style="font-size: 11px; color: #15803D; margin: 6px 0 0 2px;">
+            Giúp phần mềm phân biệt chính xác: BGH dùng USB Token phần cứng riêng để ký số hoặc dùng VGCA Cloud.
           </p>
         </div>
 
@@ -610,7 +623,37 @@
       tdPass.appendChild(codePass);
       tr.appendChild(tdPass);
 
-      // 9. Quyền Đóng Dấu Cơ Quan (USB Token)
+      // 9. Phương thức Ký Số
+      const tdMethod = document.createElement("td");
+      tdMethod.style.textAlign = "center";
+      const spanMethod = document.createElement("span");
+      const method = t.signingMethod || "AUTO";
+      if (method === "USB_TOKEN") {
+        spanMethod.className = "badge-role";
+        spanMethod.style.background = "#F0FDF4";
+        spanMethod.style.color = "#166534";
+        spanMethod.style.border = "1px solid #BBF7D0";
+        spanMethod.textContent = "🔑 USB Token";
+        spanMethod.title = "Bắt buộc cắm USB Token phần cứng để ký";
+      } else if (method === "VGCA_CLOUD") {
+        spanMethod.className = "badge-role";
+        spanMethod.style.background = "#F3E8FF";
+        spanMethod.style.color = "#6B21A8";
+        spanMethod.style.border = "1px solid #E9D5FF";
+        spanMethod.textContent = "☁️ VGCA Cloud";
+        spanMethod.title = "Ký số từ xa qua ứng dụng VGCA Virtual CSP v2.0";
+      } else {
+        spanMethod.className = "badge-role";
+        spanMethod.style.background = "#EFF6FF";
+        spanMethod.style.color = "#1E40AF";
+        spanMethod.style.border = "1px solid #BFDBFE";
+        spanMethod.textContent = "🔄 Tự động";
+        spanMethod.title = "Tự động nhận diện thiết bị khả dụng";
+      }
+      tdMethod.appendChild(spanMethod);
+      tr.appendChild(tdMethod);
+
+      // 10. Quyền Đóng Dấu Cơ Quan (USB Token)
       const tdSeal = document.createElement("td");
       tdSeal.style.textAlign = "center";
       const spanSeal = document.createElement("span");
@@ -696,6 +739,7 @@
     document.getElementById("inpEmail").value = "";
     document.getElementById("inpOrg").value = "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ";
     document.getElementById("inpPassword").value = "123456";
+    document.getElementById("inpSigningMethod").value = "AUTO";
     document.getElementById("inpCanSeal").checked = false;
     document.getElementById("teacherModal").classList.add("active");
   }
@@ -715,6 +759,7 @@
     document.getElementById("inpEmail").value = teacher.email || "";
     document.getElementById("inpOrg").value = teacher.organization || "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ";
     document.getElementById("inpPassword").value = teacher.password || "123456";
+    document.getElementById("inpSigningMethod").value = teacher.signingMethod || "AUTO";
     document.getElementById("inpCanSeal").checked = Boolean(teacher.canSeal);
     document.getElementById("teacherModal").classList.add("active");
   }
@@ -734,6 +779,7 @@
     const email = document.getElementById("inpEmail").value.trim();
     const organization = document.getElementById("inpOrg").value.trim();
     const password = document.getElementById("inpPassword").value.trim() || "123456";
+    const signingMethod = document.getElementById("inpSigningMethod").value || "AUTO";
     const canSeal = document.getElementById("inpCanSeal").checked;
 
     if (!/^[0-9]{12}$/.test(cccd)) {
@@ -747,7 +793,7 @@
         alert("Số CCCD này đã tồn tại trong danh sách! Vui lòng kiểm tra lại.");
         return;
       }
-      teachers.push({ cccd, fullName, title, department, phone, email, organization, canSeal, password, status: "ACTIVE" });
+      teachers.push({ cccd, fullName, title, department, phone, email, organization, canSeal, signingMethod, password, status: "ACTIVE" });
       showToast(`Đã thêm thầy/cô ${fullName} thành công!`, "success");
     } else {
       // Chỉnh sửa
@@ -771,6 +817,7 @@
         teachers[idx].email = email;
         teachers[idx].organization = organization;
         teachers[idx].password = password;
+        teachers[idx].signingMethod = signingMethod;
         teachers[idx].canSeal = canSeal;
         showToast(`Đã cập nhật thông tin thầy/cô ${fullName}!`, "success");
       }

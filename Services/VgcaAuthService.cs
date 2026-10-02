@@ -32,6 +32,7 @@ namespace VGCASignToolPro.Services
         public string Email { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
         public bool CanSeal { get; set; } = false;
+        public string SigningMethod { get; set; } = "AUTO"; // "AUTO", "USB_TOKEN", "VGCA_CLOUD"
         public string Password { get; set; } = "123456";
         public string Status { get; internal set; } = "ACTIVE";
         public int RemainingCounter { get; internal set; } = MaxAttempts;
@@ -330,6 +331,7 @@ namespace VGCASignToolPro.Services
                                 CanSeal = item["canSeal"] != null
                                     ? item["canSeal"]!.Value<bool>()
                                     : (item["title"]?.ToString() == "Hiệu trưởng" || item["title"]?.ToString() == "Phó hiệu trưởng" || item["title"]?.ToString() == "Văn thư"),
+                                SigningMethod = item["signingMethod"]?.ToString()?.Trim() ?? "AUTO",
                                 Password = item["password"]?.ToString()?.Trim() ?? "123456",
                                 Status = item["status"]?.ToString() ?? "ACTIVE",
                                 RemainingCounter = item["remainingCounter"]?.Type == JTokenType.Integer
@@ -444,6 +446,7 @@ namespace VGCASignToolPro.Services
                     string email = item["email"]?.ToString()?.Trim() ?? string.Empty;
                     string org = item["organization"]?.ToString()?.Trim() ?? string.Empty;
                     string password = item["password"]?.ToString()?.Trim() ?? "123456";
+                    string signingMethod = item["signingMethod"]?.ToString()?.Trim() ?? "AUTO";
                     bool canSeal = item["canSeal"] != null
                         ? item["canSeal"]!.Value<bool>()
                         : (title == "Hiệu trưởng" || title == "Phó hiệu trưởng" || title == "Văn thư");
@@ -457,6 +460,7 @@ namespace VGCASignToolPro.Services
                         if (!string.IsNullOrEmpty(email)) existing.Email = email;
                         if (!string.IsNullOrEmpty(org)) existing.Organization = org;
                         if (!string.IsNullOrEmpty(password)) existing.Password = password;
+                        existing.SigningMethod = !string.IsNullOrEmpty(signingMethod) ? signingMethod : "AUTO";
                         existing.CanSeal = canSeal;
                     }
                     else
@@ -470,6 +474,7 @@ namespace VGCASignToolPro.Services
                             Phone = phone,
                             Email = email,
                             Organization = !string.IsNullOrEmpty(org) ? org : "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+                            SigningMethod = !string.IsNullOrEmpty(signingMethod) ? signingMethod : "AUTO",
                             CanSeal = canSeal,
                             Password = password,
                             Status = "ACTIVE",
@@ -498,6 +503,7 @@ namespace VGCASignToolPro.Services
                             department = t.Department,
                             organization = t.Organization,
                             email = t.Email,
+                            signingMethod = string.IsNullOrEmpty(t.SigningMethod) ? "AUTO" : t.SigningMethod,
                             canSeal = t.CanSeal,
                             password = t.Password,
                             status = t.Status

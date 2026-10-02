@@ -423,26 +423,17 @@ namespace VGCASignToolPro
                         }
                     }
 
-                    // Đồng bộ chứng thư trong kho Windows Store nếu có
-                    CertificateModel? matchedCert = null;
-                    if (_certificates != null && _certificates.Count > 0)
+                    // Đồng bộ chứng thư trong kho Windows Store theo đối soát danh tính
+                    CertificateModel? matchedCert = _certService.GetActiveVGCACertificate(teacher.FullName, teacher.Cccd, teacher.SigningMethod);
+                    if (matchedCert != null)
                     {
-                        matchedCert = _certificates.FirstOrDefault(c =>
-                            c.IsVGCACertificate && (
-                                c.CommonName.Contains(teacher.FullName, StringComparison.OrdinalIgnoreCase) ||
-                                (!string.IsNullOrEmpty(teacher.SerialNumber) && string.Equals(c.SerialNumber, teacher.SerialNumber, StringComparison.OrdinalIgnoreCase))
-                            ));
-
-                        if (matchedCert != null)
-                        {
-                            _currentActiveCert = matchedCert;
-                            CmbCertificates.SelectedItem = matchedCert;
-                            TxtDetailIssuer.Text = matchedCert.Issuer;
-                            TxtDetailSerial.Text = matchedCert.SerialNumber;
-                            TxtDetailValidity.Text = $"{matchedCert.NotBefore:dd/MM/yyyy} đến {matchedCert.NotAfter:dd/MM/yyyy} ({(matchedCert.IsValidNow ? "Còn hiệu lực" : "Đã hết hạn")})";
-                            TxtDetailAlgorithm.Text = matchedCert.KeyAlgorithm;
-                            TxtDetailThumbprint.Text = matchedCert.Thumbprint;
-                        }
+                        _currentActiveCert = matchedCert;
+                        CmbCertificates.SelectedItem = matchedCert;
+                        TxtDetailIssuer.Text = matchedCert.Issuer;
+                        TxtDetailSerial.Text = matchedCert.SerialNumber;
+                        TxtDetailValidity.Text = $"{matchedCert.NotBefore:dd/MM/yyyy} đến {matchedCert.NotAfter:dd/MM/yyyy} ({(matchedCert.IsValidNow ? "Còn hiệu lực" : "Đã hết hạn")})";
+                        TxtDetailAlgorithm.Text = matchedCert.KeyAlgorithm;
+                        TxtDetailThumbprint.Text = matchedCert.Thumbprint;
                     }
 
                     // Cập nhật dòng trạng thái USB Token & Virtual CSP thực tế
@@ -520,21 +511,24 @@ namespace VGCASignToolPro
                             }
                             else
                             {
-                                // USB Token vật lý (Con dấu cơ quan)
+                                // USB Token vật lý phần cứng (Cá nhân BGH hoặc Con dấu cơ quan)
                                 TxtDetailBannerIcon.Text = "🛡️";
-                                TxtDetailBannerTitle.Text = "PHIÊN ĐĂNG NHẬP ĐÃ XÁC THỰC";
+                                TxtDetailBannerTitle.Text = "ĐÃ KẾT NỐI USB TOKEN PHẦN CỨNG";
                                 TxtDetailBannerTitle.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
-                                TxtDetailBannerSubtitle.Text = "Đã sẵn sàng ký số tài liệu chuẩn PAdES LTV theo Nghị định 30/2020/NĐ-CP.";
+                                string tokenDesc = matchedCert.IsOrganizationCertificate
+                                    ? $"USB Token con dấu nhà trường: {matchedCert.CommonName}"
+                                    : $"USB Token cá nhân: {matchedCert.CommonName}";
+                                TxtDetailBannerSubtitle.Text = $"Thiết bị {tokenDesc} đã sẵn sàng ký số trực tiếp.";
                                 BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(240, 253, 244));
                                 BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(134, 239, 172));
                                 BtnDetailOpenVcsp.Visibility = Visibility.Collapsed;
 
-                                TxtDetailUsbStatus.Text = $"✅ Đã phát hiện USB Token con dấu cơ quan ({matchedCert.CommonName}). Sẵn sàng!";
+                                TxtDetailUsbStatus.Text = $"✅ {tokenDesc}. Sẵn sàng ký số!";
                                 TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
 
                                 BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(6, 95, 70));
                                 TxtVgcaGlobalStatusIcon.Text = "✅";
-                                TxtVgcaGlobalStatusText.Text = $"VGCA: {teacher.FullName}";
+                                TxtVgcaGlobalStatusText.Text = $"VGCA Token: {teacher.FullName}";
                             }
                         }
                         else
@@ -653,8 +647,12 @@ namespace VGCASignToolPro
                     return;
                 }
 
-                // Tìm chứng thư VGCA chuyên dùng của Ban Cơ yếu Chính phủ
-                CertificateModel? vgcaCert = _certService.GetActiveVGCACertificate();
+                // Tìm chứng thư VGCA chuyên dùng của Ban Cơ yếu Chính phủ (Ưu tiên theo tài khoản đang đăng nhập)
+                string? curFullName = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.FullName : null;
+                string? curCccd = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.Cccd : null;
+                string? curMethod = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.SigningMethod : "AUTO";
+
+                CertificateModel? vgcaCert = _certService.GetActiveVGCACertificate(curFullName, curCccd, curMethod);
 
                 if (vgcaCert != null)
                 {
@@ -689,6 +687,10 @@ namespace VGCASignToolPro
                             {
                                 UpdateStatus($"Đã phát hiện chứng thư Ban Cơ yếu: {vgcaCert.CommonName}. Virtual CSP đã sẵn sàng kết nối.");
                             }
+                        }
+                        else if (vgcaCert.IsHardwareToken)
+                        {
+                            UpdateStatus($"Đã phát hiện USB Token cá nhân: {vgcaCert.CommonName}. Sẵn sàng ký số.");
                         }
                         else
                         {
@@ -731,7 +733,10 @@ namespace VGCASignToolPro
             {
                 try
                 {
-                    CertificateModel? activeVgCa = _certService.GetActiveVGCACertificate();
+                    string? curFullName = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.FullName : null;
+                    string? curCccd = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.Cccd : null;
+                    string? curMethod = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.SigningMethod : "AUTO";
+                    CertificateModel? activeVgCa = _certService.GetActiveVGCACertificate(curFullName, curCccd, curMethod);
                     string activeThumbprint = activeVgCa?.Thumbprint ?? string.Empty;
                     string currentThumbprint = _currentActiveCert?.Thumbprint ?? string.Empty;
 
@@ -2830,7 +2835,11 @@ namespace VGCASignToolPro
 
             // CHỐT CHẶN AN TOÀN TRƯỚC KHI KÝ (Pre-Sign Identity Guard):
             // Kiểm tra tức thì xem chứng thư trong Windows Store có còn kết nối khóa riêng và có bị thay đổi tài khoản hay không
-            CertificateModel? activeVgCa = _certService.GetActiveVGCACertificate();
+            string? curFullName = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.FullName : null;
+            string? curCccd = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.Cccd : null;
+            string? curMethod = _vgcaAuth.IsLoggedIn ? _vgcaAuth.CurrentTeacher?.SigningMethod : "AUTO";
+
+            CertificateModel? activeVgCa = _certService.GetActiveVGCACertificate(curFullName, curCccd, curMethod);
             if (activeVgCa == null || !activeVgCa.HasPrivateKey)
             {
                 var retryChoice = MessageBox.Show(
@@ -2842,7 +2851,7 @@ namespace VGCASignToolPro
                 if (retryChoice == MessageBoxResult.Yes)
                 {
                     _certificates = _certService.LoadCertificates(onlyWithPrivateKey: true);
-                    activeVgCa = _certService.GetActiveVGCACertificate();
+                    activeVgCa = _certService.GetActiveVGCACertificate(curFullName, curCccd, curMethod);
                 }
 
                 if (activeVgCa == null || !activeVgCa.HasPrivateKey)
@@ -2852,7 +2861,25 @@ namespace VGCASignToolPro
                 }
             }
 
-            // KIỂM TRA ĐẶC THÙ CHO VGCA VIRTUAL CSP (Remote Signing / Ký số từ xa)
+            // ĐỐI SOÁT CHÍNH XÁC DANH TÍNH CÁ NHÂN KHI ĐÃ ĐĂNG NHẬP (Chống ký lẫn lộn giữa các BGH / Giáo viên)
+            if (_vgcaAuth.IsLoggedIn && _vgcaAuth.CurrentTeacher != null)
+            {
+                var loggedTeacher = _vgcaAuth.CurrentTeacher;
+                bool isMatched = activeVgCa.MatchesPerson(loggedTeacher.FullName, loggedTeacher.Cccd);
+                if (!isMatched)
+                {
+                    MessageBox.Show(
+                        $"Thiết bị chữ ký số đang kết nối KHÔNG PHÙ HỢP với tài khoản đăng nhập!\n\n" +
+                        $"• Người đăng nhập: {loggedTeacher.FullName} (CCCD: {loggedTeacher.Cccd})\n" +
+                        $"• Chứng thư trên thiết bị: {activeVgCa.CommonName}\n\n" +
+                        $"Theo quy định an toàn số, bạn phải cắm đúng USB Token cá nhân hoặc đăng nhập tài khoản Virtual CSP của {loggedTeacher.FullName} để ký tài liệu này.",
+                        "Sai Thiết Bị Ký Số Cá Nhân", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    UpdateStatus($"Từ chối ký: Chứng thư {activeVgCa.CommonName} không khớp với tài khoản {loggedTeacher.FullName}.");
+                    return;
+                }
+            }
+
+            // KIỂM TRA ĐẶC THÙ CHO VGCA VIRTUAL CSP (Chỉ áp dụng khi chứng thư là Virtual CSP Cloud)
             if (activeVgCa.IsVirtualCspCertificate)
             {
                 var vcspStatus = VcspStatusService.CheckStatus();

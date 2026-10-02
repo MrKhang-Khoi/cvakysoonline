@@ -1,54 +1,72 @@
-﻿{
-    "description":  "Danh mục phân quyền tài khoản Giáo viên toàn trường kết nối ký số Ban Cơ Yếu Chính Phủ",
-    "roster":  [
-                   {
-                       "canSeal":  true,
-                       "cccd":  "062187000641",
-                       "department":  "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
-                       "email":  "tttloan-dakmar@quangngai.gov.vn",
-                       "fullName":  "Trần Thị Thúy Loan",
-                       "organization":  "ỦY BAN NHÂN DÂN XÃ ĐAK MAR - TỈNH QUẢNG NGÃI",
-                       "password":  "123456",
-                       "phone":  "0819810007",
-                       "title":  "Giáo viên"
-                   },
-                   {
-                       "cccd":  "042084002100",
-                       "department":  "ỦY BAN NHÂN DÂN XÃ ĐĂK HÀ",
-                       "email":  "hvty-dakha@quangngai.gov.vn",
-                       "fullName":  "Hà Văn Tý",
-                       "organization":  "ỦY BAN NHÂN DÂN TỈNH QUẢNG NGÃI",
-                       "phone":  "0818810007",
-                       "title":  "Giáo viên"
-                   },
-                   {
-                       "cccd":  "062185001053",
-                       "department":  "Tổ Ngữ Văn - Trường THCS Nguyễn Huệ",
-                       "email":  "gv062185001053@quangngai.gov.vn",
-                       "fullName":  "Nguyễn Thị Mai (CCCD 062185001053)",
-                       "organization":  "ỦY BAN NHÂN DÂN XÃ ĐAK MAR - TỈNH QUẢNG NGÃI",
-                       "phone":  "0819000105",
-                       "title":  "Tổ trưởng"
-                   },
-                   {
-                       "cccd":  "062180000001",
-                       "department":  "Ban Giám hiệu",
-                       "email":  "lvhung@quangngai.gov.vn",
-                       "fullName":  "Lê Văn Hùng",
-                       "organization":  "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
-                       "phone":  "0905123456",
-                       "title":  "Hiệu trưởng"
-                   },
-                   {
-                       "cccd":  "062182000002",
-                       "department":  "Ban Giám hiệu",
-                       "email":  "ptlan@quangngai.gov.vn",
-                       "fullName":  "Phạm Thị Lan",
-                       "organization":  "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
-                       "phone":  "0905654321",
-                       "title":  "Phó hiệu trưởng"
-                   }
-               ],
-    "schoolName":  "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
-    "updatedAt":  "2026-09-29T05:56:04.173Z"
+{
+  "schoolName": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+  "description": "Danh mục phân quyền tài khoản Giáo viên toàn trường kết nối ký số Ban Cơ Yếu Chính Phủ",
+  "updatedAt": "2026-10-02T06:00:00.000Z",
+  "roster": [
+    {
+      "cccd": "062187000641",
+      "fullName": "Trần Thị Thúy Loan",
+      "title": "Giáo viên",
+      "phone": "0819810007",
+      "department": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+      "organization": "ỦY BAN NHÂN DÂN XÃ ĐAK MAR - TỈNH QUẢNG NGÃI",
+      "email": "tttloan-dakmar@quangngai.gov.vn",
+      "canSeal": true,
+      "signingMethod": "USB_TOKEN",
+      "password": "123456",
+      "status": "ACTIVE"
+    },
+    {
+      "cccd": "042084002100",
+      "fullName": "Hà Văn Tý",
+      "title": "Giáo viên",
+      "phone": "0818810007",
+      "department": "ỦY BAN NHÂN DÂN XÃ ĐĂK HÀ",
+      "organization": "ỦY BAN NHÂN DÂN TỈNH QUẢNG NGÃI",
+      "email": "hvty-dakha@quangngai.gov.vn",
+      "canSeal": false,
+      "signingMethod": "VGCA_CLOUD",
+      "password": "123456",
+      "status": "ACTIVE"
+    },
+    {
+      "cccd": "062185001053",
+      "fullName": "Nguyễn Thị Mai (CCCD 062185001053)",
+      "title": "Tổ trưởng",
+      "phone": "0819000105",
+      "department": "Tổ Ngữ Văn - Trường THCS Nguyễn Huệ",
+      "organization": "ỦY BAN NHÂN DÂN XÃ ĐAK MAR - TỈNH QUẢNG NGÃI",
+      "email": "gv062185001053@quangngai.gov.vn",
+      "canSeal": false,
+      "signingMethod": "AUTO",
+      "password": "123456",
+      "status": "ACTIVE"
+    },
+    {
+      "cccd": "062180000001",
+      "fullName": "Nguyễn Văn Hiền",
+      "title": "Phó hiệu trưởng",
+      "phone": "0905123456",
+      "department": "Ban Giám hiệu",
+      "organization": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+      "email": "nvhien@quangngai.gov.vn",
+      "canSeal": true,
+      "signingMethod": "USB_TOKEN",
+      "password": "123456",
+      "status": "ACTIVE"
+    },
+    {
+      "cccd": "062182000002",
+      "fullName": "Phạm Thị Lan",
+      "title": "Phó hiệu trưởng",
+      "phone": "0905654321",
+      "department": "Ban Giám hiệu",
+      "organization": "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ",
+      "email": "ptlan@quangngai.gov.vn",
+      "canSeal": true,
+      "signingMethod": "AUTO",
+      "password": "123456",
+      "status": "ACTIVE"
+    }
+  ]
 }

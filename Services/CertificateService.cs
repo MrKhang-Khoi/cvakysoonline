@@ -78,72 +78,136 @@ namespace VGCASignToolPro.Services
         }
 
         /// <summary>
-        /// Lấy chứng thư số chuyên dùng Ban Cơ yếu Chính phủ đang hoạt động của người dùng
+        /// Lấy chứng thư số chuyên dùng Ban Cơ yếu Chính phủ đang hoạt động của cá nhân BGH/Giáo viên
+        /// Hỗ trợ đối soát chính xác theo Họ tên, CCCD và phương thức ký (AUTO / USB_TOKEN / VGCA_CLOUD)
         /// </summary>
-        public CertificateModel? GetActiveVGCACertificate(string? preferredNameOrEmail = null)
+        public CertificateModel? GetActiveVGCACertificate(string? fullName = null, string? cccd = null, string? signingMethod = "AUTO")
         {
             var certs = LoadCertificates(onlyWithPrivateKey: true);
 
-            if (!string.IsNullOrWhiteSpace(preferredNameOrEmail))
+            // Lọc danh sách: bắt buộc là chứng thư cá nhân VGCA có khóa riêng và còn hạn (loại bỏ hoàn toàn con dấu cơ quan)
+            var personalCerts = certs
+                .Where(c => c.IsVGCACertificate && !c.IsOrganizationCertificate && c.HasPrivateKey && c.IsValidNow)
+                .ToList();
+
+            string method = (signingMethod ?? "AUTO").ToUpperInvariant();
+
+            // 1. Nếu có thông tin người dùng cụ thể (BGH / Giáo viên đăng nhập): BẮT BUỘC ĐỐI SOÁT CHÍNH XÁC DANH TÍNH
+            if (!string.IsNullOrWhiteSpace(fullName) || !string.IsNullOrWhiteSpace(cccd))
             {
-                var matched = certs.FirstOrDefault(c => c.IsVGCACertificate && (
-                    string.Equals(c.CommonName, preferredNameOrEmail, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(c.Email, preferredNameOrEmail, StringComparison.OrdinalIgnoreCase) ||
-                    c.Subject.Contains(preferredNameOrEmail, StringComparison.OrdinalIgnoreCase)));
-                if (matched != null) return matched;
+                var matchedCerts = personalCerts.Where(c => c.MatchesPerson(fullName ?? string.Empty, cccd)).ToList();
+
+                // Nếu không tìm thấy chứng thư nào của người này -> Trả về null ngay (tuyệt đối không lấy nhầm người khác!)
+                if (matchedCerts.Count == 0)
+                {
+                    return null;
+                }
+
+                if (method == "USB_TOKEN")
+                {
+                    // Yêu cầu USB Token: Chỉ trả về nếu là Token phần cứng của người này
+                    return matchedCerts.FirstOrDefault(c => c.IsHardwareToken);
+                }
+                else if (method == "VGCA_CLOUD")
+                {
+                    // Yêu cầu Ký số từ xa: Chỉ trả về nếu là Virtual CSP của người này
+                    return matchedCerts.FirstOrDefault(c => c.IsVirtualCspCertificate);
+                }
+                else // AUTO: Ưu tiên USB Token phần cứng nếu cắm, ngược lại dùng Cloud của người này
+                {
+                    return matchedCerts.FirstOrDefault(c => c.IsHardwareToken)
+                        ?? matchedCerts.FirstOrDefault(c => c.IsVirtualCspCertificate)
+                        ?? matchedCerts[0];
+                }
             }
 
-            // Ưu tiên chứng thư cá nhân giáo viên (không phải con dấu pháp nhân cơ quan)
-            var personalCert = certs.FirstOrDefault(c => c.IsVGCACertificate && c.IsValidNow && !c.IsOrganizationCertificate);
-            if (personalCert != null) return personalCert;
+            // 2. Không chỉ định người dùng hoặc không khớp người cụ thể: Lọc theo phương thức ký
+            if (method == "USB_TOKEN")
+            {
+                var tokenCert = personalCerts.FirstOrDefault(c => c.IsHardwareToken);
+                if (tokenCert != null) return tokenCert;
+            }
+            else if (method == "VGCA_CLOUD")
+            {
+                var cloudCert = personalCerts.FirstOrDefault(c => c.IsVirtualCspCertificate);
+                if (cloudCert != null) return cloudCert;
+            }
 
-            return certs.FirstOrDefault(c => c.IsVGCACertificate && c.IsValidNow)
-                ?? certs.FirstOrDefault(c => c.IsVGCACertificate);
+            // Fallback: Ưu tiên Token cắm máy -> Cloud -> chứng thư cá nhân bất kỳ
+            return personalCerts.FirstOrDefault(c => c.IsHardwareToken)
+                ?? personalCerts.FirstOrDefault(c => c.IsVirtualCspCertificate)
+                ?? personalCerts.FirstOrDefault()
+                ?? certs.FirstOrDefault(c => c.IsVGCACertificate && !c.IsOrganizationCertificate && c.HasPrivateKey);
         }
 
         /// <summary>
-        /// Quét tìm chứng thư số tổ chức / nhà trường trong thiết bị USB Token Ban Cơ yếu
+        /// Quét tìm chứng thư số tổ chức / nhà trường trong thiết bị USB Token Ban Cơ yếu (Dùng để ĐÓNG DẤU PHÁP NHÂN)
+        /// Bắt buộc chứng thư phải là Con Dấu Cơ Quan (có MST/MNS hoặc Tên trường) và có Khóa riêng
         /// </summary>
         public CertificateModel? GetOrganizationTokenCertificate()
         {
             var certs = LoadCertificates(onlyWithPrivateKey: true);
-            // 1. Ưu tiên chứng thư VGCA có khóa riêng, còn hạn và là chứng thư tổ chức
-            var orgCert = certs.FirstOrDefault(c => c.IsVGCACertificate && c.IsValidNow && c.IsOrganizationCertificate);
+
+            // 1. Ưu tiên chứng thư VGCA con dấu tổ chức có khóa riêng trên USB Token phần cứng và còn hạn
+            var orgCert = certs.FirstOrDefault(c => c.IsVGCACertificate && c.IsValidNow && c.IsOrganizationCertificate && c.IsHardwareToken);
             if (orgCert != null) return orgCert;
 
-            // 2. Chứng thư VGCA tổ chức
-            orgCert = certs.FirstOrDefault(c => c.IsVGCACertificate && c.IsOrganizationCertificate);
+            // 2. Chứng thư VGCA tổ chức có khóa riêng còn hạn
+            orgCert = certs.FirstOrDefault(c => c.IsVGCACertificate && c.IsValidNow && c.IsOrganizationCertificate);
             if (orgCert != null) return orgCert;
 
-            // 3. Fallback: chứng thư tổ chức bất kỳ có khóa riêng
+            // 3. Chứng thư VGCA tổ chức có khóa riêng
+            orgCert = certs.FirstOrDefault(c => c.IsVGCACertificate && c.IsOrganizationCertificate && c.HasPrivateKey);
+            if (orgCert != null) return orgCert;
+
+            // 4. Fallback: chứng thư tổ chức bất kỳ có khóa riêng
             return certs.FirstOrDefault(c => c.IsOrganizationCertificate && c.HasPrivateKey);
         }
 
         /// <summary>
-        /// Kiểm tra xem thiết bị USB Token chứa chứng thư con dấu tổ chức có đang cắm vào máy hay không
+        /// Kiểm tra xem thiết bị USB Token phần cứng có đang cắm vào máy hay không
+        /// - checkPersonal == true: Kiểm tra USB Token cá nhân (có thể đối soát theo fullName / cccd của BGH)
+        /// - checkPersonal == false: Kiểm tra USB Token con dấu pháp nhân nhà trường
         /// </summary>
-        public bool IsUsbTokenPluggedIn()
+        public bool IsUsbTokenPluggedIn(bool checkPersonal = false, string? fullName = null, string? cccd = null)
         {
-            var cert = GetOrganizationTokenCertificate();
-            return cert != null && cert.HasPrivateKey;
+            if (checkPersonal)
+            {
+                var certs = LoadCertificates(onlyWithPrivateKey: true);
+                if (!string.IsNullOrWhiteSpace(fullName) || !string.IsNullOrWhiteSpace(cccd))
+                {
+                    return certs.Any(c => c.IsVGCACertificate && !c.IsOrganizationCertificate && c.IsHardwareToken && c.MatchesPerson(fullName ?? string.Empty, cccd));
+                }
+                return certs.Any(c => c.IsVGCACertificate && !c.IsOrganizationCertificate && c.IsHardwareToken);
+            }
+
+            var orgCert = GetOrganizationTokenCertificate();
+            return orgCert != null && orgCert.HasPrivateKey;
         }
 
         /// <summary>
-        /// Kiểm tra xem người dùng đã đăng nhập vào hệ thống VGCA / Virtual CSP hay chưa
+        /// Kiểm tra xem người dùng đã sẵn sàng ký số Ban Cơ Yếu hay chưa
+        /// - Nếu dùng USB Token phần cứng: chỉ cần thiết bị cắm sẵn và có khóa riêng (PIN sẽ hỏi lúc ký)
+        /// - Nếu dùng VGCA Cloud (Virtual CSP): bắt buộc ứng dụng Virtual CSP v2.0 đang chạy và đã đăng nhập
         /// </summary>
-        public bool IsVGCALoggedIn()
+        public bool IsVGCALoggedIn(CertificateModel? specificCert = null)
         {
-            var activeCert = GetActiveVGCACertificate();
-            if (activeCert == null || !activeCert.HasPrivateKey) return false;
+            var cert = specificCert ?? GetActiveVGCACertificate();
+            if (cert == null || !cert.HasPrivateKey) return false;
 
-            // Nếu là chứng thư cá nhân VGCA (Remote Signing KSP) -> Bắt buộc kiểm tra phiên Virtual CSP thật
-            if (activeCert.IsVirtualCspCertificate)
+            // Nếu là thiết bị phần cứng (USB Token) -> Sẵn sàng ký trực tiếp, PIN nhập trên giao diện CSP của Token
+            if (cert.IsHardwareToken)
+            {
+                return true;
+            }
+
+            // Nếu là ký số từ xa Virtual CSP v2.0 -> Kiểm tra trạng thái KSP của dịch vụ đám mây
+            if (cert.IsVirtualCspCertificate)
             {
                 var vcspStatus = VcspStatusService.CheckStatus();
                 return vcspStatus.IsReadyToSign;
             }
 
-            // Nếu là chứng thư con dấu cơ quan (USB Token phần cứng) -> Đã có khóa riêng hợp lệ
             return true;
         }
 

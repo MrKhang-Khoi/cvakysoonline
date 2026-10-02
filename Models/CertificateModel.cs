@@ -1,6 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace VGCASignToolPro.Models
 {
@@ -21,34 +25,76 @@ namespace VGCASignToolPro.Models
         public bool HasPrivateKey { get; }
         public bool IsValidNow { get; }
         public bool IsVGCACertificate { get; }
+        public string ProviderName { get; private set; } = string.Empty;
+        public string KeyContainerName { get; private set; } = string.Empty;
+
         public bool IsOrganizationCertificate
         {
             get
             {
                 string cnUpper = (CommonName ?? string.Empty).ToUpperInvariant();
                 string subjectUpper = (Subject ?? string.Empty).ToUpperInvariant();
-                return cnUpper.Contains("TRƯỜNG") ||
-                       cnUpper.Contains("TRUONG") ||
-                       cnUpper.Contains("ỦY BAN") ||
-                       cnUpper.Contains("UY BAN") ||
-                       cnUpper.Contains("PHÒNG") ||
-                       cnUpper.Contains("PHONG") ||
-                       cnUpper.Contains("SỞ") ||
-                       cnUpper.Contains("SO ") ||
-                       cnUpper.Contains("BAN ") ||
-                       subjectUpper.Contains("MST:") ||
-                       subjectUpper.Contains("MNS:") ||
-                       subjectUpper.Contains("OID.0.9.2342.19200300.100.1.1");
+
+                // Chuẩn chứng thư con dấu pháp nhân cơ quan theo quy chuẩn Ban Cơ yếu:
+                // Bắt buộc có MST (Mã số thuế), MNS (Mã ngân sách) hoặc OID cơ quan, HOẶC tên cơ quan ở CN
+                bool hasOrgIdentifier = subjectUpper.Contains("MST:") ||
+                                        subjectUpper.Contains("MNS:") ||
+                                        subjectUpper.Contains("OID.0.9.2342.19200300.100.1.1");
+                bool hasOrgCn = cnUpper.StartsWith("TRƯỜNG ") ||
+                                cnUpper.StartsWith("TRUONG ") ||
+                                cnUpper.StartsWith("ỦY BAN ") ||
+                                cnUpper.StartsWith("UY BAN ") ||
+                                cnUpper.StartsWith("PHÒNG ") ||
+                                cnUpper.StartsWith("PHONG ") ||
+                                cnUpper.StartsWith("SỞ ") ||
+                                cnUpper.StartsWith("SO ");
+                return hasOrgIdentifier || hasOrgCn;
             }
         }
+
         public bool IsVirtualCspCertificate
         {
             get
             {
-                // Virtual CSP v2.0 của Ban Cơ Yếu Chính Phủ sử dụng ECDSA P-384 qua KSP VGCA RSSP KSP v2.0
-                return IsVGCACertificate && (KeyAlgorithm.StartsWith("ECDSA", StringComparison.OrdinalIgnoreCase) || !IsOrganizationCertificate);
+                if (!IsVGCACertificate) return false;
+                string provUpper = (ProviderName ?? string.Empty).ToUpperInvariant();
+                if (provUpper.Contains("RSSP") || provUpper.Contains("VIRTUAL"))
+                    return true;
+                // Virtual CSP v2.0 của Ban Cơ Yếu Chính Phủ sử dụng ECDSA P-384
+                if (KeyAlgorithm.StartsWith("ECDSA", StringComparison.OrdinalIgnoreCase))
+                    return true;
+                return false;
             }
         }
+
+        public bool IsHardwareToken
+        {
+            get
+            {
+                if (!HasPrivateKey) return false;
+                string provUpper = (ProviderName ?? string.Empty).ToUpperInvariant();
+                string contUpper = (KeyContainerName ?? string.Empty).ToUpperInvariant();
+
+                // Nhận diện USB Token phần cứng qua Smart Card KSP / bit4id CSP
+                if (provUpper.Contains("SMART CARD") ||
+                    provUpper.Contains("BIT4ID") ||
+                    contUpper.Contains("BIT4ID"))
+                {
+                    return true;
+                }
+
+                // Nếu có private key, không phải Virtual CSP và dùng RSA (đặc thù Token vật lý VGCA)
+                if (!IsVirtualCspCertificate &&
+                    !provUpper.Contains("RSSP") &&
+                    KeyAlgorithm.StartsWith("RSA", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
         public string KeyAlgorithm { get; }
         public string DisplayText { get; }
 
@@ -102,9 +148,66 @@ namespace VGCASignToolPro.Models
                 KeyAlgorithm = !string.IsNullOrEmpty(oidName) ? oidName : "Khóa công khai";
             }
 
+            // Trích xuất metadata Win32 Provider & Container Name (Không đánh thức PIN dialog)
+            ExtractKeyProvInfo(cert);
+
             string vgcaTag = IsVGCACertificate ? "[VGCA Ban Cơ yếu] " : "";
+            string tokenTypeTag = IsHardwareToken ? " [USB Token]" : (IsVirtualCspCertificate ? " [VGCA Cloud]" : "");
             string status = IsValidNow ? "Còn hạn" : "Hết hạn";
-            DisplayText = $"{vgcaTag}{CommonName} | {IssuerCommonName} | Hạn: {NotAfter:dd/MM/yyyy} ({status})";
+            DisplayText = $"{vgcaTag}{CommonName}{tokenTypeTag} | {IssuerCommonName} | Hạn: {NotAfter:dd/MM/yyyy} ({status})";
+        }
+
+        public bool MatchesPerson(string targetFullName, string? targetCccd = null)
+        {
+            if (string.IsNullOrWhiteSpace(targetFullName)) return false;
+
+            // Chứng thư con dấu cơ quan không được đối soát là cá nhân BGH
+            if (IsOrganizationCertificate) return false;
+
+            string normCn = RemoveDiacritics(CommonName).ToUpperInvariant();
+            string normTarget = RemoveDiacritics(targetFullName).ToUpperInvariant();
+
+            // 1. Kiểm tra đối soát Họ và Tên (chuẩn hóa tiếng Việt)
+            bool nameMatches = string.Equals(normCn, normTarget, StringComparison.OrdinalIgnoreCase) ||
+                               normCn.Contains(normTarget, StringComparison.OrdinalIgnoreCase) ||
+                               normTarget.Contains(normCn, StringComparison.OrdinalIgnoreCase);
+
+            if (!nameMatches) return false;
+
+            // 2. Nếu có số CCCD mục tiêu (12 số hoặc 9 số)
+            if (!string.IsNullOrWhiteSpace(targetCccd) && targetCccd.Length >= 9)
+            {
+                string subjectUpper = (Subject ?? string.Empty).ToUpperInvariant();
+                if (subjectUpper.Contains(targetCccd))
+                {
+                    return true; // Khớp cả Tên và CCCD
+                }
+
+                // Nếu Subject có chứa một chuỗi số CCCD khác với targetCccd thì từ chối để chống ký lẫn lộn BGH
+                var match = Regex.Match(subjectUpper, @"\b\d{9,12}\b");
+                if (match.Success && !match.Value.Equals(targetCccd, StringComparison.Ordinal))
+                {
+                    return false;
+                }
+            }
+
+            return nameMatches;
+        }
+
+        private static string RemoveDiacritics(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+            string normalizedString = text.Normalize(NormalizationForm.FormD);
+            var stringBuilder = new StringBuilder();
+            foreach (char c in normalizedString)
+            {
+                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+                {
+                    stringBuilder.Append(c);
+                }
+            }
+            return stringBuilder.ToString().Normalize(NormalizationForm.FormC).Replace('đ', 'd').Replace('Đ', 'D').Trim();
         }
 
         private static Dictionary<string, string> ParseDistinguishedName(string dn)
@@ -140,6 +243,59 @@ namespace VGCASignToolPro.Models
             }
 
             return dict;
+        }
+
+        [DllImport("crypt32.dll", SetLastError = true)]
+        private static extern bool CertGetCertificateContextProperty(
+            IntPtr pCertContext,
+            uint dwPropId,
+            IntPtr pvData,
+            ref uint pcbData);
+
+        private const uint CERT_KEY_PROV_INFO_PROP_ID = 2;
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct CRYPT_KEY_PROV_INFO
+        {
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string pwszContainerName;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            public string pwszProvName;
+            public uint dwProvType;
+            public uint dwFlags;
+            public uint cProvParam;
+            public IntPtr rgProvParam;
+            public uint dwKeySpec;
+        }
+
+        private void ExtractKeyProvInfo(X509Certificate2 cert)
+        {
+            IntPtr pData = IntPtr.Zero;
+            try
+            {
+                uint cbData = 0;
+                if (CertGetCertificateContextProperty(cert.Handle, CERT_KEY_PROV_INFO_PROP_ID, IntPtr.Zero, ref cbData) && cbData > 0)
+                {
+                    pData = Marshal.AllocHGlobal((int)cbData);
+                    if (CertGetCertificateContextProperty(cert.Handle, CERT_KEY_PROV_INFO_PROP_ID, pData, ref cbData))
+                    {
+                        var provInfo = Marshal.PtrToStructure<CRYPT_KEY_PROV_INFO>(pData);
+                        KeyContainerName = provInfo.pwszContainerName ?? string.Empty;
+                        ProviderName = provInfo.pwszProvName ?? string.Empty;
+                    }
+                }
+            }
+            catch
+            {
+                // Fallback an toàn
+            }
+            finally
+            {
+                if (pData != IntPtr.Zero)
+                {
+                    Marshal.FreeHGlobal(pData);
+                }
+            }
         }
 
         public override string ToString() => DisplayText;
