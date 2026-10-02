@@ -1000,6 +1000,9 @@
                                 <Button x:Name="BtnCommitWorkflowApproval" Content="✅ Nộp Báo Cáo Đã Duyệt ➡" Style="{StaticResource SuccessButton}" 
                                         Background="#2563EB" BorderBrush="#1D4ED8"
                                         Padding="12,5" FontSize="11" FontWeight="Bold" Visibility="Collapsed" Click="BtnCommitWorkflowApproval_Click" />
+                                <Button x:Name="BtnCommitWorkflowSeal" Content="🔴 Nộp Báo Cáo Đã Đóng Dấu ➡" Style="{StaticResource SuccessButton}" 
+                                        Background="#DC2626" BorderBrush="#B91C1C"
+                                        Padding="12,5" FontSize="11" FontWeight="Bold" Visibility="Collapsed" Click="BtnCommitWorkflowSeal_Click" />
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -1109,6 +1112,14 @@
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                         <TextBlock Text="↩️ Bị trả về: " FontSize="11" Foreground="#C2410C" FontWeight="SemiBold" />
                                         <TextBlock x:Name="TxtCountReturned" Text="0" FontWeight="Bold" FontSize="13" Foreground="#EA580C" Margin="4,0,0,0" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- THẺ ĐẾM BÁO CÁO CHỜ ĐÓNG DẤU (HIỂN THỊ KHI CÓ QUYỀN ĐÓNG DẤU) -->
+                                <Border x:Name="BorderWaitingSealCount" Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="0,0,8,0" Visibility="Collapsed">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="🔴 Chờ đóng dấu: " FontSize="11" Foreground="#991B1B" FontWeight="SemiBold" />
+                                        <TextBlock x:Name="TxtCountWaitingSeal" Text="0" FontWeight="Bold" FontSize="13" Foreground="#DC2626" Margin="4,0,0,0" />
                                     </StackPanel>
                                 </Border>
 
@@ -1331,8 +1342,75 @@
                                 </Grid>
                             </TabItem>
 
-                            <!-- SUB-TAB 4: KHO BÁO CÁO TOÀN TRƯỜNG ĐÃ HOÀN TẤT (ARCHIVE) -->
-                            <TabItem Header="  📁 Kho Báo Cáo Đã Duyệt Toàn Trường  " FontSize="13" FontWeight="SemiBold">
+                            <!-- SUB-TAB 4: BÁO CÁO CHỜ ĐÓNG DẤU (DÀNH CHO BGH / VĂN THƯ GIỮ TOKEN CON DẤU) -->
+                            <TabItem x:Name="TabItemWaitingSeal" Header="  🔴 Báo Cáo Chờ Đóng Dấu  " FontSize="13" FontWeight="SemiBold" Visibility="Collapsed">
+                                <Grid Margin="4,8,4,4">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <!-- DANH SÁCH BÁO CÁO CHỜ ĐÓNG DẤU -->
+                                    <Border Grid.Row="0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
+                                        <ListView x:Name="LvWaitingSealReports" BorderThickness="0" Background="Transparent" SelectionMode="Single"
+                                                  ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                  ScrollViewer.CanContentScroll="True"
+                                                  VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                                                  VirtualizingPanel.ScrollUnit="Item"
+                                                  MouseDoubleClick="LvWaitingSealReports_MouseDoubleClick">
+                                            <ListView.View>
+                                                <GridView>
+                                                    <GridViewColumn Header="TT" Width="45" DisplayMemberBinding="{Binding OrderIndex}" />
+                                                    <GridViewColumn Header="Mã Báo Cáo" Width="155" DisplayMemberBinding="{Binding ReportId}" />
+                                                    <GridViewColumn Header="Tiêu Đề Báo Cáo" Width="280" DisplayMemberBinding="{Binding Title}" />
+                                                    <GridViewColumn Header="Người Lập" Width="160" DisplayMemberBinding="{Binding SenderName}" />
+                                                    <GridViewColumn Header="Lãnh Đạo Ký Duyệt" Width="170" DisplayMemberBinding="{Binding ApproverName}" />
+                                                    <GridViewColumn Header="Thời Gian Ký" Width="140" DisplayMemberBinding="{Binding SignedTimeFormatted}" />
+                                                    <GridViewColumn Header="Trạng Thái" Width="155">
+                                                        <GridViewColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="#DC2626" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left" IsHitTestVisible="False">
+                                                                    <TextBlock Text="🔴 Chờ đóng dấu" Foreground="White" FontSize="11" FontWeight="Bold" />
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </GridViewColumn.CellTemplate>
+                                                    </GridViewColumn>
+                                                    <GridViewColumn Header="Nội Dung H2" Width="150">
+                                                        <GridViewColumn.CellTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" ToolTip="{Binding SignedHashTooltip}" IsHitTestVisible="False">
+                                                                    <TextBlock Text="{Binding SignedHashDisplay}" Foreground="#B91C1C" FontFamily="Consolas" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </GridViewColumn.CellTemplate>
+                                                    </GridViewColumn>
+                                                </GridView>
+                                            </ListView.View>
+                                        </ListView>
+                                    </Border>
+
+                                    <!-- THANH THAO TÁC ĐÓNG DẤU -->
+                                    <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,8,0,0">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="💡 Gợi ý: Nhấp đúp chuột hoặc chọn văn bản rồi nhấn 'Mở &amp; Đóng Dấu' để cắm USB Token Ban Cơ Yếu đóng con dấu pháp nhân trường học." 
+                                                       FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <Button x:Name="BtnOpenForSealing" Content="🔴 Mở &amp; Đóng Dấu Pháp Nhân ➡" 
+                                                        Style="{StaticResource PrimaryButton}" 
+                                                        Background="#DC2626" BorderBrush="#B91C1C"
+                                                        FontSize="12" FontWeight="Bold" Padding="16,8" Click="BtnOpenForSealing_Click" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </TabItem>
+
+                            <!-- SUB-TAB 5: KHO BÁO CÁO TOÀN TRƯỜNG ĐÃ HOÀN TẤT (ARCHIVE) -->
+                            <TabItem x:Name="TabItemArchive" Header="  📁 Kho Báo Cáo Đã Duyệt Toàn Trường  " FontSize="13" FontWeight="SemiBold">
                                 <Grid Margin="4,8,4,4">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="*" />

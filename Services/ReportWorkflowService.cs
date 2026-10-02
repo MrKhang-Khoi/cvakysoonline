@@ -79,6 +79,21 @@ namespace VGCASignToolPro.Services
         [JsonProperty("returnReason")]
         public string ReturnReason { get; set; } = string.Empty;
 
+        [JsonProperty("signedByName")]
+        public string SignedByName { get; set; } = string.Empty;
+
+        [JsonProperty("sealedBy")]
+        public string SealedBy { get; set; } = string.Empty;
+
+        [JsonProperty("sealedByName")]
+        public string SealedByName { get; set; } = string.Empty;
+
+        [JsonProperty("sealedAt")]
+        public long SealedAt { get; set; }
+
+        [JsonProperty("requiresSeal")]
+        public bool RequiresSeal { get; set; }
+
         [JsonIgnore]
         public int OrderIndex { get; set; }
 
@@ -90,6 +105,28 @@ namespace VGCASignToolPro.Services
             {
                 if (CreatedAt <= 0) return "--:--";
                 var dt = DateTimeOffset.FromUnixTimeMilliseconds(CreatedAt).ToLocalTime();
+                return dt.ToString("dd/MM/yyyy HH:mm");
+            }
+        }
+
+        [JsonIgnore]
+        public string SignedTimeFormatted
+        {
+            get
+            {
+                if (SignedAt <= 0) return "--:--";
+                var dt = DateTimeOffset.FromUnixTimeMilliseconds(SignedAt).ToLocalTime();
+                return dt.ToString("dd/MM/yyyy HH:mm");
+            }
+        }
+
+        [JsonIgnore]
+        public string SealedTimeFormatted
+        {
+            get
+            {
+                if (SealedAt <= 0) return "--:--";
+                var dt = DateTimeOffset.FromUnixTimeMilliseconds(SealedAt).ToLocalTime();
                 return dt.ToString("dd/MM/yyyy HH:mm");
             }
         }
@@ -110,6 +147,7 @@ namespace VGCASignToolPro.Services
         {
             "WAITING_OPEN" => "Chưa mở (Chờ nhận)",
             "ACQUIRED_LOCKED" => "Đã nhận (Đang xem)",
+            "WAITING_SEAL" => "Chờ đóng dấu",
             "SIGNED_COMMITTED" => "Đã duyệt & Ký số",
             "RECALLED" => "Đã thu hồi",
             "RETURNED" => "Đã trả về",
@@ -122,6 +160,7 @@ namespace VGCASignToolPro.Services
         {
             "WAITING_OPEN" => "#F59E0B",     // Vàng hổ phách
             "ACQUIRED_LOCKED" => "#0284C7",  // Xanh dương
+            "WAITING_SEAL" => "#DC2626",     // Đỏ nổi bật
             "SIGNED_COMMITTED" => "#16A34A", // Xanh lá
             "RECALLED" => "#DC2626",         // Đỏ
             "RETURNED" => "#EA580C",         // Cam đậm
@@ -581,13 +620,15 @@ namespace VGCASignToolPro.Services
         }
 
         /// <summary>
-        /// Người duyệt ký xong và nộp bản v2 hoàn tất (Có chốt chặn Base Hash chống ghi đè)
+        /// Người duyệt ký xong và nộp bản v2 hoàn tất (Nếu là BGH ký duyệt -> chuyển WAITING_SEAL chờ đóng dấu; Nếu là Giáo viên ký -> hoàn tất ngay)
         /// </summary>
         public async Task<(bool Success, string Message)> CommitSignedReportAsync(
             string reportId,
             string approverCccd,
             string signedPdfPath,
-            string expectedBaseHash)
+            string expectedBaseHash,
+            bool isLeadershipSigner = false,
+            string approverName = "")
         {
             try
             {
@@ -674,16 +715,20 @@ namespace VGCASignToolPro.Services
                     finalDriveFileId = fileIdV2;
                 }
 
-                // 3. Cập nhật trạng thái SIGNED_COMMITTED trên Firebase Realtime Database
+                // 3. Cập nhật trạng thái: Nếu người ký cuối là Lãnh đạo BGH -> WAITING_SEAL, ngược lại -> SIGNED_COMMITTED
+                string targetStatus = isLeadershipSigner ? "WAITING_SEAL" : "SIGNED_COMMITTED";
+
                 var commitPayload = new
                 {
-                    status = "SIGNED_COMMITTED",
+                    status = targetStatus,
                     signedBy = approverCccd,
+                    signedByName = !string.IsNullOrWhiteSpace(approverName) ? approverName : report.ApproverName,
                     signedHash = signedHash,
                     driveFileId = finalDriveFileId,
                     googleDriveUrl = googleDriveViewUrl,
                     signedAt = now,
-                    updatedAt = now
+                    updatedAt = now,
+                    requiresSeal = isLeadershipSigner
                 };
 
                 var patchContent = new StringContent(JsonConvert.SerializeObject(commitPayload), Encoding.UTF8, "application/json");
@@ -693,7 +738,122 @@ namespace VGCASignToolPro.Services
                     return (false, "Không thể hoàn tất trạng thái phê duyệt trên máy chủ.");
                 }
 
-                return (true, "Phê duyệt và ký số báo cáo thành công!");
+                string successMsg = isLeadershipSigner
+                    ? "Ký số phê duyệt thành công! Báo cáo đã được chuyển vào mục 'Chờ Đóng Dấu'."
+                    : "Phê duyệt và ký số báo cáo thành công!";
+
+                return (true, successMsg);
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Lỗi hệ thống: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Văn thư / BGH đóng con dấu pháp nhân trường bằng USB Token Ban Cơ Yếu và nộp bản hoàn tất chính thức
+        /// </summary>
+        public async Task<(bool Success, string Message)> CommitSealedReportAsync(
+            string reportId,
+            string sealerCccd,
+            string sealerName,
+            string sealedPdfPath)
+        {
+            try
+            {
+                if (!File.Exists(sealedPdfPath))
+                {
+                    return (false, "Tệp PDF đã đóng dấu không tồn tại.");
+                }
+
+                string reportUrl = BuildUrl($"reports/{reportId}");
+                var getRes = await _http.GetAsync(reportUrl).ConfigureAwait(false);
+                if (!getRes.IsSuccessStatusCode)
+                {
+                    return (false, "Không tìm thấy thông tin báo cáo.");
+                }
+
+                string content = await getRes.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var report = JsonConvert.DeserializeObject<ReportModel>(content);
+                if (report == null) return (false, "Dữ liệu báo cáo bị lỗi.");
+
+                if (report.Status == "RECALLED")
+                {
+                    return (false, "Từ chối: Báo cáo này đã bị thu hồi trước đó!");
+                }
+
+                long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                string sealedHash = ComputeSha256(sealedPdfPath);
+
+                string googleDriveViewUrl = string.Empty;
+                string finalDriveFileId = string.Empty;
+
+                if (!string.IsNullOrWhiteSpace(_googleAppsScriptUrl))
+                {
+                    try
+                    {
+                        var driveRes = await UploadToGoogleDriveAsync(sealedPdfPath, reportId, $"{report.Title}_DaDongDauHoanTat.pdf").ConfigureAwait(false);
+                        if (driveRes.Success && !string.IsNullOrEmpty(driveRes.ViewUrl))
+                        {
+                            googleDriveViewUrl = driveRes.ViewUrl;
+                            finalDriveFileId = !string.IsNullOrEmpty(driveRes.DownloadUrl) ? driveRes.DownloadUrl : (driveRes.FileId ?? string.Empty);
+
+                            if (!string.IsNullOrEmpty(report.DriveFileId) && !report.DriveFileId.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                            {
+                                _ = DeleteFileFromFirebaseAsync(report.DriveFileId);
+                            }
+                        }
+                    }
+                    catch (Exception gEx)
+                    {
+                        System.Diagnostics.Trace.TraceWarning($"Upload Google Drive đóng dấu thất bại: {gEx.Message}");
+                    }
+                }
+
+                if (string.IsNullOrEmpty(finalDriveFileId))
+                {
+                    byte[] sealedBytes = await File.ReadAllBytesAsync(sealedPdfPath).ConfigureAwait(false);
+                    string fileDataBase64 = Convert.ToBase64String(sealedBytes);
+                    string fileIdV3 = $"FILE_{reportId}_V3_SEALED";
+
+                    var filePayload = new
+                    {
+                        fileName = $"{report.Title}_DaDongDauHoanTat.pdf",
+                        fileData = fileDataBase64,
+                        fileSize = sealedBytes.Length,
+                        createdAt = now
+                    };
+
+                    string fileUrl = BuildUrl($"files/{fileIdV3}");
+                    var fileContent = new StringContent(JsonConvert.SerializeObject(filePayload), Encoding.UTF8, "application/json");
+                    var putRes = await _http.PutAsync(fileUrl, fileContent).ConfigureAwait(false);
+                    if (!putRes.IsSuccessStatusCode)
+                    {
+                        return (false, "Không thể lưu trữ tệp đã đóng dấu lên máy chủ đám mây.");
+                    }
+                    finalDriveFileId = fileIdV3;
+                }
+
+                var sealPayload = new
+                {
+                    status = "SIGNED_COMMITTED",
+                    sealedBy = sealerCccd,
+                    sealedByName = sealerName,
+                    sealedAt = now,
+                    signedHash = sealedHash,
+                    driveFileId = finalDriveFileId,
+                    googleDriveUrl = googleDriveViewUrl,
+                    updatedAt = now
+                };
+
+                var patchContent = new StringContent(JsonConvert.SerializeObject(sealPayload), Encoding.UTF8, "application/json");
+                var patchRes = await _http.PatchAsync(reportUrl, patchContent).ConfigureAwait(false);
+                if (!patchRes.IsSuccessStatusCode)
+                {
+                    return (false, "Không thể cập nhật trạng thái đóng dấu hoàn tất trên máy chủ.");
+                }
+
+                return (true, "Đã đóng con dấu pháp nhân và ban hành báo cáo hoàn tất thành công!");
             }
             catch (Exception ex)
             {

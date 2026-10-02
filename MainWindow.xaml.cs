@@ -31,7 +31,16 @@ namespace VGCASignToolPro
         private string? _activeWorkflowReportId;
         private string? _activeWorkflowExpectedBaseHash;
         private bool _isOutboxViewMode;
+        private bool _isWorkflowSealingMode;
         private List<ReportModel> _allReports = new();
+
+        private static bool IsLeadership(string? title)
+        {
+            if (string.IsNullOrWhiteSpace(title)) return false;
+            return title.Contains("Hiệu trưởng", StringComparison.OrdinalIgnoreCase) ||
+                   title.Contains("Hiệu phó", StringComparison.OrdinalIgnoreCase) ||
+                   title.Contains("Phó hiệu trưởng", StringComparison.OrdinalIgnoreCase);
+        }
 
         private List<CertificateModel> _certificates = new();
         private List<SignatureProfile> _profiles = new();
@@ -510,6 +519,10 @@ namespace VGCASignToolPro
                         : (!string.IsNullOrEmpty(teacher.Email) ? teacher.Email : (teacher.Cccd?.Length > 4 ? $"***{teacher.Cccd[^4..]}" : "***"));
                     UpdateStatus($"Phiên làm việc tài khoản giáo viên đã kích hoạt: {teacher.FullName} ({maskedId})");
 
+                    bool canSeal = teacher.CanSeal;
+                    TabItemWaitingSeal.Visibility = canSeal ? Visibility.Visible : Visibility.Collapsed;
+                    BorderWaitingSealCount.Visibility = canSeal ? Visibility.Visible : Visibility.Collapsed;
+
                     UpdateSignAndSealButtonsState(!string.IsNullOrWhiteSpace(_currentWorkingPdfPath) && File.Exists(_currentWorkingPdfPath));
                 }
                 else
@@ -531,10 +544,14 @@ namespace VGCASignToolPro
                     LvOutboxReports.ItemsSource = null;
                     LvReturnedReports.ItemsSource = null;
                     LvArchiveReports.ItemsSource = null;
+                    LvWaitingSealReports.ItemsSource = null;
                     TxtCountInbox.Text = "0";
                     TxtCountOutbox.Text = "0";
                     TxtCountReturned.Text = "0";
                     TxtCountCompleted.Text = "0";
+                    TxtCountWaitingSeal.Text = "0";
+                    TabItemWaitingSeal.Visibility = Visibility.Collapsed;
+                    BorderWaitingSealCount.Visibility = Visibility.Collapsed;
 
                     // Khóa Tab 2
                     TabItemSignWorkspace.Header = "  2. ✍️ Soạn Thảo & Ký Số ( 🔒 Khóa )  ";
@@ -573,9 +590,11 @@ namespace VGCASignToolPro
                 await ConfirmAndCloseCurrentDocumentAsync(isManualClose: true);
                 _activeWorkflowReportId = null;
                 _activeWorkflowExpectedBaseHash = null;
+                _isWorkflowSealingMode = false;
                 _currentActiveCert = null;
                 BorderWorkflowReviewNotice.Visibility = Visibility.Collapsed;
                 BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
+                BtnCommitWorkflowSeal.Visibility = Visibility.Collapsed;
                 BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
 
                 _vgcaAuth.Logout();
@@ -3002,22 +3021,33 @@ namespace VGCASignToolPro
                 // Cập nhật trạng thái các nút workflow trên banner
                 if (!string.IsNullOrEmpty(_activeWorkflowReportId))
                 {
-                    BtnCommitWorkflowApproval.Visibility = Visibility.Visible;
-                    BtnSubmitWorkflowReport.Visibility = Visibility.Collapsed;
-
-                    MessageBoxResult choice = MessageBox.Show(
-                        $"Ký số phê duyệt văn bản thành công!\n\nTệp tin đã lưu tại:\n{signedPath}\n\nBạn có muốn nộp báo cáo đã phê duyệt lên hệ thống liên thông ngay không?",
-                        "Ký Duyệt Thành Công", MessageBoxButton.YesNo, MessageBoxImage.Information);
-
-                    if (choice == MessageBoxResult.Yes)
+                    if (_isWorkflowSealingMode)
                     {
-                        BtnCommitWorkflowApproval_Click(this, new RoutedEventArgs());
+                        BtnCommitWorkflowSeal.Visibility = Visibility.Visible;
+                        BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
+                        BtnSubmitWorkflowReport.Visibility = Visibility.Collapsed;
+                    }
+                    else
+                    {
+                        BtnCommitWorkflowApproval.Visibility = Visibility.Visible;
+                        BtnCommitWorkflowSeal.Visibility = Visibility.Collapsed;
+                        BtnSubmitWorkflowReport.Visibility = Visibility.Collapsed;
+
+                        MessageBoxResult choice = MessageBox.Show(
+                            $"Ký số phê duyệt văn bản thành công!\n\nTệp tin đã lưu tại:\n{signedPath}\n\nBạn có muốn nộp báo cáo đã phê duyệt lên hệ thống liên thông ngay không?",
+                            "Ký Duyệt Thành Công", MessageBoxButton.YesNo, MessageBoxImage.Information);
+
+                        if (choice == MessageBoxResult.Yes)
+                        {
+                            BtnCommitWorkflowApproval_Click(this, new RoutedEventArgs());
+                        }
                     }
                 }
                 else
                 {
                     BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
                     BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
+                    BtnCommitWorkflowSeal.Visibility = Visibility.Collapsed;
 
                     MessageBoxResult choice = MessageBox.Show(
                         $"Ký số văn bản thành công!\n\nTệp tin đã lưu tại:\n{signedPath}\n\nChữ ký số đã được nhúng chính xác với dấu thời gian TSA Ban Cơ yếu.\n\nBạn có muốn mở hộp thoại trình ký báo cáo này lên Ban Giám hiệu / Tổ trưởng ngay không?",
@@ -3398,13 +3428,35 @@ namespace VGCASignToolPro
                 BtnCloseCurrentFile.Visibility = Visibility.Visible;
                 TxtSignedSummaryNotice.Text = $"Tệp đã đóng dấu: {Path.GetFileName(signedPath)} • Đã nhúng con dấu pháp nhân cơ quan và chứng thư số Ban Cơ yếu.";
 
-                MessageBox.Show(
-                    $"Đóng dấu pháp nhân cơ quan thành công!\n\n" +
-                    $"• Đơn vị: {orgCert.CommonName}\n" +
-                    $"• Số Serial Token: {orgCert.SerialNumber}\n" +
-                    $"• Tệp tin đã lưu tại:\n{signedPath}\n\n" +
-                    $"Văn bản đã được bảo toàn tính toàn vẹn và có giá trị pháp lý phát hành theo Nghị định 30/2020/NĐ-CP.",
-                    "Đóng Dấu Cơ Quan Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
+                if (_isWorkflowSealingMode && !string.IsNullOrEmpty(_activeWorkflowReportId))
+                {
+                    BtnCommitWorkflowSeal.Visibility = Visibility.Visible;
+                    BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
+                    BtnSubmitWorkflowReport.Visibility = Visibility.Collapsed;
+
+                    MessageBoxResult choice = MessageBox.Show(
+                        $"Đóng dấu pháp nhân cơ quan thành công!\n\n" +
+                        $"• Đơn vị: {orgCert.CommonName}\n" +
+                        $"• Tệp tin đã lưu tại:\n{signedPath}\n\n" +
+                        $"Bạn có muốn nộp báo cáo đã đóng dấu hoàn tất lên Kho Toàn Trường ngay không?",
+                        "Đóng Dấu Cơ Quan Thành Công", MessageBoxButton.YesNo, MessageBoxImage.Information);
+
+                    if (choice == MessageBoxResult.Yes)
+                    {
+                        BtnCommitWorkflowSeal_Click(this, new RoutedEventArgs());
+                    }
+                }
+                else
+                {
+                    BtnCommitWorkflowSeal.Visibility = Visibility.Collapsed;
+                    MessageBox.Show(
+                        $"Đóng dấu pháp nhân cơ quan thành công!\n\n" +
+                        $"• Đơn vị: {orgCert.CommonName}\n" +
+                        $"• Số Serial Token: {orgCert.SerialNumber}\n" +
+                        $"• Tệp tin đã lưu tại:\n{signedPath}\n\n" +
+                        $"Văn bản đã được bảo toàn tính toàn vẹn và có giá trị pháp lý phát hành theo Nghị định 30/2020/NĐ-CP.",
+                        "Đóng Dấu Cơ Quan Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
             }
             catch (OperationCanceledException)
             {
@@ -3781,10 +3833,14 @@ namespace VGCASignToolPro
                     LvOutboxReports.ItemsSource = null;
                     LvReturnedReports.ItemsSource = null;
                     LvArchiveReports.ItemsSource = null;
+                    LvWaitingSealReports.ItemsSource = null;
                     TxtCountInbox.Text = "0";
                     TxtCountOutbox.Text = "0";
                     TxtCountReturned.Text = "0";
                     TxtCountCompleted.Text = "0";
+                    TxtCountWaitingSeal.Text = "0";
+                    TabItemWaitingSeal.Visibility = Visibility.Collapsed;
+                    BorderWaitingSealCount.Visibility = Visibility.Collapsed;
                     return;
                 }
 
@@ -3820,15 +3876,48 @@ namespace VGCASignToolPro
                 // 4. Archive: Toàn trường đã hoàn tất
                 var archive = all.Where(r => r.Status == "SIGNED_COMMITTED").ToList();
 
+                // 5. WaitingSeal: Báo cáo chờ đóng dấu (Dành cho tài khoản có quyền CanSeal)
+                bool canSeal = _vgcaAuth.CurrentTeacher?.CanSeal ?? false;
+                List<ReportModel> waitingSeal = new();
+                if (canSeal)
+                {
+                    waitingSeal = all.Where(r => r.Status == "WAITING_SEAL").OrderByDescending(r => r.UpdatedAt).ToList();
+                    for (int i = 0; i < waitingSeal.Count; i++)
+                    {
+                        waitingSeal[i].OrderIndex = i + 1;
+                    }
+                }
+
                 var prevInboxId = (LvInboxReports.SelectedItem as ReportModel)?.ReportId;
                 var prevOutboxId = (LvOutboxReports.SelectedItem as ReportModel)?.ReportId;
                 var prevReturnedId = (LvReturnedReports.SelectedItem as ReportModel)?.ReportId;
                 var prevArchiveId = (LvArchiveReports.SelectedItem as ReportModel)?.ReportId;
+                var prevWaitingSealId = (LvWaitingSealReports.SelectedItem as ReportModel)?.ReportId;
 
                 LvInboxReports.ItemsSource = inbox;
                 LvOutboxReports.ItemsSource = outbox;
                 LvReturnedReports.ItemsSource = returned;
                 LvArchiveReports.ItemsSource = archive;
+
+                if (canSeal)
+                {
+                    LvWaitingSealReports.ItemsSource = waitingSeal;
+                    TabItemWaitingSeal.Visibility = Visibility.Visible;
+                    BorderWaitingSealCount.Visibility = Visibility.Visible;
+                    TxtCountWaitingSeal.Text = waitingSeal.Count.ToString();
+
+                    if (waitingSeal.Count > 0)
+                    {
+                        LvWaitingSealReports.SelectedItem = waitingSeal.FirstOrDefault(x => x.ReportId == prevWaitingSealId) ?? waitingSeal[0];
+                    }
+                }
+                else
+                {
+                    LvWaitingSealReports.ItemsSource = null;
+                    TabItemWaitingSeal.Visibility = Visibility.Collapsed;
+                    BorderWaitingSealCount.Visibility = Visibility.Collapsed;
+                    TxtCountWaitingSeal.Text = "0";
+                }
 
                 // Tự động khôi phục lựa chọn hoặc chọn dòng đầu tiên để người dùng bấm nút là mở được ngay
                 if (inbox.Count > 0)
@@ -4113,6 +4202,28 @@ namespace VGCASignToolPro
                 return;
             }
 
+            if (_isWorkflowSealingMode)
+            {
+                var confirmSealExit = MessageBox.Show("Bạn có chắc chắn muốn thoát khỏi chế độ đóng dấu báo cáo không?",
+                    "Thoát Chế Độ Đóng Dấu", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+                if (confirmSealExit == MessageBoxResult.Yes)
+                {
+                    _activeWorkflowReportId = null;
+                    _activeWorkflowExpectedBaseHash = null;
+                    _isWorkflowSealingMode = false;
+                    BorderWorkflowReviewNotice.Visibility = Visibility.Collapsed;
+                    BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
+                    BtnCommitWorkflowSeal.Visibility = Visibility.Collapsed;
+                    BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
+                    BtnReturnWorkflowReport.Visibility = Visibility.Collapsed;
+                    MainTabControl.SelectedIndex = 2;
+                    TabControlWorkflowSub.SelectedItem = TabItemWaitingSeal;
+                    UpdateStatus("Đã thoát chế độ đóng dấu báo cáo.");
+                }
+                return;
+            }
+
             var confirm = MessageBox.Show("Bạn có chắc chắn muốn thoát khỏi chế độ phê duyệt báo cáo liên thông không?",
                 "Thoát Chế Độ Phê Duyệt", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
@@ -4120,8 +4231,10 @@ namespace VGCASignToolPro
             {
                 _activeWorkflowReportId = null;
                 _activeWorkflowExpectedBaseHash = null;
+                _isWorkflowSealingMode = false;
                 BorderWorkflowReviewNotice.Visibility = Visibility.Collapsed;
                 BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
+                BtnCommitWorkflowSeal.Visibility = Visibility.Collapsed;
                 BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
                 BtnReturnWorkflowReport.Visibility = Visibility.Collapsed;
                 UpdateStatus("Đã thoát chế độ phê duyệt liên thông.");
@@ -4288,29 +4401,68 @@ namespace VGCASignToolPro
 
             try
             {
+                bool isLeadership = IsLeadership(_vgcaAuth.CurrentTeacher?.Title);
+                string approverName = _vgcaAuth.CurrentTeacher?.FullName ?? "";
+
                 var result = await _workflowService.CommitSignedReportAsync(
                     reportId: _activeWorkflowReportId,
                     approverCccd: _vgcaAuth.CurrentTeacher?.Cccd ?? "",
                     signedPdfPath: _lastSignedPdfPath,
-                    expectedBaseHash: _activeWorkflowExpectedBaseHash ?? ""
+                    expectedBaseHash: _activeWorkflowExpectedBaseHash ?? "",
+                    isLeadershipSigner: isLeadership,
+                    approverName: approverName
                 );
 
                 if (result.Success)
                 {
-                    MessageBox.Show(
-                        "Đã phê duyệt và nộp báo cáo hoàn tất thành công!\n\nVăn bản đã được lưu trữ vĩnh viễn với đầy đủ 2 chữ ký số PAdES LTV.",
-                        "Phê Duyệt Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (isLeadership)
+                    {
+                        MessageBox.Show(
+                            "Đã ký số phê duyệt thành công!\n\n" +
+                            "Do người ký duyệt là Ban Giám Hiệu, báo cáo đã được chuyển vào danh mục [🔴 Báo Cáo Chờ Đóng Dấu].\n\n" +
+                            "Người được ủy quyền đóng dấu (Văn thư / BGH) sẽ cắm USB Token Ban Cơ Yếu đóng con dấu pháp nhân cơ quan để hoàn tất ban hành.",
+                            "Ký Duyệt Thành Công - Chờ Đóng Dấu", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                    _activeWorkflowReportId = null;
-                    _activeWorkflowExpectedBaseHash = null;
-                    BorderWorkflowReviewNotice.Visibility = Visibility.Collapsed;
-                    BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
-                    BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
-                    BtnReturnWorkflowReport.Visibility = Visibility.Collapsed;
+                        _activeWorkflowReportId = null;
+                        _activeWorkflowExpectedBaseHash = null;
+                        _isWorkflowSealingMode = false;
+                        BorderWorkflowReviewNotice.Visibility = Visibility.Collapsed;
+                        BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
+                        BtnCommitWorkflowSeal.Visibility = Visibility.Collapsed;
+                        BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
+                        BtnReturnWorkflowReport.Visibility = Visibility.Collapsed;
 
-                    MainTabControl.SelectedIndex = 2;
-                    TabControlWorkflowSub.SelectedIndex = 3;
-                    await RefreshWorkflowDataAsync();
+                        MainTabControl.SelectedIndex = 2;
+                        if (_vgcaAuth.CurrentTeacher?.CanSeal == true)
+                        {
+                            TabControlWorkflowSub.SelectedItem = TabItemWaitingSeal;
+                        }
+                        else
+                        {
+                            TabControlWorkflowSub.SelectedItem = TabItemArchive;
+                        }
+                        await RefreshWorkflowDataAsync();
+                    }
+                    else
+                    {
+                        MessageBox.Show(
+                            "Đã phê duyệt và nộp báo cáo hoàn tất thành công!\n\n" +
+                            "Văn bản đã được lưu trữ vĩnh viễn vào Kho Toàn Trường với đầy đủ chữ ký số PAdES LTV.",
+                            "Phê Duyệt Thành Công", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                        _activeWorkflowReportId = null;
+                        _activeWorkflowExpectedBaseHash = null;
+                        _isWorkflowSealingMode = false;
+                        BorderWorkflowReviewNotice.Visibility = Visibility.Collapsed;
+                        BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
+                        BtnCommitWorkflowSeal.Visibility = Visibility.Collapsed;
+                        BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
+                        BtnReturnWorkflowReport.Visibility = Visibility.Collapsed;
+
+                        MainTabControl.SelectedIndex = 2;
+                        TabControlWorkflowSub.SelectedItem = TabItemArchive;
+                        await RefreshWorkflowDataAsync();
+                    }
                 }
                 else
                 {
@@ -4325,6 +4477,166 @@ namespace VGCASignToolPro
             finally
             {
                 BtnCommitWorkflowApproval.IsEnabled = true;
+            }
+        }
+
+        private async void BtnOpenForSealing_Click(object sender, RoutedEventArgs e)
+        {
+            if (LvWaitingSealReports.SelectedItem is not ReportModel report)
+            {
+                MessageBox.Show("Vui lòng chọn một báo cáo trong danh sách để mở đóng dấu.",
+                    "Chưa Chọn Báo Cáo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!_vgcaAuth.IsLoggedIn || _vgcaAuth.CurrentTeacher == null)
+            {
+                MessageBox.Show("Bạn cần đăng nhập tài khoản chữ ký số VGCA để mở và đóng dấu văn bản.",
+                    "Chưa Đăng Nhập", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (!_vgcaAuth.CurrentTeacher.CanSeal)
+            {
+                MessageBox.Show("Tài khoản của bạn chưa được phân quyền 'Đóng Dấu Cơ Quan'.\n\nChỉ Ban Giám Hiệu, Văn thư hoặc người được phân quyền quản lý thiết bị USB Token mới được phép thực hiện chức năng này.",
+                    "Chưa Cấp Quyền Đóng Dấu", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var confirm = MessageBox.Show(
+                $"XÁC NHẬN MỞ VĂN BẢN ĐỂ ĐÓNG DẤU PHÁP NHÂN:\n\n" +
+                $"• Tên báo cáo: \"{report.Title}\"\n" +
+                $"• Người ký duyệt: {report.SignedByName ?? report.ApproverName}\n" +
+                $"• Thời gian ký: {report.SignedTimeFormatted}\n\n" +
+                $"Bạn có muốn nạp văn bản này sang bàn làm việc để đóng con dấu cơ quan không?",
+                "Xác Nhận Đóng Dấu Pháp Nhân", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (confirm != MessageBoxResult.Yes) return;
+
+            UpdateStatus($"Đang nạp tệp báo cáo chờ đóng dấu '{report.ReportId}'...");
+            BtnOpenForSealing.IsEnabled = false;
+            ShowLoadingOverlay("Đang nạp báo cáo...", $"Đang nạp văn bản chờ đóng dấu: {report.Title}...", "🔴");
+            SetProcessingBusyState(true);
+
+            try
+            {
+                string tempDir = Path.Combine(Path.GetTempPath(), "VGCASignToolPro_Reports");
+                Directory.CreateDirectory(tempDir);
+                string cacheKey = !string.IsNullOrWhiteSpace(report.SignedHash)
+                    ? report.SignedHash
+                    : (!string.IsNullOrWhiteSpace(report.BaseHash) ? report.BaseHash : report.DriveFileId);
+                foreach (char c in Path.GetInvalidFileNameChars())
+                {
+                    cacheKey = cacheKey.Replace(c, '_');
+                }
+                string destPath = Path.Combine(tempDir, $"{report.ReportId}_{cacheKey}.pdf");
+
+                if (!File.Exists(destPath) || new FileInfo(destPath).Length == 0)
+                {
+                    bool downloaded = await _workflowService.DownloadFileAsync(report.DriveFileId, destPath);
+                    if (!downloaded || !File.Exists(destPath))
+                    {
+                        MessageBox.Show("Không thể tải tệp báo cáo từ máy chủ đám mây.", "Lỗi Tải Tệp", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+                }
+
+                _activeWorkflowReportId = report.ReportId;
+                _activeWorkflowExpectedBaseHash = report.BaseHash;
+                _isWorkflowSealingMode = true;
+
+                BorderWorkflowReviewNotice.Visibility = Visibility.Visible;
+                TxtWorkflowReviewNoticeHeader.Text = $"CHẾ ĐỘ ĐÓNG DẤU PHÁP NHÂN CƠ QUAN: {report.Title}";
+                TxtWorkflowReviewNoticeDetail.Text = $"Người ký duyệt: {report.SignedByName ?? report.ApproverName} • Ngày ký: {report.SignedTimeFormatted} • Đã sẵn sàng đóng dấu.";
+
+                BtnCommitWorkflowSeal.Visibility = Visibility.Visible;
+                BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
+                BtnSubmitWorkflowReport.Visibility = Visibility.Collapsed;
+                BtnReturnWorkflowReport.Visibility = Visibility.Collapsed;
+
+                await LoadPdfDocumentAsync(destPath);
+
+                MainTabControl.SelectedIndex = 1;
+                UpdateStatus($"Đã nạp văn bản '{report.Title}' sang Tab 2. Vui lòng bấm [📍 Chèn Vị Trí Ký], căn chỉnh vị trí con dấu trùm 1/3 chữ ký rồi bấm [🔴 Đóng dấu].");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi nạp văn bản: {ex.Message}", "Lỗi Hệ Thống", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                await HideLoadingOverlayAsync(50);
+                SetProcessingBusyState(false);
+                BtnOpenForSealing.IsEnabled = true;
+            }
+        }
+
+        private void LvWaitingSealReports_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            BtnOpenForSealing_Click(sender, e);
+        }
+
+        private async void BtnCommitWorkflowSeal_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(_activeWorkflowReportId))
+            {
+                MessageBox.Show("Không có phiên đóng dấu báo cáo nào đang mở.", "Thông Báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_lastSignedPdfPath) || !File.Exists(_lastSignedPdfPath))
+            {
+                MessageBox.Show("Vui lòng thực hiện đóng dấu pháp nhân trước khi nộp lên hệ thống.",
+                    "Chưa Đóng Dấu", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            BtnCommitWorkflowSeal.IsEnabled = false;
+            UpdateStatus("Đang tải lên bản báo cáo đã đóng dấu và cập nhật hệ thống...");
+
+            try
+            {
+                var result = await _workflowService.CommitSealedReportAsync(
+                    reportId: _activeWorkflowReportId,
+                    sealerCccd: _vgcaAuth.CurrentTeacher?.Cccd ?? "",
+                    sealerName: _vgcaAuth.CurrentTeacher?.FullName ?? "",
+                    sealedPdfPath: _lastSignedPdfPath
+                );
+
+                if (result.Success)
+                {
+                    MessageBox.Show(
+                        "Đã đóng dấu pháp nhân và ban hành báo cáo hoàn tất thành công!\n\n" +
+                        "Văn bản đã được lưu trữ vĩnh viễn vào Kho Toàn Trường với đầy đủ chữ ký số cá nhân và con dấu pháp nhân cơ quan theo Nghị định 30/2020/NĐ-CP.",
+                        "Ban Hành Hoàn Tất", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    _activeWorkflowReportId = null;
+                    _activeWorkflowExpectedBaseHash = null;
+                    _isWorkflowSealingMode = false;
+
+                    BorderWorkflowReviewNotice.Visibility = Visibility.Collapsed;
+                    BtnCommitWorkflowSeal.Visibility = Visibility.Collapsed;
+                    BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
+                    BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
+                    BtnReturnWorkflowReport.Visibility = Visibility.Collapsed;
+
+                    MainTabControl.SelectedIndex = 2;
+                    TabControlWorkflowSub.SelectedItem = TabItemArchive;
+                    await RefreshWorkflowDataAsync();
+                }
+                else
+                {
+                    MessageBox.Show($"Không thể nộp bản đã đóng dấu:\n{result.Message}", "Lỗi Nộp Báo Cáo", MessageBoxButton.OK, MessageBoxImage.Error);
+                    UpdateStatus($"Lỗi nộp báo cáo: {result.Message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi hệ thống: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                BtnCommitWorkflowSeal.IsEnabled = true;
             }
         }
 
