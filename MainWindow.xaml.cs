@@ -78,7 +78,7 @@ namespace VGCASignToolPro
         public MainWindow()
         {
             InitializeComponent();
-            WindowState = WindowState.Maximized; // Khởi động mặc định phóng to toàn màn hình (Maximum)
+            WindowState = App.IsAutoStartMode ? WindowState.Minimized : WindowState.Maximized;
             Loaded += MainWindow_Loaded;
             LocationChanged += (s, e) => RepositionLoadingPopup();
             SizeChanged += (s, e) => RepositionLoadingPopup();
@@ -95,8 +95,16 @@ namespace VGCASignToolPro
         {
             try
             {
-                WindowState = WindowState.Maximized; // Đảm bảo luôn toàn màn hình trên mọi độ phân giải máy tính
-                UpdateStatus("Khởi tạo hệ thống VGCA Sign Tool Pro...");
+                if (App.IsAutoStartMode)
+                {
+                    WindowState = WindowState.Minimized;
+                    UpdateStatus("Hệ thống tự động khởi động cùng Windows (Chế độ sẵn sàng nền).");
+                }
+                else
+                {
+                    WindowState = WindowState.Maximized;
+                    UpdateStatus("Khởi tạo hệ thống VGCA Sign Tool Pro...");
+                }
 
                 if (OverlayLoadingPopup != null && MainRootGrid != null)
                 {

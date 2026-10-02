@@ -10,8 +10,22 @@ namespace VGCASignToolPro;
 /// </summary>
 public partial class App : Application
 {
+    public static bool IsAutoStartMode { get; private set; }
+
     protected override void OnStartup(StartupEventArgs e)
     {
+        if (e.Args != null)
+        {
+            foreach (var arg in e.Args)
+            {
+                if (string.Equals(arg, "--autostart", StringComparison.OrdinalIgnoreCase))
+                {
+                    IsAutoStartMode = true;
+                    break;
+                }
+            }
+        }
+
         InitializeSyncfusionLicensing();
         base.OnStartup(e);
     }

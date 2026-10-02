@@ -7,6 +7,7 @@
         xmlns:syncfusion="clr-namespace:Syncfusion.Windows.Controls.RichTextBoxAdv;assembly=Syncfusion.SfRichTextBoxAdv.Wpf"
         mc:Ignorable="d"
         Title="VGCA Sign Tool Pro - Hệ Thống Ký Số Điện Tử &amp; Soạn Thảo Văn Bản Tích Hợp" 
+        Icon="app_icon.ico"
         Height="820" Width="1320"
         MinHeight="700" MinWidth="1080"
         WindowStartupLocation="CenterScreen"

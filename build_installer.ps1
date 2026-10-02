@@ -55,6 +55,11 @@ if (Test-Path (Join-Path $distDir "school_roster.json.hmac")) {
     Remove-Item -Path (Join-Path $distDir "school_roster.json.hmac") -Force
 }
 
+$sourceIcon = Join-Path $projectDir "app_icon.ico"
+if (Test-Path $sourceIcon) {
+    Copy-Item -Path $sourceIcon -Destination $distDir -Force
+}
+
 # 5. COMPILE INNO SETUP INSTALLER (.EXE)
 Write-Host "`n[5/6] Compiling Official Inno Setup Single-Installer (.exe)..." -ForegroundColor Yellow
 if (-not (Test-Path $innoCompiler)) {
