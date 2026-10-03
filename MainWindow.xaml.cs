@@ -44,6 +44,15 @@ namespace VGCASignToolPro
                    title.Contains("Phó hiệu trưởng", StringComparison.OrdinalIgnoreCase);
         }
 
+        private static bool IsPrincipalOnly(string? title)
+        {
+            if (string.IsNullOrWhiteSpace(title)) return false;
+            // Phân biệt Hiệu trưởng đích danh, loại trừ Phó hiệu trưởng / Hiệu phó
+            return title.Contains("Hiệu trưởng", StringComparison.OrdinalIgnoreCase) &&
+                   !title.Contains("Phó", StringComparison.OrdinalIgnoreCase) &&
+                   !title.Contains("Hiệu phó", StringComparison.OrdinalIgnoreCase);
+        }
+
         private List<CertificateModel> _certificates = new();
         private List<SignatureProfile> _profiles = new();
         private CertificateModel? _currentActiveCert;
@@ -3127,13 +3136,28 @@ namespace VGCASignToolPro
             };
 
             _signingCts = new System.Threading.CancellationTokenSource();
-            ShowLoadingOverlay(
-                "Đang tiến hành ký số...",
-                "Đang kết nối chứng thư số Ban Cơ Yếu và gửi yêu cầu xác thực tới điện thoại (Virtual CSP) hoặc USB Token...",
-                "✍️",
-                showCancelButton: true,
-                cancelButtonText: "✕ Hủy Chờ Ký");
-            SetProcessingBusyState(true, "Đang tiến hành ký số văn bản chuẩn PAdES LTV...");
+            bool isVirtualCsp = _currentActiveCert?.IsVirtualCspCertificate == true;
+            if (isVirtualCsp)
+            {
+                ShowLoadingOverlay(
+                    "Đang tiến hành ký số...",
+                    "Đang gửi yêu cầu xác thực tới máy chủ Ban Cơ Yếu...\nVui lòng kiểm tra và xác nhận trên điện thoại (VGCA Mobile).",
+                    "📱",
+                    showCancelButton: true,
+                    cancelButtonText: "✕ Hủy Chờ Ký");
+                SetProcessingBusyState(true, "Đang gửi yêu cầu xác thực và chờ xác nhận trên điện thoại...");
+            }
+            else
+            {
+                // Ký bằng USB Token phần cứng cá nhân hoặc con dấu: chỉ hiện trạng thái kết nối, không hiện thông báo chờ điện thoại
+                ShowLoadingOverlay(
+                    "Đang tiến hành ký số...",
+                    "Đang kết nối USB Token Ban Cơ Yếu...\nVui lòng nhập mã PIN trên cửa sổ bảo mật nếu được yêu cầu.",
+                    "🔐",
+                    showCancelButton: true,
+                    cancelButtonText: "✕ Hủy");
+                SetProcessingBusyState(true, "Đang kết nối USB Token Ban Cơ Yếu...");
+            }
 
             Action<string> onSignStatus = msg =>
             {
@@ -3180,11 +3204,21 @@ namespace VGCASignToolPro
                     else
                     {
                         BtnCommitWorkflowApproval.Visibility = Visibility.Visible;
-                        if (BtnForwardWorkflowReport != null) BtnForwardWorkflowReport.Visibility = Visibility.Visible;
                         BtnCommitWorkflowSeal.Visibility = Visibility.Collapsed;
                         BtnSubmitWorkflowReport.Visibility = Visibility.Collapsed;
 
-                        ShowWorkflowApprovalChoicePopup();
+                        // Nếu người ký là Hiệu trưởng đích danh: Tự động phê duyệt hoàn tất và chuyển thẳng sang chờ đóng dấu pháp nhân
+                        // Tuyệt đối không bật hộp thoại chọn người ký tiếp theo vì Hiệu trưởng là cấp ký cao nhất
+                        if (IsPrincipalOnly(_vgcaAuth.CurrentTeacher?.Title))
+                        {
+                            if (BtnForwardWorkflowReport != null) BtnForwardWorkflowReport.Visibility = Visibility.Collapsed;
+                            BtnCommitWorkflowApproval_Click(this, new RoutedEventArgs());
+                        }
+                        else
+                        {
+                            if (BtnForwardWorkflowReport != null) BtnForwardWorkflowReport.Visibility = Visibility.Visible;
+                            ShowWorkflowApprovalChoicePopup();
+                        }
                     }
                 }
                 else
@@ -3390,21 +3424,9 @@ namespace VGCASignToolPro
                 }
             }
 
-            // 3. Hộp thoại xác nhận đóng dấu pháp nhân
-            MessageBoxResult confirm = MessageBox.Show(
-                $"XÁC NHẬN ĐÓNG DẤU PHÁP NHÂN NHÀ TRƯỜNG:\n\n" +
-                $"• Đơn vị phát hành: {orgCert.CommonName}\n" +
-                $"• Nhà cấp chứng thư: {orgCert.IssuerCommonName}\n" +
-                $"• Số Serial Token: {orgCert.SerialNumber}\n" +
-                $"• Người thực hiện: {_vgcaAuth.CurrentTeacher.FullName} ({_vgcaAuth.CurrentTeacher.Title})\n\n" +
-                $"Hệ thống sẽ tiến hành đóng dấu đỏ pháp nhân cơ quan lên tài liệu bằng thiết bị USB Token.\n" +
-                $"Bạn có chắc chắn muốn thực hiện không?",
-                "Xác Nhận Đóng Dấu Cơ Quan (USB Token)", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            if (confirm != MessageBoxResult.Yes)
-            {
-                return;
-            }
+            // 3. Tiến hành đóng dấu pháp nhân trực tiếp bằng USB Token (không hiện dialog hỏi xác nhận gây cản trở)
+            // Windows Smart Card CSP sẽ tự động hiển thị pop-up nhập mã PIN của Token
+            UpdateStatus($"Đang chuẩn bị đóng dấu pháp nhân bằng USB Token: {orgCert.CommonName}...");
 
             // 4. Tìm kiếm mẫu Profile con dấu đỏ nhà trường (ưu tiên ProfileType == 4 hoặc tên có 'Dấu Đỏ' / 'Cơ Quan')
             SignatureProfile? sealProfile = _profiles.FirstOrDefault(p => p.ProfileType == 4)
