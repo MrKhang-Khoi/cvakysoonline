@@ -5139,9 +5139,21 @@ namespace VGCASignToolPro
             }
         }
 
+        private void LvInboxReports_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (BtnOpenForReview != null)
+            {
+                BtnOpenForReview.IsEnabled = LvInboxReports?.SelectedItem != null;
+            }
+        }
+
         private void LvOutboxReports_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (LvOutboxReports.SelectedItem is ReportModel report)
+            bool hasItem = LvOutboxReports?.SelectedItem != null;
+            if (BtnViewOutboxReport != null) BtnViewOutboxReport.IsEnabled = hasItem;
+            if (BtnDismissOutboxReport != null) BtnDismissOutboxReport.IsEnabled = hasItem;
+
+            if (LvOutboxReports?.SelectedItem is ReportModel report)
             {
                 if (report.Status == "RECALLED" || report.Status == "SIGNED_COMMITTED" || report.Status == "RETURNED")
                 {
@@ -5161,6 +5173,28 @@ namespace VGCASignToolPro
                 BtnRecallReport.IsEnabled = false;
                 BtnRecallReport.ToolTip = null;
             }
+        }
+
+        private void LvReturnedReports_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            bool hasItem = LvReturnedReports?.SelectedItem != null;
+            if (BtnViewReturnedReport != null) BtnViewReturnedReport.IsEnabled = hasItem;
+            if (BtnDismissReturnedReport != null) BtnDismissReturnedReport.IsEnabled = hasItem;
+        }
+
+        private void LvWaitingSealReports_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (BtnOpenForSealing != null)
+            {
+                BtnOpenForSealing.IsEnabled = LvWaitingSealReports?.SelectedItem != null;
+            }
+        }
+
+        private void LvArchiveReports_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            bool hasItem = LvArchiveReports?.SelectedItem != null;
+            if (BtnViewArchiveReport != null) BtnViewArchiveReport.IsEnabled = hasItem;
+            if (BtnDownloadArchiveReport != null) BtnDownloadArchiveReport.IsEnabled = hasItem;
         }
 
         private async void BtnRecallReport_Click(object sender, RoutedEventArgs e)

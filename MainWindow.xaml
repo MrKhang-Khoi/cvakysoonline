@@ -1025,7 +1025,7 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <!-- HÀNG 0: THANH ĐIỀU HÀNH NGƯỜI DÙNG & CHỈ SỐ BÁO CÁO -->
+                    <!-- HÀNG 0: THANH ĐIỀU HÀNH NGƯỜI DÙNG & TÁC VỤ TOÀN CỤC -->
                     <Border Grid.Row="0" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="12,10" Margin="0,0,0,10">
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -1034,7 +1034,7 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,12,0">
+                                <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1" CornerRadius="6" Padding="10,6">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE77B;" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="#1E40AF" />
                                         <StackPanel VerticalAlignment="Center">
@@ -1043,77 +1043,65 @@
                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
-
-                                <!-- THẺ ĐẾM BÁO CÁO CHỜ DUYỆT -->
-                                <Border Background="#FEF3C7" BorderBrush="#FDE68A" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="0,0,8,0">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="Chờ duyệt: " FontSize="11" Foreground="#92400E" FontWeight="SemiBold" />
-                                        <TextBlock x:Name="TxtCountInbox" Text="0" FontWeight="Bold" FontSize="13" Foreground="#B45309" Margin="4,0,0,0" />
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- THẺ ĐẾM BÁO CÁO TÔI ĐÃ GỬI -->
-                                <Border Background="#F0FDF4" BorderBrush="#BBF7D0" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="0,0,8,0">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="Đã gửi: " FontSize="11" Foreground="#166534" FontWeight="SemiBold" />
-                                        <TextBlock x:Name="TxtCountOutbox" Text="0" FontWeight="Bold" FontSize="13" Foreground="#15803D" Margin="4,0,0,0" />
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- THẺ ĐẾM BÁO CÁO BỊ TRẢ VỀ -->
-                                <Border Background="#FFF7ED" BorderBrush="#FED7AA" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="0,0,8,0">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="Bị trả về: " FontSize="11" Foreground="#C2410C" FontWeight="SemiBold" />
-                                        <TextBlock x:Name="TxtCountReturned" Text="0" FontWeight="Bold" FontSize="13" Foreground="#EA580C" Margin="4,0,0,0" />
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- THẺ ĐẾM BÁO CÁO CHỜ ĐÓNG DẤU (HIỂN THỊ KHI CÓ QUYỀN ĐÓNG DẤU) -->
-                                <Border x:Name="BorderWaitingSealCount" Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="0,0,8,0" Visibility="Collapsed">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="Chờ đóng dấu: " FontSize="11" Foreground="#991B1B" FontWeight="SemiBold" />
-                                        <TextBlock x:Name="TxtCountWaitingSeal" Text="0" FontWeight="Bold" FontSize="13" Foreground="#DC2626" Margin="4,0,0,0" />
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- THẺ ĐẾM TOÀN TRƯỜNG HOÀN TẤT -->
-                                <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="10,4">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="Lưu trữ: " FontSize="11" Foreground="#475569" FontWeight="SemiBold" />
-                                        <TextBlock x:Name="TxtCountCompleted" Text="0" FontWeight="Bold" FontSize="13" Foreground="#334155" Margin="4,0,0,0" />
-                                    </StackPanel>
-                                </Border>
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                 <Button x:Name="BtnRefreshWorkflow" Content="Làm mới" Style="{StaticResource SecondaryButton}" 
                                         FontSize="12" FontWeight="SemiBold" Padding="12,6" Margin="0,0,8,0" Click="BtnRefreshWorkflow_Click" />
-                                <Button Content="Soạn báo cáo mới" Style="{StaticResource PrimaryButton}" 
-                                        FontSize="12" FontWeight="SemiBold" Padding="14,6" Click="BtnNewReportFromTab3_Click" />
+                                <Button Content="Soạn báo cáo mới" Style="{StaticResource SecondaryButton}" 
+                                        FontSize="12" FontWeight="SemiBold" Padding="14,6" Click="BtnNewReportFromTab3_Click" 
+                                        ToolTip="Chuyển sang tab Soạn thảo để tạo báo cáo mới" />
                             </StackPanel>
                         </Grid>
                     </Border>
 
-                    <!-- HÀNG 1: SUB-TABS TRÌNH KÝ (INBOX, OUTBOX, ARCHIVE) -->
+                    <!-- HÀNG 1: SUB-TABS TRÌNH KÝ VỚI COMMAND BAR TÍCH HỢP TRÊN ĐỈNH -->
                     <Border Grid.Row="1" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="6">
                         <TabControl x:Name="TabControlWorkflowSub" Background="Transparent" BorderThickness="0">
                             
                             <!-- SUB-TAB 1: BÁO CÁO CHỜ TÔI DUYỆT (INBOX) -->
-                            <TabItem x:Name="TabItemInbox" Header="  Chờ tôi duyệt  " FontSize="13" FontWeight="SemiBold">
-                                <Grid Margin="4,8,4,4">
+                            <TabItem x:Name="TabItemInbox">
+                                <TabItem.Header>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Chờ tôi duyệt" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" />
+                                        <Border Background="#FEF3C7" CornerRadius="10" Padding="7,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock x:Name="TxtCountInbox" Text="0" FontSize="11" FontWeight="Bold" Foreground="#B45309" />
+                                        </Border>
+                                    </StackPanel>
+                                </TabItem.Header>
+                                <Grid Margin="4,6,4,4">
                                     <Grid.RowDefinitions>
-                                        <RowDefinition Height="*" />
                                         <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
                                     </Grid.RowDefinitions>
 
+                                    <!-- COMMAND BAR TRÊN ĐỈNH SUB-TAB 1 -->
+                                    <Border Grid.Row="0" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,0,6">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="Nhấp chọn một văn bản trong danh sách hoặc nhấp đúp để ký duyệt ngay." 
+                                                       FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
+                                            <Button Grid.Column="1" x:Name="BtnOpenForReview" Content="Mở và ký duyệt" 
+                                                    Style="{StaticResource PrimaryButton}" 
+                                                    IsEnabled="False"
+                                                    FontSize="12" FontWeight="SemiBold" Padding="16,6" Click="BtnOpenForReview_Click" 
+                                                    ToolTip="Mở văn bản được chọn để đọc và thực hiện ký số phê duyệt" />
+                                        </Grid>
+                                    </Border>
+
                                     <!-- DANH SÁCH BÁO CÁO ĐẾN -->
-                                    <Border Grid.Row="0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
+                                    <Border Grid.Row="1" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
                                         <ListView x:Name="LvInboxReports" BorderThickness="0" Background="Transparent" 
                                                   ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                   ScrollViewer.CanContentScroll="True"
                                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                                                   VirtualizingPanel.ScrollUnit="Item"
-                                                  SelectionMode="Single" MouseDoubleClick="LvInboxReports_MouseDoubleClick">
+                                                  SelectionMode="Single"
+                                                  SelectionChanged="LvInboxReports_SelectionChanged"
+                                                  MouseDoubleClick="LvInboxReports_MouseDoubleClick">
                                             <ListView.View>
                                                 <GridView>
                                                     <GridViewColumn Header="Mã Báo Cáo" Width="155" DisplayMemberBinding="{Binding ReportId}" />
@@ -1143,34 +1131,56 @@
                                             </ListView.View>
                                         </ListView>
                                     </Border>
+                                </Grid>
+                            </TabItem>
 
-                                    <!-- THANH THAO TÁC DUYỆT -->
-                                    <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,8,0,0">
+                            <!-- SUB-TAB 2: BÁO CÁO TÔI ĐÃ GỬI (OUTBOX) -->
+                            <TabItem x:Name="TabItemOutbox">
+                                <TabItem.Header>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Tôi đã gửi" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" />
+                                        <Border Background="#F0FDF4" CornerRadius="10" Padding="7,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock x:Name="TxtCountOutbox" Text="0" FontSize="11" FontWeight="Bold" Foreground="#15803D" />
+                                        </Border>
+                                    </StackPanel>
+                                </TabItem.Header>
+                                <Grid Margin="4,6,4,4">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+
+                                    <!-- COMMAND BAR TRÊN ĐỈNH SUB-TAB 2 -->
+                                    <Border Grid.Row="0" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,0,6">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="Nhấp đúp chuột vào văn bản trong danh sách để mở và ký số ngay." 
+                                            <TextBlock Grid.Column="0" Text="Danh sách các báo cáo bạn đã trình lên cấp trên phê duyệt." 
                                                        FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
-                                            <Button Grid.Column="1" x:Name="BtnOpenForReview" Content="Mở và ký duyệt" 
-                                                    Style="{StaticResource PrimaryButton}" 
-                                                    FontSize="12" FontWeight="SemiBold" Padding="16,8" Click="BtnOpenForReview_Click" />
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <Button x:Name="BtnViewOutboxReport" Content="Xem lại báo cáo" 
+                                                        Style="{StaticResource PrimaryButton}" 
+                                                        Background="#4F46E5" BorderBrush="#4338CA"
+                                                        FontSize="12" FontWeight="SemiBold" Padding="14,6" Margin="0,0,6,0" 
+                                                        IsEnabled="False" Click="BtnViewOutboxReport_Click" />
+                                                <Button x:Name="BtnRecallReport" Content="Thu hồi báo cáo" 
+                                                        Style="{StaticResource SecondaryButton}" 
+                                                        Foreground="#DC2626" BorderBrush="#FCA5A5" Background="#FEF2F2"
+                                                        FontSize="12" FontWeight="SemiBold" Padding="14,6" Margin="0,0,6,0" 
+                                                        IsEnabled="False" Click="BtnRecallReport_Click" />
+                                                <Button x:Name="BtnDismissOutboxReport" Content="Xóa khỏi danh sách" 
+                                                        Style="{StaticResource SecondaryButton}" 
+                                                        Foreground="#475569" BorderBrush="#CBD5E1" Background="#F1F5F9"
+                                                        FontSize="12" FontWeight="SemiBold" Padding="12,6" 
+                                                        IsEnabled="False" Click="BtnDismissOutboxReport_Click" />
+                                            </StackPanel>
                                         </Grid>
                                     </Border>
-                                </Grid>
-                            </TabItem>
-
-                            <!-- SUB-TAB 2: BÁO CÁO TÔI ĐÃ GỬI (OUTBOX) -->
-                            <TabItem x:Name="TabItemOutbox" Header="  Tôi đã gửi  " FontSize="13" FontWeight="SemiBold">
-                                <Grid Margin="4,8,4,4">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="*" />
-                                        <RowDefinition Height="Auto" />
-                                    </Grid.RowDefinitions>
 
                                     <!-- DANH SÁCH BÁO CÁO ĐI -->
-                                    <Border Grid.Row="0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
+                                    <Border Grid.Row="1" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
                                         <ListView x:Name="LvOutboxReports" BorderThickness="0" Background="Transparent" SelectionMode="Single"
                                                   ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                   ScrollViewer.CanContentScroll="True"
@@ -1206,50 +1216,57 @@
                                             </ListView.View>
                                         </ListView>
                                     </Border>
+                                </Grid>
+                            </TabItem>
 
-                                    <!-- THANH THAO TÁC THU HỒI & XÓA KHỎI DANH SÁCH -->
-                                    <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,8,0,0">
+                            <!-- SUB-TAB 3: BÁO CÁO TRẢ VỀ (RETURNED) -->
+                            <TabItem x:Name="TabItemReturned">
+                                <TabItem.Header>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Bị trả về" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" />
+                                        <Border Background="#FFF7ED" CornerRadius="10" Padding="7,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock x:Name="TxtCountReturned" Text="0" FontSize="11" FontWeight="Bold" Foreground="#EA580C" />
+                                        </Border>
+                                    </StackPanel>
+                                </TabItem.Header>
+                                <Grid Margin="4,6,4,4">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+
+                                    <!-- COMMAND BAR TRÊN ĐỈNH SUB-TAB 3 -->
+                                    <Border Grid.Row="0" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,0,6">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="Nhấp đúp chuột vào văn bản để xem lại nội dung đã trình ký." 
+                                            <TextBlock Grid.Column="0" Text="Các báo cáo bị trả về cần xem lý do và chỉnh sửa lại." 
                                                        FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
                                             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                <Button x:Name="BtnDismissOutboxReport" Content="Xóa khỏi danh sách" 
+                                                <Button x:Name="BtnViewReturnedReport" Content="Xem lại báo cáo" 
+                                                        Style="{StaticResource PrimaryButton}" 
+                                                        Background="#EA580C" BorderBrush="#C2410C"
+                                                        FontSize="12" FontWeight="SemiBold" Padding="14,6" Margin="0,0,6,0" 
+                                                        IsEnabled="False" Click="BtnViewReturnedReport_Click" />
+                                                <Button x:Name="BtnDismissReturnedReport" Content="Xóa khỏi danh sách" 
                                                         Style="{StaticResource SecondaryButton}" 
                                                         Foreground="#475569" BorderBrush="#CBD5E1" Background="#F1F5F9"
-                                                        FontSize="12" FontWeight="SemiBold" Padding="12,8" Margin="0,0,8,0" Click="BtnDismissOutboxReport_Click" />
-                                                <Button x:Name="BtnViewOutboxReport" Content="Xem lại báo cáo" 
-                                                        Style="{StaticResource PrimaryButton}" 
-                                                        Background="#4F46E5" BorderBrush="#4338CA"
-                                                        FontSize="12" FontWeight="SemiBold" Padding="14,8" Margin="0,0,8,0" Click="BtnViewOutboxReport_Click" />
-                                                <Button x:Name="BtnRecallReport" Content="Thu hồi báo cáo" 
-                                                        Style="{StaticResource SecondaryButton}" 
-                                                        Foreground="#DC2626" BorderBrush="#FCA5A5" Background="#FEF2F2"
-                                                        FontSize="12" FontWeight="SemiBold" Padding="16,8" Click="BtnRecallReport_Click" />
+                                                        FontSize="12" FontWeight="SemiBold" Padding="12,6" 
+                                                        IsEnabled="False" Click="BtnDismissReturnedReport_Click" />
                                             </StackPanel>
                                         </Grid>
                                     </Border>
-                                </Grid>
-                            </TabItem>
-
-                            <!-- SUB-TAB 3: BÁO CÁO TRẢ VỀ (RETURNED) -->
-                            <TabItem Header="  Bị trả về  " FontSize="13" FontWeight="SemiBold">
-                                <Grid Margin="4,8,4,4">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="*" />
-                                        <RowDefinition Height="Auto" />
-                                    </Grid.RowDefinitions>
 
                                     <!-- DANH SÁCH BÁO CÁO TRẢ VỀ -->
-                                    <Border Grid.Row="0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
+                                    <Border Grid.Row="1" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
                                         <ListView x:Name="LvReturnedReports" BorderThickness="0" Background="Transparent" SelectionMode="Single"
                                                   ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                   ScrollViewer.CanContentScroll="True"
                                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                                                   VirtualizingPanel.ScrollUnit="Item"
+                                                  SelectionChanged="LvReturnedReports_SelectionChanged"
                                                   MouseDoubleClick="LvReturnedReports_MouseDoubleClick">
                                             <ListView.View>
                                                 <GridView>
@@ -1270,46 +1287,50 @@
                                             </ListView.View>
                                         </ListView>
                                     </Border>
+                                </Grid>
+                            </TabItem>
 
-                                    <!-- THANH THAO TÁC SUB-TAB TRẢ VỀ -->
-                                    <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,8,0,0">
+                            <!-- SUB-TAB 4: BÁO CÁO CHỜ ĐÓNG DẤU (DÀNH CHO BGH / VĂN THƯ GIỮ TOKEN CON DẤU) -->
+                            <TabItem x:Name="TabItemWaitingSeal" Visibility="Collapsed">
+                                <TabItem.Header>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Chờ đóng dấu" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" />
+                                        <Border x:Name="BorderWaitingSealCount" Background="#FEF2F2" CornerRadius="10" Padding="7,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock x:Name="TxtCountWaitingSeal" Text="0" FontSize="11" FontWeight="Bold" Foreground="#DC2626" />
+                                        </Border>
+                                    </StackPanel>
+                                </TabItem.Header>
+                                <Grid Margin="4,6,4,4">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+
+                                    <!-- COMMAND BAR TRÊN ĐỈNH SUB-TAB 4 -->
+                                    <Border Grid.Row="0" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,0,6">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="Nhấp đúp chuột để mở xem lại báo cáo hoặc xem phản hồi." 
+                                            <TextBlock Grid.Column="0" Text="Báo cáo đã ký duyệt 1 cấp, đang chờ cắm USB Token Ban Cơ yếu để đóng con dấu cơ quan." 
                                                        FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                <Button x:Name="BtnDismissReturnedReport" Content="Xóa khỏi danh sách" 
-                                                        Style="{StaticResource SecondaryButton}" 
-                                                        Foreground="#475569" BorderBrush="#CBD5E1" Background="#F1F5F9"
-                                                        FontSize="12" FontWeight="SemiBold" Padding="12,8" Margin="0,0,8,0" Click="BtnDismissReturnedReport_Click" />
-                                                <Button x:Name="BtnViewReturnedReport" Content="Xem lại báo cáo" 
-                                                        Style="{StaticResource PrimaryButton}" 
-                                                        Background="#EA580C" BorderBrush="#C2410C"
-                                                        FontSize="12" FontWeight="SemiBold" Padding="14,8" Click="BtnViewReturnedReport_Click" />
-                                            </StackPanel>
+                                            <Button Grid.Column="1" x:Name="BtnOpenForSealing" Content="Mở và đóng dấu" 
+                                                    Style="{StaticResource PrimaryButton}" 
+                                                    Background="#DC2626" BorderBrush="#B91C1C"
+                                                    FontSize="12" FontWeight="SemiBold" Padding="16,6" 
+                                                    IsEnabled="False" Click="BtnOpenForSealing_Click" />
                                         </Grid>
                                     </Border>
-                                </Grid>
-                            </TabItem>
-
-                            <!-- SUB-TAB 4: BÁO CÁO CHỜ ĐÓNG DẤU (DÀNH CHO BGH / VĂN THƯ GIỮ TOKEN CON DẤU) -->
-                            <TabItem x:Name="TabItemWaitingSeal" Header="  Chờ đóng dấu  " FontSize="13" FontWeight="SemiBold" Visibility="Collapsed">
-                                <Grid Margin="4,8,4,4">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="*" />
-                                        <RowDefinition Height="Auto" />
-                                    </Grid.RowDefinitions>
 
                                     <!-- DANH SÁCH BÁO CÁO CHỜ ĐÓNG DẤU -->
-                                    <Border Grid.Row="0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
+                                    <Border Grid.Row="1" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
                                         <ListView x:Name="LvWaitingSealReports" BorderThickness="0" Background="Transparent" SelectionMode="Single"
                                                   ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                   ScrollViewer.CanContentScroll="True"
                                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                                                   VirtualizingPanel.ScrollUnit="Item"
+                                                  SelectionChanged="LvWaitingSealReports_SelectionChanged"
                                                   MouseDoubleClick="LvWaitingSealReports_MouseDoubleClick">
                                             <ListView.View>
                                                 <GridView>
@@ -1341,42 +1362,53 @@
                                             </ListView.View>
                                         </ListView>
                                     </Border>
+                                </Grid>
+                            </TabItem>
 
-                                    <!-- THANH THAO TÁC ĐÓNG DẤU -->
-                                    <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,8,0,0">
+                            <!-- SUB-TAB 5: KHO BÁO CÁO TOÀN TRƯỜNG ĐÃ HOÀN TẤT (ARCHIVE) -->
+                            <TabItem x:Name="TabItemArchive">
+                                <TabItem.Header>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="Kho lưu trữ" VerticalAlignment="Center" FontSize="13" FontWeight="SemiBold" />
+                                        <Border Background="#F1F5F9" CornerRadius="10" Padding="7,1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock x:Name="TxtCountCompleted" Text="0" FontSize="11" FontWeight="Bold" Foreground="#475569" />
+                                        </Border>
+                                    </StackPanel>
+                                </TabItem.Header>
+                                <Grid Margin="4,6,4,4">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+
+                                    <!-- COMMAND BAR TRÊN ĐỈNH SUB-TAB 5 -->
+                                    <Border Grid.Row="0" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,0,6">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="Nhấp đúp chuột hoặc chọn văn bản rồi nhấn 'Mở và đóng dấu' để đóng con dấu cơ quan." 
-                                                       FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="0" Text="Các văn bản đã ký đủ 2 cấp và lưu trữ an toàn trong kho toàn trường." 
+                                                       FontSize="12" Foreground="#059669" FontWeight="SemiBold" VerticalAlignment="Center" />
                                             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                <Button x:Name="BtnOpenForSealing" Content="Mở và đóng dấu" 
-                                                        Style="{StaticResource PrimaryButton}" 
-                                                        Background="#DC2626" BorderBrush="#B91C1C"
-                                                        FontSize="12" FontWeight="SemiBold" Padding="16,8" Click="BtnOpenForSealing_Click" />
+                                                <Button x:Name="BtnViewArchiveReport" Content="Xem tệp đầy đủ" Style="{StaticResource SecondaryButton}" 
+                                                        FontSize="12" FontWeight="SemiBold" Padding="14,6" Margin="0,0,6,0" 
+                                                        IsEnabled="False" Click="BtnViewArchiveReport_Click" />
+                                                <Button x:Name="BtnDownloadArchiveReport" Content="Tải về máy tính" Style="{StaticResource SuccessButton}" 
+                                                        FontSize="12" FontWeight="SemiBold" Padding="16,6" 
+                                                        IsEnabled="False" Click="BtnDownloadArchiveReport_Click" />
                                             </StackPanel>
                                         </Grid>
                                     </Border>
-                                </Grid>
-                            </TabItem>
-
-                            <!-- SUB-TAB 5: KHO BÁO CÁO TOÀN TRƯỜNG ĐÃ HOÀN TẤT (ARCHIVE) -->
-                            <TabItem x:Name="TabItemArchive" Header="  Kho lưu trữ chung  " FontSize="13" FontWeight="SemiBold">
-                                <Grid Margin="4,8,4,4">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="*" />
-                                        <RowDefinition Height="Auto" />
-                                    </Grid.RowDefinitions>
 
                                     <!-- DANH SÁCH BÁO CÁO ĐÃ KÝ 2 CẤP -->
-                                    <Border Grid.Row="0" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
+                                    <Border Grid.Row="1" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Background="#FAFAFA">
                                         <ListView x:Name="LvArchiveReports" BorderThickness="0" Background="Transparent" SelectionMode="Single"
                                                   ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                   ScrollViewer.CanContentScroll="True"
                                                   VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
                                                   VirtualizingPanel.ScrollUnit="Item"
+                                                  SelectionChanged="LvArchiveReports_SelectionChanged"
                                                   MouseDoubleClick="LvArchiveReports_MouseDoubleClick">
                                             <ListView.View>
                                                 <GridView>
@@ -1406,25 +1438,6 @@
                                                 </GridView>
                                             </ListView.View>
                                         </ListView>
-                                    </Border>
-
-
-                                    <!-- THANH THAO TÁC XEM / TẢI VỀ -->
-                                    <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,8" Margin="0,8,0,0">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="Các văn bản tại đây đã có đầy đủ chữ ký số hợp lệ theo quy định." 
-                                                       FontSize="12" Foreground="#059669" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                <Button x:Name="BtnViewArchiveReport" Content="Xem tệp đầy đủ" Style="{StaticResource SecondaryButton}" 
-                                                        FontSize="12" FontWeight="SemiBold" Padding="14,8" Margin="0,0,8,0" Click="BtnViewArchiveReport_Click" />
-                                                <Button x:Name="BtnDownloadArchiveReport" Content="Tải về máy tính" Style="{StaticResource SuccessButton}" 
-                                                        FontSize="12" FontWeight="SemiBold" Padding="16,8" Click="BtnDownloadArchiveReport_Click" />
-                                            </StackPanel>
-                                        </Grid>
                                     </Border>
                                 </Grid>
                             </TabItem>
@@ -1481,7 +1494,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="TIẾN TRÌNH: " FontSize="10" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <TextBlock Grid.Column="1" x:Name="TxtStatusBar" Text="Sẵn sàng." FontSize="11" Foreground="#E2E8F0" FontFamily="Segoe UI" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                <TextBlock Grid.Column="2" x:Name="TxtAppVersion" Text="Phiên bản v2.5.1 • .NET 8 x64" FontSize="11" Foreground="#94A3B8" VerticalAlignment="Center" Margin="16,0,0,0" />
+                <TextBlock Grid.Column="2" x:Name="TxtAppVersion" Text="Phiên bản v2.5.2 • .NET 8 x64" FontSize="11" Foreground="#94A3B8" VerticalAlignment="Center" Margin="16,0,0,0" />
             </Grid>
         </Border>
 

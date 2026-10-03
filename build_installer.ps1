@@ -1,10 +1,10 @@
 # ==============================================================================
 # SCRIPT DONG GOI BO CAI DAT & GOI UPDATE TU DONG CHUAN MICROSOFT WINDOWS
-# Project: VGCA Sign Tool Pro (v2.5.1)
+# Project: VGCA Sign Tool Pro (v2.5.2)
 # ==============================================================================
 
 $ErrorActionPreference = "Stop"
-$appVersion = "2.5.1"
+$appVersion = "2.5.2"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $projectDir = $scriptDir
 $distDir = Join-Path $projectDir "dist\win-x64"
@@ -168,7 +168,7 @@ $releaseObj = @{
     minSupportedVersion = "2.0.0"
     releaseDate = (Get-Date -Format "yyyy-MM-dd")
     title = "Ban cap nhat VGCA Sign Tool Pro v$appVersion"
-    description = "Tich hop co che tu dong ma hoa AES-256 GCM va dong bo/khoi phuc mau chu ky, hinh anh con dau len Cloud Firebase: Cai lai Windows hay doi may tinh khong bao gio bi mat file anh."
+    description = "Tai cau truc toan dien Tab 3 Hop Thu Trinh Ky: Tich hop so dem vao Sub-Tabs, dua CommandBar len dinh bang, khoa mo nut theo dong du lieu chon khoa hoc."
     downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v$appVersion/VGCASignToolPro_Update_v$appVersion.zip"
     installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v$appVersion/VGCASignToolPro_Setup_v$appVersion.exe"
     sha256 = $zipHash
@@ -176,11 +176,11 @@ $releaseObj = @{
     mandatory = $false
     status = "ACTIVE"
     changelog = @(
-        "Tich hop co che ma hoa AES-256 GCM client-side voi khoa dan xuat tu CCCD, dong bo mau chu ky len Firebase an toan tuyet doi",
-        "Tu dong khoi phuc anh chu ky va con dau tu Cloud khi cai lai may tinh hoac dang nhap tren thiet bi moi",
-        "Bo sung nut Dong Bo Dam May chu dong tai Tab 1 cho phep nguoi dung chu dong sao luu/khoi phuc",
-        "Bao ve toan ven du lieu voi ma bam SHA-256 chat che truoc va sau khi giai ma",
-        "Bao toan 100% tinh nang ky so PAdES LTV, hop thu trinh ky SSE va giao dien Fluent chuan Windows 11"
+        "Tai cau truc Tab 3 Hop Thu Trinh Ky theo mo hinh Windows 11 CommandBar hien dai nhat",
+        "Tich hop truc tiep so dem vao Badge cua tung Sub-Tab, loai bo hoan toan hang the dem tinh trung lap",
+        "Dua toan bo thanh thao tac (Mo ky, Thu hoi, Xem lai, Dong dau, Tai ve) len tren dau moi bang",
+        "Rang buoc trang thai nut IsEnabled tu dong sang len khi nguoi dung chon dong van ban",
+        "Mo rong 100% dien tich hien thi danh sach bao cao, loai bo thanh xam goy y chiem cho duoi day"
     )
 }
 $jsonPayload = $releaseObj | ConvertTo-Json -Depth 5
