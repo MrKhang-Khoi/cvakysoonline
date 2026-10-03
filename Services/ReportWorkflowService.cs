@@ -94,6 +94,9 @@ namespace VGCASignToolPro.Services
         [JsonProperty("requiresSeal")]
         public bool RequiresSeal { get; set; }
 
+        [JsonProperty("signersHistory")]
+        public List<string> SignersHistory { get; set; } = new();
+
         [JsonIgnore]
         public int OrderIndex { get; set; }
 
@@ -479,28 +482,15 @@ namespace VGCASignToolPro.Services
                     }
                 }
 
-                // Tải nội dung tệp PDF
-                string fileUrl = BuildUrl($"files/{report.DriveFileId}");
-                var fileRes = await _http.GetAsync(fileUrl).ConfigureAwait(false);
-                if (!fileRes.IsSuccessStatusCode)
-                {
-                    return (false, "Không thể tải tệp đính kèm từ máy chủ.", null, null);
-                }
-
-                string fileJson = await fileRes.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var fileObj = JObject.Parse(fileJson);
-                string? base64Data = fileObj["fileData"]?.ToString();
-
-                if (string.IsNullOrEmpty(base64Data))
-                {
-                    return (false, "Nội dung tệp đính kèm rỗng.", null, null);
-                }
-
-                byte[] pdfBytes = Convert.FromBase64String(base64Data);
+                // Tải nội dung tệp PDF qua DownloadFileAsync (hỗ trợ cả Firebase lẫn Google Drive URL)
                 string tempDir = Path.Combine(Path.GetTempPath(), "VGCASignToolPro_Reports");
                 Directory.CreateDirectory(tempDir);
                 string localFilePath = Path.Combine(tempDir, $"{reportId}_Review.pdf");
-                await File.WriteAllBytesAsync(localFilePath, pdfBytes).ConfigureAwait(false);
+                bool downloaded = await DownloadFileAsync(report.DriveFileId, localFilePath);
+                if (!downloaded || !File.Exists(localFilePath) || new FileInfo(localFilePath).Length == 0)
+                {
+                    return (false, "Không thể tải tệp đính kèm từ máy chủ (Google Drive / Firebase).", null, null);
+                }
 
                 return (true, "Đã tải văn bản thành công.", localFilePath, report.BaseHash);
             }
@@ -889,6 +879,16 @@ namespace VGCASignToolPro.Services
                     ? $"[Chuyển tiếp] {currentSignerName} đã ký duyệt và chuyển tiếp lên {nextApproverName}."
                     : $"[Chuyển tiếp từ {currentSignerName}]: {forwardNotes}";
 
+                var existingHistory = report.SignersHistory ?? new List<string>();
+                if (!existingHistory.Contains(currentSignerCccd))
+                {
+                    existingHistory.Add(currentSignerCccd);
+                }
+                if (!string.IsNullOrEmpty(report.SignedBy) && !existingHistory.Contains(report.SignedBy))
+                {
+                    existingHistory.Add(report.SignedBy);
+                }
+
                 var forwardPayload = new
                 {
                     status = "WAITING_OPEN",
@@ -903,7 +903,8 @@ namespace VGCASignToolPro.Services
                     updatedAt = now,
                     lockedBy = "",
                     lockedAt = 0,
-                    notes = combinedNotes
+                    notes = combinedNotes,
+                    signersHistory = existingHistory
                 };
 
                 var patchContent = new StringContent(JsonConvert.SerializeObject(forwardPayload), Encoding.UTF8, "application/json");
@@ -1047,6 +1048,55 @@ namespace VGCASignToolPro.Services
             {
                 if (string.IsNullOrWhiteSpace(fileId)) return false;
 
+                string gDriveFileId = fileId;
+                if (fileId.Contains("drive.google.com"))
+                {
+                    if (fileId.Contains("id="))
+                    {
+                        var parts = fileId.Split(new[] { "id=" }, StringSplitOptions.None);
+                        if (parts.Length > 1) gDriveFileId = parts[1].Split('&')[0];
+                    }
+                    else if (fileId.Contains("/file/d/"))
+                    {
+                        var parts = fileId.Split(new[] { "/file/d/" }, StringSplitOptions.None);
+                        if (parts.Length > 1) gDriveFileId = parts[1].Split('/')[0];
+                    }
+                }
+
+                // Thử tải qua Google Apps Script Gateway (action=getFile) nếu là Google Drive ID
+                if (!string.IsNullOrWhiteSpace(_googleAppsScriptUrl) && (fileId.Contains("drive.google.com") || fileId.Length > 20 && !fileId.StartsWith("FILE_")))
+                {
+                    try
+                    {
+                        var payload = new { action = "getFile", fileId = gDriveFileId };
+                        string jsonContent = JsonConvert.SerializeObject(payload);
+                        using var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
+                        var res = await client.PostAsync(_googleAppsScriptUrl, content).ConfigureAwait(false);
+                        if (res.IsSuccessStatusCode)
+                        {
+                            string respJson = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var obj = JObject.Parse(respJson);
+                            if (obj["success"]?.Value<bool>() == true)
+                            {
+                                string? base64 = obj["data"]?["base64Data"]?.ToString();
+                                if (!string.IsNullOrEmpty(base64))
+                                {
+                                    byte[] bytes = Convert.FromBase64String(base64);
+                                    string? dir = Path.GetDirectoryName(destinationPath);
+                                    if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+                                    await File.WriteAllBytesAsync(destinationPath, bytes).ConfigureAwait(false);
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Trace.TraceWarning($"Lỗi tải qua Google Apps Script Gateway getFile: {ex.Message}");
+                    }
+                }
+
                 // Nếu fileId là một liên kết web trực tiếp (Google Drive Download URL hoặc CDN)
                 if (fileId.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
                     fileId.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
@@ -1064,19 +1114,19 @@ namespace VGCASignToolPro.Services
 
                 // Tải từ Firebase Realtime Database (/files/{fileId})
                 string fileUrl = BuildUrl($"files/{fileId}");
-                var res = await _http.GetAsync(fileUrl).ConfigureAwait(false);
-                if (!res.IsSuccessStatusCode) return false;
+                var resFb = await _http.GetAsync(fileUrl).ConfigureAwait(false);
+                if (!resFb.IsSuccessStatusCode) return false;
 
-                string json = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
+                string json = await resFb.Content.ReadAsStringAsync().ConfigureAwait(false);
                 var jObj = JObject.Parse(json);
-                string? base64 = jObj["fileData"]?.ToString();
-                if (string.IsNullOrEmpty(base64)) return false;
+                string? base64Fb = jObj["fileData"]?.ToString();
+                if (string.IsNullOrEmpty(base64Fb)) return false;
 
-                byte[] bytes = Convert.FromBase64String(base64);
-                string? dir = Path.GetDirectoryName(destinationPath);
-                if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+                byte[] bytesFb = Convert.FromBase64String(base64Fb);
+                string? dirFb = Path.GetDirectoryName(destinationPath);
+                if (!string.IsNullOrEmpty(dirFb)) Directory.CreateDirectory(dirFb);
 
-                await File.WriteAllBytesAsync(destinationPath, bytes).ConfigureAwait(false);
+                await File.WriteAllBytesAsync(destinationPath, bytesFb).ConfigureAwait(false);
                 return true;
             }
             catch (Exception ex)

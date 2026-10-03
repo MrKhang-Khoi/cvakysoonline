@@ -3957,9 +3957,11 @@ namespace VGCASignToolPro
                     (r.Status == "WAITING_OPEN" || r.Status == "ACQUIRED_LOCKED" || r.Status == "LOCK_TIMEOUT")
                 ).ToList();
 
-                // 2. Outbox: Tôi đã gửi (Tuyệt đối không hiển thị báo cáo đã bị trả về và báo cáo đã ẩn khỏi giao diện)
+                // 2. Outbox: Tôi đã gửi hoặc đã tham gia ký duyệt/chuyển tiếp
                 var outbox = all.Where(r =>
-                    string.Equals(r.SenderCccd, myCccd, StringComparison.OrdinalIgnoreCase) &&
+                    (string.Equals(r.SenderCccd, myCccd, StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(r.SignedBy, myCccd, StringComparison.OrdinalIgnoreCase) ||
+                     (r.SignersHistory != null && r.SignersHistory.Any(s => string.Equals(s, myCccd, StringComparison.OrdinalIgnoreCase)))) &&
                     r.Status != "RETURNED" &&
                     !hiddenIds.Contains(r.ReportId)
                 ).ToList();
@@ -5357,7 +5359,7 @@ namespace VGCASignToolPro
 
                 string? localFile = null;
 
-                // 1. Kiểm tra chính xác theo cacheKey
+                // 1. Kiểm tra chính xác theo cacheKey (chỉ chấp nhận cache đúng phiên bản SignedHash hoặc BaseHash/DriveFileId hiện tại)
                 string cacheKey = !string.IsNullOrWhiteSpace(report.SignedHash)
                     ? report.SignedHash
                     : (!string.IsNullOrWhiteSpace(report.BaseHash) ? report.BaseHash : report.DriveFileId);
@@ -5375,18 +5377,7 @@ namespace VGCASignToolPro
                     }
                 }
 
-                // 2. Nếu chưa thấy, tìm bất kỳ file cache nào của reportId này trên máy
-                if (localFile == null)
-                {
-                    var candidates = Directory.GetFiles(tempDir, $"{report.ReportId}_*.pdf");
-                    if (candidates.Length > 0)
-                    {
-                        localFile = candidates.OrderByDescending(f => new FileInfo(f).LastWriteTime).First();
-                    }
-                }
-
-                // 3. NẾU ĐÃ CÓ FILE CỤC BỘ TRÊN MÁY: MỞ TRỰC TIẾP NGAY LẬP TỨC (<10ms)
-                // TUYỆT ĐỐI KHÔNG BẬT ShowLoadingOverlay (Tránh tối màn hình, nhấp nháy, giật lag)
+                // 2. NẾU ĐÃ CÓ FILE CỤC BỘ ĐÚNG PHIÊN BẢN: MỞ TRỰC TIẾP NGAY LẬP TỨC (<10ms)
                 if (localFile != null && File.Exists(localFile))
                 {
                     try

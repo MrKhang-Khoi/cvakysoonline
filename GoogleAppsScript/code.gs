@@ -80,6 +80,10 @@ function doPost(e) {
       return handleUploadFile(requestData);
     }
 
+    if (action === "getFile") {
+      return handleGetFile(requestData);
+    }
+
     if (action === "deleteFile") {
       return handleDeleteFile(requestData);
     }
@@ -157,6 +161,33 @@ function handleUploadFile(data) {
     downloadUrl: downloadUrl,
     createdAt: new Date().toISOString()
   });
+}
+
+/**
+ * Lấy tệp PDF từ Google Drive và trả về dữ liệu Base64
+ */
+function handleGetFile(data) {
+  const fileId = data.fileId;
+  if (!fileId || fileId.trim() === "") {
+    return jsonError("Thiếu fileId (fileId is required).", 400);
+  }
+
+  try {
+    const file = DriveApp.getFileById(fileId);
+    const blob = file.getBlob();
+    const bytes = blob.getBytes();
+    const base64 = Utilities.base64Encode(bytes);
+
+    return jsonSuccess({
+      fileId: fileId,
+      fileName: file.getName(),
+      fileSize: file.getSize(),
+      base64Data: base64,
+      updatedAt: file.getLastUpdated().toISOString()
+    });
+  } catch (ex) {
+    return jsonError("Không thể đọc tệp từ Google Drive: " + ex.toString(), 404);
+  }
 }
 
 /**
