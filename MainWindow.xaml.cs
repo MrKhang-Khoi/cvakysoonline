@@ -459,6 +459,46 @@ namespace VGCASignToolPro
             if (CmbCertificates != null) CmbCertificates.ItemsSource = null;
         }
 
+        private void ClearWorkflowUI()
+        {
+            try
+            {
+                _realtimeWatcher?.Stop();
+                _allReports?.Clear();
+                _activeWorkflowReportId = null;
+                _activeWorkflowExpectedBaseHash = null;
+                _isWorkflowSealingMode = false;
+
+                if (LvInboxReports != null) LvInboxReports.ItemsSource = null;
+                if (LvOutboxReports != null) LvOutboxReports.ItemsSource = null;
+                if (LvReturnedReports != null) LvReturnedReports.ItemsSource = null;
+                if (LvArchiveReports != null) LvArchiveReports.ItemsSource = null;
+                if (LvWaitingSealReports != null) LvWaitingSealReports.ItemsSource = null;
+
+                if (TxtCountInbox != null) TxtCountInbox.Text = "0";
+                if (TxtCountOutbox != null) TxtCountOutbox.Text = "0";
+                if (TxtCountReturned != null) TxtCountReturned.Text = "0";
+                if (TxtCountCompleted != null) TxtCountCompleted.Text = "0";
+                if (TxtCountWaitingSeal != null) TxtCountWaitingSeal.Text = "0";
+
+                if (TabItemWaitingSeal != null) TabItemWaitingSeal.Visibility = Visibility.Collapsed;
+                if (BorderWaitingSealCount != null) BorderWaitingSealCount.Visibility = Visibility.Collapsed;
+
+                if (TxtWorkflowUserGreeting != null) TxtWorkflowUserGreeting.Text = "Giáo viên: ---";
+                if (TxtWorkflowUserUnit != null) TxtWorkflowUserUnit.Text = "Đơn vị giáo dục";
+
+                if (BorderWorkflowReviewNotice != null) BorderWorkflowReviewNotice.Visibility = Visibility.Collapsed;
+                if (BtnCommitWorkflowApproval != null) BtnCommitWorkflowApproval.Visibility = Visibility.Collapsed;
+                if (BtnForwardWorkflowReport != null) BtnForwardWorkflowReport.Visibility = Visibility.Collapsed;
+                if (BtnCommitWorkflowSeal != null) BtnCommitWorkflowSeal.Visibility = Visibility.Collapsed;
+                if (BtnSubmitWorkflowReport != null) BtnSubmitWorkflowReport.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceWarning($"Lỗi ClearWorkflowUI: {ex.Message}");
+            }
+        }
+
         private void OnVgcaLoginStateChanged(bool isLoggedIn, VgcaTeacherModel? teacher)
         {
             Dispatcher.Invoke(() =>
@@ -480,6 +520,9 @@ namespace VGCASignToolPro
                     TxtQuickCertNotice.Text = $"Chứng thư: {teacher.FullName} (Ban Cơ yếu G2)";
 
                     // Đồng bộ thông tin sang Hộp Thư Trình Ký (Tab 3)
+                    // Reset sạch dữ liệu hiển thị Tab 3 của phiên trước để tránh nhầm lẫn / lộ báo cáo
+                    ClearWorkflowUI();
+
                     TxtWorkflowUserGreeting.Text = $"Giáo viên: {teacher.FullName} ({teacher.Title})";
                     TxtWorkflowUserUnit.Text = !string.IsNullOrWhiteSpace(teacher.Department)
                         ? $"{teacher.Department} - {teacher.Organization ?? ""}"
@@ -634,6 +677,7 @@ namespace VGCASignToolPro
 
                     // Reset 100% chi tiết kỹ thuật về mặc định ("---"), chống hoàn toàn lỗi đọng dữ liệu trên RAM
                     ClearCertificateDetailsUI();
+                    ClearWorkflowUI();
 
                     // Mở sẵn Tab 2 để giáo viên mở file Word, Excel, PDF xem bình thường
                     TabItemSignWorkspace.Header = "  Soạn Thảo & Ký Số  ";
@@ -4039,12 +4083,13 @@ namespace VGCASignToolPro
                     (r.Status == "WAITING_OPEN" || r.Status == "ACQUIRED_LOCKED" || r.Status == "LOCK_TIMEOUT")
                 ).ToList();
 
-                // 2. Outbox: Tôi đã gửi hoặc đã tham gia ký duyệt/chuyển tiếp
+                // 2. Outbox: Tôi đã gửi hoặc đã tham gia ký duyệt/chuyển tiếp (chỉ các văn bản đang xử lý hoặc chờ đóng dấu, KHÔNG bao gồm văn bản đã hoàn thành SIGNED_COMMITTED)
                 var outbox = all.Where(r =>
                     (string.Equals(r.SenderCccd, myCccd, StringComparison.OrdinalIgnoreCase) ||
                      string.Equals(r.SignedBy, myCccd, StringComparison.OrdinalIgnoreCase) ||
                      (r.SignersHistory != null && r.SignersHistory.Any(s => string.Equals(s, myCccd, StringComparison.OrdinalIgnoreCase)))) &&
                     r.Status != "RETURNED" &&
+                    r.Status != "SIGNED_COMMITTED" &&
                     !hiddenIds.Contains(r.ReportId)
                 ).ToList();
 
