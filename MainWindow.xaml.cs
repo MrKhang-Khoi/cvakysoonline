@@ -2957,11 +2957,24 @@ namespace VGCASignToolPro
                 }
             }
 
-            // 1. Tự động nhận diện thiết bị chữ ký số VGCA đang kết nối (USB Token hoặc Virtual CSP)
-            CertificateModel? activeVgCa = _certService.GetActiveVGCACertificate();
+            // 1. Xác định chứng thư sẽ dùng để ký:
+            //    Ưu tiên: cert user đã chọn/lưu preference (_currentActiveCert) nếu vẫn còn trong kho.
+            //    Fallback: auto-detect qua GetActiveVGCACertificate() chỉ khi _currentActiveCert null/không còn.
+            CertificateModel? activeVgCa = null;
+
+            // Kiểm tra cert user đã chọn còn trong kho không (tránh dùng cert đã rút token)
+            if (_currentActiveCert != null && _currentActiveCert.HasPrivateKey)
+            {
+                // Xác nhận cert này vẫn thực sự có trong kho Windows Store hiện tại
+                var currentCerts = _certService.LoadCertificates(onlyWithPrivateKey: true);
+                activeVgCa = currentCerts.FirstOrDefault(c =>
+                    string.Equals(c.Thumbprint, _currentActiveCert.Thumbprint, StringComparison.OrdinalIgnoreCase));
+                if (activeVgCa != null) _certificates = currentCerts;
+            }
+
+            // Fallback: auto-detect (khi chưa có preference hoặc cert preference không còn trong kho)
             if (activeVgCa == null || !activeVgCa.HasPrivateKey)
             {
-                // Thử quét lại kho chứng thư Windows Store
                 _certificates = _certService.LoadCertificates(onlyWithPrivateKey: true);
                 activeVgCa = _certService.GetActiveVGCACertificate();
             }
@@ -2983,7 +2996,7 @@ namespace VGCASignToolPro
                 return;
             }
 
-            // 2. Tự động kích hoạt danh tính người ký hiện hành đồng bộ theo chứng thư phát hiện
+            // 2. Đồng bộ _currentActiveCert với cert đã được xác nhận (không overwrite nếu đã chọn đúng)
             _currentActiveCert = activeVgCa;
             _vgcaAuth.SetCurrentActiveIdentity(activeVgCa);
 
