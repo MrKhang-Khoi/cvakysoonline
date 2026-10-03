@@ -18,7 +18,7 @@ namespace VGCASignToolPro.Services
     {
         private static readonly HttpClient _httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
         private readonly string _configFilePath;
-        public string CurrentVersionString { get; private set; } = "2.5.2";
+        public string CurrentVersionString { get; private set; } = "2.5.3";
 
         public UpdateService()
         {

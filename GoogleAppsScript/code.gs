@@ -80,6 +80,14 @@ function doPost(e) {
       return handleUploadFile(requestData);
     }
 
+    if (action === "deleteFile") {
+      return handleDeleteFile(requestData);
+    }
+
+    if (action === "deleteBatchFiles") {
+      return handleDeleteBatchFiles(requestData);
+    }
+
     return jsonError("Hành động '" + action + "' không được hỗ trợ.", 400);
 
   } catch (globalEx) {
@@ -148,6 +156,60 @@ function handleUploadFile(data) {
     directViewUrl: directViewUrl,
     downloadUrl: downloadUrl,
     createdAt: new Date().toISOString()
+  });
+}
+
+/**
+ * Xóa một tệp trên Google Drive (đưa vào thùng rác)
+ */
+function handleDeleteFile(data) {
+  const fileId = data.fileId;
+  if (!fileId || fileId.trim() === "") {
+    return jsonError("Thiếu fileId (fileId is required).", 400);
+  }
+
+  try {
+    const file = DriveApp.getFileById(fileId);
+    file.setTrashed(true);
+    return jsonSuccess({
+      message: "Đã xóa tệp trên Google Drive vào thùng rác thành công.",
+      fileId: fileId,
+      trashed: true
+    });
+  } catch (ex) {
+    return jsonError("Không thể xóa tệp: " + ex.toString(), 404);
+  }
+}
+
+/**
+ * Xóa hàng loạt tệp trên Google Drive theo danh sách fileIds
+ */
+function handleDeleteBatchFiles(data) {
+  const fileIds = data.fileIds;
+  if (!Array.isArray(fileIds) || fileIds.length === 0) {
+    return jsonError("Thiếu danh sách fileIds hợp lệ.", 400);
+  }
+
+  let deletedCount = 0;
+  const failedIds = [];
+
+  for (let i = 0; i < fileIds.length; i++) {
+    const fid = fileIds[i];
+    if (!fid) continue;
+    try {
+      const file = DriveApp.getFileById(fid);
+      file.setTrashed(true);
+      deletedCount++;
+    } catch (ex) {
+      failedIds.push({ fileId: fid, error: ex.toString() });
+    }
+  }
+
+  return jsonSuccess({
+    message: "Đã xử lý xóa hàng loạt tệp trên Google Drive.",
+    deletedCount: deletedCount,
+    totalRequested: fileIds.length,
+    failed: failedIds
   });
 }
 

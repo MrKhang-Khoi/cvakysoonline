@@ -513,7 +513,7 @@
                                     </Border>
 
                                     <!-- KHUNG THÔNG TIN CHI TIẾT CHỨNG THƯ -->
-                                    <Border Background="#F8FAFC" BorderBrush="#CBD5E1" BorderThickness="1" CornerRadius="6" Padding="14" Margin="0,0,0,12">
+                                    <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,12">
                                         <Grid>
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto" />
@@ -528,49 +528,49 @@
                                                 <RowDefinition Height="Auto" />
                                             </Grid.RowDefinitions>
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="150" />
+                                                <ColumnDefinition Width="140" />
                                                 <ColumnDefinition Width="*" />
                                             </Grid.ColumnDefinitions>
 
                                             <!-- HỌ VÀ TÊN -->
-                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Người Ký (Chủ sở hữu):" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="TxtDetailSignerName" Text="---" FontWeight="Bold" FontSize="14" Foreground="#1E3A8A" Margin="0,4" />
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Người ký:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="TxtDetailSignerName" Text="---" FontWeight="Bold" FontSize="13" Foreground="#1E3A8A" Margin="0,4" />
 
-                                            <!-- CHỨC VỤ VÀ PHÂN QUYỀN HỆ THỐNG -->
-                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Chức Vụ &amp; Phân Quyền:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="TxtDetailRoleAndSeal" Text="---" FontWeight="Bold" FontSize="12" Foreground="#0F172A" Margin="0,4" />
+                                            <!-- CHỨC VỤ -->
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Chức vụ:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="TxtDetailRoleAndSeal" Text="---" FontWeight="SemiBold" FontSize="12" Foreground="#0F172A" Margin="0,4" />
 
-                                            <!-- TRẠNG THÁI USB TOKEN / VGCA -->
-                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Kết Nối Chữ Ký Số:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="2" Grid.Column="1" x:Name="TxtDetailUsbStatus" Text="Đang kiểm tra kết nối..." FontSize="11" FontWeight="SemiBold" Foreground="#D97706" TextWrapping="Wrap" Margin="0,4" />
+                                            <!-- TRẠNG THÁI THIẾT BỊ -->
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Trạng thái thiết bị:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="2" Grid.Column="1" x:Name="TxtDetailUsbStatus" Text="Đang kiểm tra kết nối..." FontSize="12" FontWeight="SemiBold" Foreground="#D97706" TextWrapping="Wrap" Margin="0,4" />
 
                                             <!-- EMAIL -->
-                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Email Công Vụ:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="TxtDetailEmail" Text="---" Foreground="#0F172A" Margin="0,4" />
+                                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Email:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="TxtDetailEmail" Text="---" FontSize="12" Foreground="#0F172A" Margin="0,4" />
 
                                             <!-- ĐƠN VỊ -->
-                                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Đơn Vị Công Tác:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="TxtDetailOrg" Text="---" TextWrapping="Wrap" Foreground="#0F172A" Margin="0,4" />
+                                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Đơn vị:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="4" Grid.Column="1" x:Name="TxtDetailOrg" Text="---" FontSize="12" TextWrapping="Wrap" Foreground="#0F172A" Margin="0,4" />
 
-                                            <!-- CƠ QUAN CẤP (CA) -->
-                                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Cơ Quan Cấp Chứng Thư:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="5" Grid.Column="1" x:Name="TxtDetailIssuer" Text="---" Foreground="#059669" FontWeight="SemiBold" Margin="0,4" />
+                                            <!-- NHÀ CẤP CHỨNG THƯ -->
+                                            <TextBlock Grid.Row="5" Grid.Column="0" Text="Nhà cấp chứng thư:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="5" Grid.Column="1" x:Name="TxtDetailIssuer" Text="---" FontSize="12" Foreground="#059669" FontWeight="SemiBold" Margin="0,4" />
 
-                                            <!-- SỐ SERIAL -->
-                                            <TextBlock Grid.Row="6" Grid.Column="0" Text="Số Serial Chứng Thư:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="6" Grid.Column="1" x:Name="TxtDetailSerial" Text="---" FontFamily="Consolas" Foreground="#0F172A" Margin="0,4" />
+                                            <!-- SỐ SERI -->
+                                            <TextBlock Grid.Row="6" Grid.Column="0" Text="Số seri:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="6" Grid.Column="1" x:Name="TxtDetailSerial" Text="---" FontSize="12" Foreground="#0F172A" Margin="0,4" />
 
-                                            <!-- HIỆU LỰC -->
-                                            <TextBlock Grid.Row="7" Grid.Column="0" Text="Thời Hạn Hiệu Lực:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="7" Grid.Column="1" x:Name="TxtDetailValidity" Text="---" Foreground="#0F172A" Margin="0,4" />
+                                            <!-- THỜI HẠN -->
+                                            <TextBlock Grid.Row="7" Grid.Column="0" Text="Thời hạn:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="7" Grid.Column="1" x:Name="TxtDetailValidity" Text="---" FontSize="12" Foreground="#0F172A" Margin="0,4" />
 
-                                            <!-- THUẬT TOÁN KHÓA -->
-                                            <TextBlock Grid.Row="8" Grid.Column="0" Text="Thuật Toán Mật Mã:" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="8" Grid.Column="1" x:Name="TxtDetailAlgorithm" Text="---" Foreground="#D97706" FontWeight="SemiBold" Margin="0,4" />
+                                            <!-- THUẬT TOÁN -->
+                                            <TextBlock Grid.Row="8" Grid.Column="0" Text="Thuật toán:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="8" Grid.Column="1" x:Name="TxtDetailAlgorithm" Text="---" FontSize="12" Foreground="#D97706" FontWeight="SemiBold" Margin="0,4" />
 
-                                            <!-- THUMBPRINT -->
-                                            <TextBlock Grid.Row="9" Grid.Column="0" Text="Mã Băm (Thumbprint):" FontWeight="Bold" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="9" Grid.Column="1" x:Name="TxtDetailThumbprint" Text="---" FontFamily="Consolas" FontSize="10" Foreground="#64748B" TextWrapping="Wrap" Margin="0,4" />
+                                            <!-- MÃ BĂM -->
+                                            <TextBlock Grid.Row="9" Grid.Column="0" Text="Mã băm:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
+                                            <TextBlock Grid.Row="9" Grid.Column="1" x:Name="TxtDetailThumbprint" Text="---" FontSize="11" Foreground="#64748B" TextWrapping="Wrap" Margin="0,4" />
                                         </Grid>
                                     </Border>
 
@@ -1494,7 +1494,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="TIẾN TRÌNH: " FontSize="10" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <TextBlock Grid.Column="1" x:Name="TxtStatusBar" Text="Sẵn sàng." FontSize="11" Foreground="#E2E8F0" FontFamily="Segoe UI" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                <TextBlock Grid.Column="2" x:Name="TxtAppVersion" Text="Phiên bản v2.5.2 • .NET 8 x64" FontSize="11" Foreground="#94A3B8" VerticalAlignment="Center" Margin="16,0,0,0" />
+                <TextBlock Grid.Column="2" x:Name="TxtAppVersion" Text="Phiên bản v2.5.3 • .NET 8 x64" FontSize="11" Foreground="#94A3B8" VerticalAlignment="Center" Margin="16,0,0,0" />
             </Grid>
         </Border>
 
