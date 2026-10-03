@@ -1,10 +1,10 @@
-﻿# ==============================================================================
+# ==============================================================================
 # SCRIPT DONG GOI BO CAI DAT & GOI UPDATE TU DONG CHUAN MICROSOFT WINDOWS
 # Project: VGCA Sign Tool Pro (v2.3.0)
 # ==============================================================================
 
 $ErrorActionPreference = "Stop"
-$appVersion = "2.3.1"
+$appVersion = "2.3.2"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $projectDir = $scriptDir
 $distDir = Join-Path $projectDir "dist\win-x64"
@@ -167,8 +167,8 @@ $releaseObj = @{
     version = $appVersion
     minSupportedVersion = "2.0.0"
     releaseDate = (Get-Date -Format "yyyy-MM-dd")
-    title = "Bản cập nhật VGCA Sign Tool Pro v$appVersion"
-    description = "Sửa dứt điểm lỗi AccessViolationException (0xc0000005) khi ký số bằng cách tái cấu trúc bộ đệm KSP Ban Cơ Yếu, khôi phục hộp thoại ký Loading Overlay chuyên nghiệp có nút '✕ Hủy Chờ Ký' và tự khởi động ngầm Virtual CSP không treo ứng dụng."
+    title = "Ban cap nhat VGCA Sign Tool Pro v$appVersion"
+    description = "Sua dut diem loi hop thoai Loading Overlay van quay sau khi xac nhan ky so thanh cong tren dien thoai: An Overlay ngay sau khi PDF da render xong tren WebView2 truoc khi hien dialog thong bao."
     downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v$appVersion/VGCASignToolPro_Update_v$appVersion.zip"
     installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v$appVersion/VGCASignToolPro_Setup_v$appVersion.exe"
     sha256 = $zipHash
@@ -176,10 +176,10 @@ $releaseObj = @{
     mandatory = $false
     status = "ACTIVE"
     changelog = @(
-        "Khắc phục triệt để lỗi crash AccessViolationException (0xc0000005) trong coreclr.dll / KSP Ban Cơ Yếu: Tái cấu trúc NetX509ExternalSignature chỉ đọc Public Key trên RAM mà không đánh thức / giải phóng lặp đi lặp lại handle KSP của vgca_vcsp11_v2.dll, bảo vệ unmanaged memory 100%",
-        "Khôi phục hộp thoại tiến trình ký Loading Overlay chuyên nghiệp kèm nút '✕ Hủy Chờ Ký', thông báo rõ ràng cho giáo viên an tâm khi gửi yêu cầu tới điện thoại hoặc USB Token",
-        "Tự động chạy nền VGCA Virtual CSP không hiện hộp thoại modal chặn ngang gây treo ứng dụng",
-        "Bảo tồn 100% tính năng chuyển tiếp Ban Giám Hiệu, nạp Word, Excel, PDF và Hộp Thư Trình Ký thời gian thực SSE"
+        "Khac phuc triet de loi hop thoai Loading Overlay (Tien trinh ky) van quay sau khi xac nhan tren dien thoai thanh cong: Tu dong an Overlay va giai phong con tro cho ngay khi PDF render xong truoc khi hien dialog thong bao",
+        "Bao ve tuyet doi khoi catch va finally de luon dam bao Overlay duoc an ngay lap tuc ke ca khi xay ra loi hoac nguoi dung bam huy",
+        "Tu dong chay nen VGCA Virtual CSP khong hien hop thoai modal chan ngang gay treo ung dung",
+        "Bao ton 100% tinh nang chuyen tiep Ban Giam Hieu, nap Word, Excel, PDF va Hop Thu Trinh Ky thoi gian thuc SSE"
     )
 }
 $jsonPayload = $releaseObj | ConvertTo-Json -Depth 5

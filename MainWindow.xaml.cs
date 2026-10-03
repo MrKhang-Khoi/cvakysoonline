@@ -2996,6 +2996,10 @@ namespace VGCASignToolPro
                 BtnCloseCurrentFile.Visibility = Visibility.Visible;
                 TxtSignedSummaryNotice.Text = $"Tệp đã ký: {Path.GetFileName(signedPath)} • Đã nhúng chữ ký số và dấu thời gian TSA Ban Cơ yếu.";
 
+                // ẨN NGAY HỘP THOẠI LOADING OVERLAY VÀ GIẢI PHÓNG TRẠNG THÁI BUSY TRƯỚC KHI HIỆN BẤT KỲ DIALOG/POPUP NÀO
+                await HideLoadingOverlayAsync(400);
+                SetProcessingBusyState(false);
+
                 // Cập nhật trạng thái các nút workflow trên banner
                 if (!string.IsNullOrEmpty(_activeWorkflowReportId))
                 {
@@ -3039,6 +3043,8 @@ namespace VGCASignToolPro
             }
             catch (Exception ex)
             {
+                await HideLoadingOverlayAsync(0);
+                SetProcessingBusyState(false);
                 if (_signingCts?.IsCancellationRequested == true)
                 {
                     UpdateStatus("Đã hủy bỏ thao tác ký số theo yêu cầu của người dùng.");
@@ -3052,7 +3058,7 @@ namespace VGCASignToolPro
             finally
             {
                 _pdfSigner.StatusChanged -= onSignStatus;
-                HideLoadingOverlay();
+                await HideLoadingOverlayAsync(0);
                 SetProcessingBusyState(false);
                 UpdateSignAndSealButtonsState(true);
                 _signingCts?.Dispose();
@@ -3407,6 +3413,10 @@ namespace VGCASignToolPro
                 BtnCloseCurrentFile.Visibility = Visibility.Visible;
                 TxtSignedSummaryNotice.Text = $"Tệp đã đóng dấu: {Path.GetFileName(signedPath)} • Đã nhúng con dấu pháp nhân cơ quan và chứng thư số Ban Cơ yếu.";
 
+                // ẨN NGAY HỘP THOẠI LOADING OVERLAY VÀ GIẢI PHÓNG TRẠNG THÁI BUSY TRƯỚC KHI HIỆN BẤT KỲ DIALOG/POPUP NÀO
+                await HideLoadingOverlayAsync(400);
+                SetProcessingBusyState(false);
+
                 if (_isWorkflowSealingMode && !string.IsNullOrEmpty(_activeWorkflowReportId))
                 {
                     BtnCommitWorkflowSeal.Visibility = Visibility.Visible;
@@ -3444,6 +3454,8 @@ namespace VGCASignToolPro
             }
             catch (Exception ex)
             {
+                await HideLoadingOverlayAsync(0);
+                SetProcessingBusyState(false);
                 if (_signingCts?.IsCancellationRequested == true)
                 {
                     UpdateStatus("Đã hủy bỏ thao tác đóng dấu theo yêu cầu của người dùng.");
@@ -3458,7 +3470,7 @@ namespace VGCASignToolPro
             finally
             {
                 _pdfSigner.StatusChanged -= onSealStatus;
-                HideLoadingOverlay();
+                await HideLoadingOverlayAsync(0);
                 SetProcessingBusyState(false);
                 UpdateSignAndSealButtonsState(true);
                 _signingCts?.Dispose();
