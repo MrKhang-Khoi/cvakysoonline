@@ -1,7 +1,7 @@
 <Window x:Class="VGCASignToolPro.UpdateDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Cập Nhật Hệ Thống VGCA Sign Tool Pro" 
+        Title="Cập nhật ứng dụng VGCA Sign Tool Pro" 
         Height="470" Width="540"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
@@ -21,10 +21,10 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="🔄" FontSize="26" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <TextBlock Grid.Column="0" FontFamily="Segoe MDL2 Assets" Text="&#xE896;" FontSize="24" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,12,0" />
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Text="CẬP NHẬT PHẦN MỀM CHỮ KÝ SỐ VGCA" FontWeight="Bold" FontSize="15" Foreground="#F8FAFC" />
-                    <TextBlock Text="Đồng bộ tính năng &amp; giao thức ký số Ban Cơ Yếu Chính Phủ" FontSize="11" Foreground="#94A3B8" Margin="0,2,0,0" />
+                    <TextBlock Text="Cập nhật VGCA Sign Tool Pro" FontWeight="Bold" FontSize="15" Foreground="#F8FAFC" />
+                    <TextBlock Text="Đồng bộ tính năng và giao thức ký số Ban Cơ yếu Chính phủ" FontSize="11" Foreground="#94A3B8" Margin="0,2,0,0" />
                 </StackPanel>
             </Grid>
         </Border>
@@ -41,25 +41,25 @@
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                            <TextBlock Text="Phiên Bản Hiện Tại" FontSize="11" Foreground="#64748B" HorizontalAlignment="Center" />
-                            <TextBlock x:Name="TxtCurrentVer" Text="v2.0.0" FontWeight="Bold" FontSize="15" Foreground="#334155" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                            <TextBlock Text="Phiên bản hiện tại" FontSize="11" Foreground="#64748B" HorizontalAlignment="Center" />
+                            <TextBlock x:Name="TxtCurrentVer" Text="v2.4.0" FontWeight="Bold" FontSize="15" Foreground="#334155" HorizontalAlignment="Center" Margin="0,2,0,0" />
                         </StackPanel>
                         <TextBlock Grid.Column="1" Text="➔" FontSize="20" FontWeight="Bold" Foreground="#3B82F6" VerticalAlignment="Center" Margin="10,0" />
                         <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                            <TextBlock Text="Phiên Bản Mới" FontSize="11" Foreground="#059669" HorizontalAlignment="Center" />
-                            <TextBlock x:Name="TxtNewVer" Text="v2.1.0" FontWeight="Bold" FontSize="15" Foreground="#059669" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                            <TextBlock Text="Phiên bản mới" FontSize="11" Foreground="#059669" HorizontalAlignment="Center" />
+                            <TextBlock x:Name="TxtNewVer" Text="v2.5.0" FontWeight="Bold" FontSize="15" Foreground="#059669" HorizontalAlignment="Center" Margin="0,2,0,0" />
                         </StackPanel>
                     </Grid>
                 </Border>
 
                 <!-- RELEASE INFO -->
                 <Grid Margin="0,0,0,6">
-                    <TextBlock x:Name="TxtReleaseTitle" Text="Bản Cập Nhật VGCA Sign Tool Pro" FontWeight="Bold" FontSize="13" Foreground="#1E293B" />
-                    <TextBlock x:Name="TxtReleaseDate" Text="Phát hành: 29/09/2026" FontSize="11" Foreground="#64748B" HorizontalAlignment="Right" />
+                    <TextBlock x:Name="TxtReleaseTitle" Text="Bản cập nhật VGCA Sign Tool Pro" FontWeight="Bold" FontSize="13" Foreground="#1E293B" />
+                    <TextBlock x:Name="TxtReleaseDate" Text="Phát hành: Hôm nay" FontSize="11" Foreground="#64748B" HorizontalAlignment="Right" />
                 </Grid>
 
                 <!-- CHANGELOG BOX -->
-                <TextBlock Text="Nội dung cải tiến &amp; nâng cấp mới:" FontSize="12" FontWeight="SemiBold" Foreground="#475569" Margin="0,4,0,4" />
+                <TextBlock Text="Nội dung cải tiến:" FontSize="12" FontWeight="SemiBold" Foreground="#475569" Margin="0,4,0,4" />
                 <Border Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Height="140" Padding="8">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel x:Name="PnlChangelogList" Margin="4">
@@ -70,7 +70,7 @@
 
                 <!-- MANDATORY NOTICE (IF ANY) -->
                 <Border x:Name="BorderMandatoryNotice" Background="#FEF2F2" BorderBrush="#FCA5A5" BorderThickness="1" CornerRadius="6" Padding="8,5" Margin="0,8,0,0" Visibility="Collapsed">
-                    <TextBlock Text="⚠️ Đây là bản cập nhật quan trọng bắt buộc để đảm bảo tính pháp lý của chữ ký số." FontSize="11" Foreground="#DC2626" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="Bản cập nhật quan trọng nhằm đảm bảo tính pháp lý của chữ ký số." FontSize="11" Foreground="#DC2626" FontWeight="SemiBold" TextWrapping="Wrap" />
                 </Border>
 
                 <!-- PROGRESS AREA (COLLAPSED INITIALLY) -->
@@ -88,10 +88,10 @@
         <!-- FOOTER ACTIONS -->
         <Border Grid.Row="2" Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="0,1,0,0" Padding="18,12">
             <Grid>
-                <TextBlock x:Name="TxtShaNotice" Text="🔒 Mã băm SHA-256 bảo vệ từ Firebase" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" />
+                <TextBlock x:Name="TxtShaNotice" Text="Mã băm SHA-256 bảo vệ tính toàn vẹn" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" />
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button x:Name="BtnLater" Content="Để Sau" Padding="16,6" Margin="0,0,10,0" Background="White" BorderBrush="#CBD5E1" Foreground="#475569" FontWeight="SemiBold" FontSize="12" Click="BtnLater_Click" />
-                    <Button x:Name="BtnUpdateNow" Content="🚀 Cập Nhật Ngay" Padding="20,6" Background="#2563EB" BorderBrush="#1D4ED8" Foreground="White" FontWeight="Bold" FontSize="12" Click="BtnUpdateNow_Click" />
+                    <Button x:Name="BtnLater" Content="Để sau" Padding="16,6" Margin="0,0,10,0" Background="White" BorderBrush="#CBD5E1" Foreground="#475569" FontWeight="SemiBold" FontSize="12" Click="BtnLater_Click" />
+                    <Button x:Name="BtnUpdateNow" Content="Cập nhật ngay" Padding="20,6" Background="#2563EB" BorderBrush="#1D4ED8" Foreground="White" FontWeight="Bold" FontSize="12" Click="BtnUpdateNow_Click" />
                 </StackPanel>
             </Grid>
         </Border>

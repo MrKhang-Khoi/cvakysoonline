@@ -458,7 +458,7 @@ namespace VGCASignToolPro
                     GrpVgcaActiveCard.Visibility = Visibility.Visible;
 
                     BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(6, 95, 70));
-                    TxtVgcaGlobalStatusIcon.Text = "✅";
+                    TxtVgcaGlobalStatusIcon.Text = "\uE73E";
                     TxtVgcaGlobalStatusText.Text = $"VGCA: {teacher.FullName}";
 
                     TxtDetailSignerName.Text = teacher.FullName;
@@ -478,7 +478,7 @@ namespace VGCASignToolPro
                     _ = RefreshWorkflowDataAsync();
 
                     // Mở khóa Tab 2
-                    TabItemSignWorkspace.Header = "  2. ✍️ Soạn Thảo & Ký Số  ";
+                    TabItemSignWorkspace.Header = "  Soạn Thảo & Ký Số  ";
                     TabItemSignWorkspace.IsEnabled = true;
                     OverlayTab2Locked.Visibility = Visibility.Collapsed;
                     if (PdfPreviewControl != null)
@@ -529,31 +529,31 @@ namespace VGCASignToolPro
                                 BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(240, 253, 244));
                                 BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(134, 239, 172));
 
-                                TxtDetailUsbStatus.Text = $"✅ Đã phát hiện chứng thư Ban Cơ yếu ({matchedCert.CommonName}) & Virtual CSP đã sẵn sàng ký số!";
+                                TxtDetailUsbStatus.Text = $"Đã phát hiện chứng thư Ban Cơ yếu ({matchedCert.CommonName}) & Virtual CSP đã sẵn sàng ký số";
                                 TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
 
                                 BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(6, 95, 70));
-                                TxtVgcaGlobalStatusIcon.Text = "✅";
+                                TxtVgcaGlobalStatusIcon.Text = "\uE73E";
                                 TxtVgcaGlobalStatusText.Text = $"VGCA: {teacher.FullName}";
                             }
                             else
                             {
                                 // USB Token vật lý phần cứng (Cá nhân BGH hoặc Con dấu cơ quan)
-                                TxtDetailBannerIcon.Text = "🛡️";
-                                TxtDetailBannerTitle.Text = "ĐÃ KẾT NỐI USB TOKEN PHẦN CỨNG";
+                                TxtDetailBannerIcon.Text = "\uE730";
+                                TxtDetailBannerTitle.Text = "Đã kết nối USB Token phần cứng";
                                 TxtDetailBannerTitle.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
                                 string tokenDesc = matchedCert.IsOrganizationCertificate
                                     ? $"USB Token con dấu nhà trường: {matchedCert.CommonName}"
                                     : $"USB Token cá nhân: {matchedCert.CommonName}";
-                                TxtDetailBannerSubtitle.Text = $"Thiết bị {tokenDesc} đã sẵn sàng ký số trực tiếp.";
+                                TxtDetailBannerSubtitle.Text = $"Thiết bị {tokenDesc} đã sẵn sàng ký số.";
                                 BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(240, 253, 244));
                                 BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(134, 239, 172));
 
-                                TxtDetailUsbStatus.Text = $"✅ {tokenDesc}. Sẵn sàng ký số!";
+                                TxtDetailUsbStatus.Text = $"{tokenDesc}. Sẵn sàng ký số";
                                 TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
 
                                 BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(6, 95, 70));
-                                TxtVgcaGlobalStatusIcon.Text = "✅";
+                                TxtVgcaGlobalStatusIcon.Text = "\uE73E";
                                 TxtVgcaGlobalStatusText.Text = $"VGCA Token: {teacher.FullName}";
                             }
                         }
@@ -580,14 +580,14 @@ namespace VGCASignToolPro
                     GrpVgcaActiveCard.Visibility = Visibility.Visible;
 
                     BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(217, 119, 6));
-                    TxtVgcaGlobalStatusIcon.Text = "⚠️";
-                    TxtVgcaGlobalStatusText.Text = "VGCA: Chưa Kết Nối Chữ Ký Số";
+                    TxtVgcaGlobalStatusIcon.Text = "\uE7BA";
+                    TxtVgcaGlobalStatusText.Text = "Chưa kết nối chữ ký số";
                     TxtQuickCertNotice.Text = "Chưa kết nối chứng thư VGCA (Vui lòng cắm USB hoặc mở Virtual CSP)";
 
-                    TxtDetailBannerIcon.Text = "⚠️";
-                    TxtDetailBannerTitle.Text = "CHƯA KẾT NỐI THIẾT BỊ KÝ SỐ BAN CƠ YẾU";
+                    TxtDetailBannerIcon.Text = "\uE7BA";
+                    TxtDetailBannerTitle.Text = "Chưa kết nối thiết bị ký số Ban Cơ yếu";
                     TxtDetailBannerTitle.Foreground = new SolidColorBrush(Color.FromRgb(217, 119, 6));
-                    TxtDetailBannerSubtitle.Text = "Vui lòng mở ứng dụng VGCA Virtual CSP (ký từ xa qua điện thoại) hoặc cắm USB Token Ban Cơ Yếu vào máy tính.";
+                    TxtDetailBannerSubtitle.Text = "Vui lòng mở ứng dụng VGCA Virtual CSP hoặc cắm USB Token Ban Cơ yếu vào máy tính.";
                     BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(255, 251, 235));
                     BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(253, 230, 138));
 
@@ -595,7 +595,7 @@ namespace VGCASignToolPro
                     ClearCertificateDetailsUI();
 
                     // Mở sẵn Tab 2 để giáo viên mở file Word, Excel, PDF xem bình thường
-                    TabItemSignWorkspace.Header = "  2. ✍️ Soạn Thảo & Ký Số  ";
+                    TabItemSignWorkspace.Header = "  Soạn Thảo & Ký Số  ";
                     TabItemSignWorkspace.IsEnabled = true;
                     OverlayTab2Locked.Visibility = Visibility.Collapsed;
                     if (PdfPreviewControl != null)
@@ -1217,7 +1217,7 @@ namespace VGCASignToolPro
                 // Đồng bộ sang chip hiển thị trên Tab 2
                 ImgTab2StampThumb.Source = bitmap;
                 ImgTab2StampThumb.Visibility = Visibility.Visible;
-                TxtTab2StampStatus.Text = $"🔴 Con dấu: {Path.GetFileName(filePath)}";
+                TxtTab2StampStatus.Text = $"Con dấu: {Path.GetFileName(filePath)}";
                 BtnTab2SelectStamp.Content = "Đổi ảnh";
 
                 // Tự động lưu trữ an toàn vào App Vault và Base64 trong Profile
@@ -1257,8 +1257,8 @@ namespace VGCASignToolPro
 
             ImgTab2StampThumb.Source = null;
             ImgTab2StampThumb.Visibility = Visibility.Collapsed;
-            TxtTab2StampStatus.Text = "⚪ Con dấu: Chưa chọn";
-            BtnTab2SelectStamp.Content = "+ Thêm ảnh";
+            TxtTab2StampStatus.Text = "Con dấu: Chưa chọn";
+            BtnTab2SelectStamp.Content = "Chọn mẫu...";
 
             if (CmbProfiles.SelectedItem is SignatureProfile profile)
             {
@@ -1704,7 +1704,7 @@ namespace VGCASignToolPro
         /// Hiển thị hộp thoại trung tâm Loading Dialog với huy hiệu tĩnh chống lag và thanh tiến trình.
         /// Sử dụng WPF Popup tạo HWND độc lập giải quyết triệt để lỗi Airspace che khuất của WebView2.
         /// </summary>
-        private void ShowLoadingOverlay(string title, string message, string icon = "📄", bool showCancelButton = false, string cancelButtonText = "✕ Hủy Chờ Ký")
+        private void ShowLoadingOverlay(string title, string message, string icon = "📄", bool showCancelButton = false, string cancelButtonText = "Hủy chờ ký")
         {
             _loadingStartTime = DateTime.UtcNow;
             VGCASignToolPro.Services.AppLogger.Info($"Hiện loading overlay: {title} | {message}", "ShowLoadingOverlay");
@@ -1712,7 +1712,21 @@ namespace VGCASignToolPro
             EnsurePopupElements();
             if (_popupLoadingTitle != null) _popupLoadingTitle.Text = title;
             if (_popupLoadingMessage != null) _popupLoadingMessage.Text = message;
-            if (_popupLoadingIcon != null) _popupLoadingIcon.Text = icon;
+            if (_popupLoadingIcon != null)
+            {
+                string glyph = icon switch
+                {
+                    "📄" or "📑" => "\uE8A5",
+                    "📊" => "\uE9F9",
+                    "⚡" => "\uE7E8",
+                    "✍️" => "\uE8D7",
+                    "🔴" => "\uEA3B",
+                    "📥" => "\uE896",
+                    _ => icon
+                };
+                _popupLoadingIcon.FontFamily = new System.Windows.Media.FontFamily("Segoe MDL2 Assets");
+                _popupLoadingIcon.Text = glyph;
+            }
 
             if (_btnCancelSigningOverlay != null)
             {

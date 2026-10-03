@@ -6,7 +6,7 @@
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         xmlns:syncfusion="clr-namespace:Syncfusion.Windows.Controls.RichTextBoxAdv;assembly=Syncfusion.SfRichTextBoxAdv.Wpf"
         mc:Ignorable="d"
-        Title="VGCA Sign Tool Pro - Hệ Thống Ký Số Điện Tử &amp; Soạn Thảo Văn Bản Tích Hợp" 
+        Title="VGCA Sign Tool Pro - Hệ thống ký số và soạn thảo văn bản" 
         Icon="app_icon.ico"
         Height="820" Width="1320"
         MinHeight="700" MinWidth="1080"
@@ -427,26 +427,26 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="VGCA SIGN TOOL PRO" FontSize="20" FontWeight="Bold" Foreground="White" />
-                    <TextBlock Text="Ký số PAdES Ban Cơ yếu Chính phủ • Soạn thảo &amp; Xem trực tiếp Word/PDF • Cổng Web" 
+                    <TextBlock Text="Ký số chuẩn PAdES Ban Cơ yếu Chính phủ • Soạn thảo và xử lý văn bản" 
                                FontSize="12" Foreground="#93C5FD" Margin="0,2,0,0" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <!-- NÚT KIỂM TRA CẬP NHẬT PHIÊN BẢN MỚI TỪ FIREBASE -->
                     <Button x:Name="BtnCheckUpdate" Click="BtnCheckUpdate_Click" 
                             Background="#1E293B" BorderBrush="#334155" BorderThickness="1"
-                            Padding="10,6" Margin="0,0,10,0" Cursor="Hand" ToolTip="Kiểm tra phiên bản cập nhật mới từ hệ thống nhà trường (Firebase &amp; GitHub)">
+                            Padding="10,6" Margin="0,0,10,0" Cursor="Hand" ToolTip="Kiểm tra phiên bản cập nhật mới từ hệ thống (Firebase &amp; GitHub)">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🔄" FontSize="12" Margin="0,0,6,0" Foreground="#38BDF8" VerticalAlignment="Center" />
-                            <TextBlock x:Name="TxtUpdateStatusHeader" Text="Kiểm Tra Cập Nhật" FontSize="11" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" />
+                            <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE72C;" FontSize="11" Margin="0,0,6,0" Foreground="#38BDF8" VerticalAlignment="Center" />
+                            <TextBlock x:Name="TxtUpdateStatusHeader" Text="Kiểm tra cập nhật" FontSize="11" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
 
                     <!-- BADGE TRẠNG THÁI VGCA TOÀN CỤC -->
                     <Border x:Name="BadgeVgcaGlobalStatus" Background="#B91C1C" CornerRadius="6" Padding="12,6" Margin="0,0,10,0">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock x:Name="TxtVgcaGlobalStatusIcon" Text="🔒" Margin="0,0,6,0" VerticalAlignment="Center" />
-                            <TextBlock x:Name="TxtVgcaGlobalStatusText" Text="VGCA: Chưa Đăng Nhập" 
-                                       Foreground="#FEF2F2" FontSize="12" FontWeight="Bold" VerticalAlignment="Center" />
+                            <TextBlock x:Name="TxtVgcaGlobalStatusIcon" FontFamily="Segoe MDL2 Assets" Text="&#xE72E;" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="#FEF2F2" />
+                            <TextBlock x:Name="TxtVgcaGlobalStatusText" Text="Chưa kết nối chứng thư" 
+                                       Foreground="#FEF2F2" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -458,7 +458,7 @@
 
             <!-- ================= TAB 1: THÔNG TIN CHỮ KÝ SỐ (VGCA & PROFILES) ================= -->
             <!-- ================= TAB 1: THÔNG TIN NHẬN DIỆN CHỮ KÝ SỐ (VGCA & PROFILES) ================= -->
-            <TabItem Header="  1. 👤 Nhận Diện Chữ Ký Số  " FontSize="13" FontWeight="SemiBold">
+            <TabItem Header="  Nhận diện chữ ký  " FontSize="13" FontWeight="SemiBold">
                 <ScrollViewer Margin="0,10,0,0" VerticalScrollBarVisibility="Auto">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -469,7 +469,7 @@
 
                         <!-- CỘT TRÁI: KHUNG THÔNG TIN NHẬN DIỆN CHỨNG THƯ VGCA & PHÂN QUYỀN FIREBASE -->
                         <StackPanel Grid.Column="0">
-                            <GroupBox x:Name="GrpVgcaActiveCard" Header="Thông Tin Nhận Diện Chữ Ký Số VGCA (Ban Cơ Yếu Chính Phủ)" Visibility="Visible">
+                            <GroupBox x:Name="GrpVgcaActiveCard" Header="Thông tin nhận diện chữ ký số VGCA Ban Cơ yếu Chính phủ" Visibility="Visible">
                                 <StackPanel Margin="4">
                                     <!-- BANNER XÁC THỰC HOẶC CẢNH BÁO TRẠNG THÁI CSP / TOKEN -->
                                     <Border x:Name="BorderDetailBanner" Background="#F0FDF4" BorderBrush="#86EFAC" BorderThickness="1" CornerRadius="6" Padding="12,10" Margin="0,0,0,10">
@@ -480,34 +480,34 @@
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Grid.Column="0">
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock x:Name="TxtDetailBannerIcon" Text="🛡️" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" />
-                                                    <TextBlock x:Name="TxtDetailBannerTitle" Text="ĐÃ NHẬN DIỆN THIẾT BỊ KÝ SỐ BAN CƠ YẾU" FontWeight="Bold" Foreground="#15803D" FontSize="12" VerticalAlignment="Center" />
+                                                    <TextBlock x:Name="TxtDetailBannerIcon" FontFamily="Segoe MDL2 Assets" Text="&#xE730;" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="#15803D" />
+                                                    <TextBlock x:Name="TxtDetailBannerTitle" Text="Đã nhận diện thiết bị ký số Ban Cơ yếu" FontWeight="Bold" Foreground="#15803D" FontSize="12" VerticalAlignment="Center" />
                                                 </StackPanel>
-                                                <TextBlock x:Name="TxtDetailBannerSubtitle" Text="Tự động phân quyền ký số và đóng dấu theo số CCCD từ hệ thống nhà trường." FontSize="11" Foreground="#166534" Margin="0,2,0,0" />
+                                                <TextBlock x:Name="TxtDetailBannerSubtitle" Text="Tự động phân quyền ký số và đóng dấu theo số định danh cá nhân." FontSize="11" Foreground="#166534" Margin="0,2,0,0" />
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                                <Button x:Name="BtnDetailOpenVcsp" Content="🖥️ Mở Công Cụ VGCA" Style="{StaticResource SecondaryButton}" 
-                                                        Background="#FEF3C7" BorderBrush="#FCD34D" Foreground="#B45309" FontWeight="Bold" 
+                                                <Button x:Name="BtnDetailOpenVcsp" Content="Công cụ VGCA" Style="{StaticResource SecondaryButton}" 
+                                                        Background="#FEF3C7" BorderBrush="#FCD34D" Foreground="#B45309" FontWeight="SemiBold" 
                                                         Padding="8,4" FontSize="11" Margin="0,0,6,0" Click="BtnLaunchVgcaManager_Click"
-                                                        ToolTip="Bấm để mở VGCA Virtual CSP Manager hoặc USB Token Sign Tool (Hoặc chuột phải để chọn thao tác)">
+                                                        ToolTip="Mở VGCA Virtual CSP Manager hoặc USB Token Sign Tool">
                                                     <Button.ContextMenu>
                                                         <ContextMenu>
-                                                            <MenuItem Header="🖥️ Mở Virtual CSP Manager (Ký số từ xa qua điện thoại)" Click="MenuOpenVcspManager_Click" FontWeight="Bold" />
+                                                            <MenuItem Header="Mở Virtual CSP Manager (Ký số từ xa)" Click="MenuOpenVcspManager_Click" FontWeight="SemiBold" />
                                                             <Separator />
-                                                            <MenuItem Header="📦 Cài đặt VGCA Virtual CSP v2.0 (VGCA_VCSPInstaller.exe)" Click="MenuInstallVcsp_Click" />
-                                                            <MenuItem Header="🔑 Cài đặt VGCA Sign Tool v3.0.6 (USB Token phần cứng - .msi)" Click="MenuInstallVgcaSignTool_Click" />
+                                                            <MenuItem Header="Cài đặt VGCA Virtual CSP v2.0" Click="MenuInstallVcsp_Click" />
+                                                            <MenuItem Header="Cài đặt VGCA Sign Tool v3.0.6 (USB Token)" Click="MenuInstallVgcaSignTool_Click" />
                                                             <Separator />
-                                                            <MenuItem Header="⚡ Mở VGCA Sign Tool v3.0.6 (USB Token)" Click="MenuOpenVgcaSignTool_Click" />
+                                                            <MenuItem Header="Mở VGCA Sign Tool v3.0.6" Click="MenuOpenVgcaSignTool_Click" />
                                                         </ContextMenu>
                                                     </Button.ContextMenu>
                                                 </Button>
-                                                <Button Content="🔄 Quét Lại Thiết Bị" Style="{StaticResource SecondaryButton}" 
+                                                <Button Content="Quét lại thiết bị" Style="{StaticResource SecondaryButton}" 
                                                         Background="#F1F5F9" BorderBrush="#CBD5E1" Foreground="#334155" FontWeight="SemiBold" 
                                                         Padding="8,4" FontSize="11" Margin="0,0,6,0" Click="BtnSyncVgcaCertificate_Click" />
-                                                <Button Content="☁️ Đồng Bộ Phân Quyền" Style="{StaticResource SecondaryButton}" 
-                                                        Background="#ECFDF5" BorderBrush="#A7F3D0" Foreground="#047857" FontWeight="Bold" 
+                                                <Button Content="Đồng bộ phân quyền" Style="{StaticResource SecondaryButton}" 
+                                                        Background="#ECFDF5" BorderBrush="#A7F3D0" Foreground="#047857" FontWeight="SemiBold" 
                                                         Padding="8,4" FontSize="11" Click="BtnSyncRosterCloud_Click"
-                                                        ToolTip="Tải lại ngay danh bạ và phân quyền đóng dấu mới nhất từ máy chủ đám mây Firebase / Cổng Quản Trị Web" />
+                                                        ToolTip="Tải lại danh bạ và quyền đóng dấu từ hệ thống" />
                                             </StackPanel>
                                         </Grid>
                                     </Border>
@@ -575,8 +575,8 @@
                                     </Border>
 
                                     <!-- NÚT ĐI TỚI SOẠN THẢO (TAB 2) NỔI BẬT -->
-                                    <Button Content="👉 Chuyển Sang Soạn Thảo &amp; Ký Số (Tab 2) ➡" Style="{StaticResource PrimaryButton}" 
-                                            Background="#1E40AF" FontSize="13" FontWeight="Bold" Padding="14,10" Click="BtnGoToSignWorkspace_Click" Margin="0,0,0,8" />
+                                    <Button Content="Tiếp tục sang soạn thảo và ký số" Style="{StaticResource PrimaryButton}" 
+                                            Background="#1E40AF" FontSize="13" FontWeight="SemiBold" Padding="14,10" Click="BtnGoToSignWorkspace_Click" Margin="0,0,0,8" />
 
                                     <!-- DROPDOWN CHỌN CHỨNG THƯ (CHỈ HIỂN THỊ CHỨNG THƯ HỢP LỆ) -->
                                     <TextBlock Text="Danh sách chứng thư ký số phát hiện trên máy:" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
@@ -586,7 +586,7 @@
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <ComboBox Grid.Column="0" x:Name="CmbCertificates" Padding="6" SelectionChanged="CmbCertificates_SelectionChanged" />
-                                        <Button Grid.Column="1" Content="🔄 Quét Lại Token" Style="{StaticResource SecondaryButton}" 
+                                        <Button Grid.Column="1" Content="Quét lại" Style="{StaticResource SecondaryButton}" 
                                                 Margin="6,0,0,0" Padding="8,4" Click="BtnRefreshCertificates_Click" />
                                     </Grid>
                                 </StackPanel>
@@ -595,7 +595,7 @@
 
                         <!-- CỘT PHẢI: MẪU CHỮ KÝ & VỊ TRÍ KÝ MẶC ĐỊNH (SIGNER PROFILE) -->
                         <StackPanel Grid.Column="2">
-                            <GroupBox Header="Cấu Hình Mẫu Chữ Ký &amp; Vị Trí Mặc Định">
+                            <GroupBox Header="Cấu hình mẫu chữ ký và vị trí mặc định">
                                 <StackPanel Margin="4">
                                     <TextBlock Text="Chọn mẫu chữ ký chuẩn:" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
                                     <Grid Margin="0,0,0,8">
@@ -605,10 +605,10 @@
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <ComboBox Grid.Column="0" x:Name="CmbProfiles" Padding="6" SelectionChanged="CmbProfiles_SelectionChanged" />
-                                        <Button Grid.Column="1" x:Name="BtnAddNewProfile" Content="➕ Thêm Mới" Style="{StaticResource PrimaryButton}" 
+                                        <Button Grid.Column="1" x:Name="BtnAddNewProfile" Content="Thêm mới" Style="{StaticResource PrimaryButton}" 
                                                 Background="#0284C7" BorderBrush="#0369A1" Padding="8,4" FontSize="11" Margin="6,0,0,0" 
-                                                Click="BtnAddNewProfile_Click" ToolTip="Tạo thêm mẫu chữ ký mới (ví dụ: Dấu đỏ cơ quan, Ký nháy, Ký duyệt...)" />
-                                        <Button Grid.Column="2" x:Name="BtnDeleteProfile" Content="🗑️ Xóa" Style="{StaticResource SecondaryButton}" 
+                                                Click="BtnAddNewProfile_Click" ToolTip="Tạo thêm mẫu chữ ký mới" />
+                                        <Button Grid.Column="2" x:Name="BtnDeleteProfile" Content="Xóa" Style="{StaticResource SecondaryButton}" 
                                                 Foreground="#DC2626" BorderBrush="#FCA5A5" Background="#FEF2F2" Padding="8,4" FontSize="11" Margin="6,0,0,0" 
                                                 Click="BtnDeleteProfile_Click" ToolTip="Xóa mẫu chữ ký đang chọn" />
                                     </Grid>
@@ -621,10 +621,10 @@
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0" Text="Hình ảnh con dấu đỏ hoặc chữ ký tay quét:" FontSize="12" FontWeight="Bold" Foreground="#1E293B" VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="0" Text="Hình ảnh con dấu hoặc chữ ký tay:" FontSize="12" FontWeight="SemiBold" Foreground="#1E293B" VerticalAlignment="Center" />
                                                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                    <Button Content="🖼 Chọn Ảnh..." Style="{StaticResource PrimaryButton}" Padding="10,4" FontSize="11" Click="BtnSelectStampImage_Click" />
-                                                    <Button x:Name="BtnClearStampImage" Content="❌ Gỡ Ảnh" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Margin="6,0,0,0" Click="BtnClearStampImage_Click" Visibility="Collapsed" />
+                                                    <Button Content="Chọn ảnh..." Style="{StaticResource PrimaryButton}" Padding="10,4" FontSize="11" Click="BtnSelectStampImage_Click" />
+                                                    <Button x:Name="BtnClearStampImage" Content="Gỡ ảnh" Style="{StaticResource SecondaryButton}" Padding="8,4" FontSize="11" Margin="6,0,0,0" Click="BtnClearStampImage_Click" Visibility="Collapsed" />
                                                 </StackPanel>
                                             </Grid>
 
@@ -633,8 +633,8 @@
                                                 <Grid>
                                                     <!-- PLACEHOLDER KHI CHƯA CHỌN ẢNH -->
                                                     <StackPanel x:Name="PnlStampPlaceholder" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                        <TextBlock Text="⭕ Chưa chọn ảnh con dấu / chữ ký tay" FontSize="12" Foreground="#94A3B8" HorizontalAlignment="Center" />
-                                                        <TextBlock Text="Nhấn nút 'Chọn Ảnh...' ở trên để nạp tệp con dấu đỏ (.png, .jpg)" FontSize="10" Foreground="#CBD5E1" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                                                        <TextBlock Text="Chưa chọn ảnh con dấu hoặc chữ ký tay" FontSize="12" Foreground="#94A3B8" HorizontalAlignment="Center" />
+                                                        <TextBlock Text="Chọn tệp hình ảnh (.png, .jpg) để hiển thị khi ký" FontSize="10" Foreground="#CBD5E1" HorizontalAlignment="Center" Margin="0,2,0,0" />
                                                     </StackPanel>
 
                                                     <!-- ẢNH HIỂN THỊ THỰC TẾ KHI ĐÃ CHỌN -->
@@ -657,9 +657,9 @@
                                             <!-- HÌNH THỨC HIỂN THỊ CHỮ KÝ (MODE) -->
                                             <TextBlock Text="Hình thức thể hiện khi ký trên tài liệu PDF:" FontSize="11" Foreground="#64748B" Margin="0,2,0,2" />
                                             <ComboBox x:Name="CmbDisplayMode" Padding="5" SelectionChanged="CmbDisplayMode_SelectionChanged">
-                                                <ComboBoxItem Content="🔴 Chỉ hình ảnh con dấu / chữ ký tay (Khuyên dùng)" IsSelected="True" />
-                                                <ComboBoxItem Content="📝 Ảnh con dấu + Dòng thông tin người ký &amp; ngày giờ" />
-                                                <ComboBoxItem Content="📄 Chỉ thông tin văn bản chữ ký số điện tử (Không ảnh)" />
+                                                <ComboBoxItem Content="Chỉ hình ảnh con dấu hoặc chữ ký tay" IsSelected="True" />
+                                                <ComboBoxItem Content="Hình ảnh kèm tên người ký và thời gian" />
+                                                <ComboBoxItem Content="Chỉ văn bản chứng thư (không dùng ảnh)" />
                                             </ComboBox>
                                         </StackPanel>
                                     </Border>
@@ -700,7 +700,7 @@
                                     <TextBlock Text="Lý do ký:" FontSize="11" Foreground="#64748B" Margin="0,0,0,2" />
                                     <TextBox x:Name="TxtReason" Text="Ký duyệt phát hành văn bản điện tử" Padding="5" Margin="0,0,0,8" />
 
-                                    <CheckBox x:Name="ChkUseTSA" Content="Đóng Dấu thời gian TSA Ban Cơ yếu (http://ca.gov.vn/tsa)" 
+                                    <CheckBox x:Name="ChkUseTSA" Content="Đóng dấu thời gian TSA Ban Cơ yếu (http://ca.gov.vn/tsa)" 
                                               IsChecked="True" FontWeight="Normal" FontSize="11" Margin="0,0,0,12" />
 
                                     <!-- NÚT LƯU CẤU HÌNH & CHUYỂN SANG TAB SOẠN THẢO -->
@@ -709,10 +709,10 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <Button Grid.Column="0" Content="💾 Lưu Mẫu Chữ Ký" 
+                                        <Button Grid.Column="0" Content="Lưu mẫu chữ ký" 
                                                 Style="{StaticResource SecondaryButton}" Padding="10,8" Margin="0,0,4,0" 
                                                 Click="BtnSaveProfile_Click" />
-                                        <Button Grid.Column="1" Content="👉 Sang Soạn Thảo &amp; Ký Số ➡" 
+                                        <Button Grid.Column="1" Content="Sang soạn thảo và ký số" 
                                                 Style="{StaticResource PrimaryButton}" Padding="10,8" Margin="4,0,0,0" 
                                                 Click="BtnGoToSignWorkspace_Click" />
                                     </Grid>
@@ -724,7 +724,7 @@
             </TabItem>
 
             <!-- ================= TAB 2: SOẠN THẢO & KÝ SỐ VĂN BẢN TRỰC TIẾP ================= -->
-            <TabItem x:Name="TabItemSignWorkspace" Header="  2. ✍️ Soạn Thảo &amp; Ký Số  " IsEnabled="True" FontSize="13" FontWeight="SemiBold">
+            <TabItem x:Name="TabItemSignWorkspace" Header="  Soạn thảo và ký số  " IsEnabled="True" FontSize="13" FontWeight="SemiBold">
                 <Grid x:Name="GridTab2Root" Margin="0,10,0,0">
                     <Grid.RowDefinitions>
                         <!-- HÀNG 0: THANH CÔNG CỤ ĐIỀU KHIỂN & SOẠN THẢO TRÊN CÙNG -->
@@ -757,22 +757,22 @@
                                 </Grid.ColumnDefinitions>
 
                                 <!-- NÚT 1: MỞ FILE WORD -->
-                                <Button Grid.Column="0" x:Name="BtnSelectWord" Content="📄 Mở File Word" 
+                                <Button Grid.Column="0" x:Name="BtnSelectWord" Content="Mở tệp Word" 
                                         Style="{StaticResource ToolbarWordButton}" 
                                         Click="BtnSelectWord_Click" Margin="0,0,6,0" 
-                                        ToolTip="Mở văn bản Microsoft Word (.docx) để xem, chỉnh sửa và ký số" />
+                                        ToolTip="Mở tệp Word (.docx) để xem, chỉnh sửa và ký số" />
 
                                 <!-- NÚT 2: MỞ BẢNG TÍNH EXCEL -->
-                                <Button Grid.Column="1" x:Name="BtnSelectExcel" Content="📊 Mở File Excel" 
+                                <Button Grid.Column="1" x:Name="BtnSelectExcel" Content="Mở tệp Excel" 
                                         Style="{StaticResource ToolbarExcelButton}" 
                                         Click="BtnSelectExcel_Click" Margin="0,0,6,0" 
-                                        ToolTip="Mở bảng tính Microsoft Excel (.xlsx, .xls) để xem, điều chỉnh và ký số" />
+                                        ToolTip="Mở bảng tính Excel (.xlsx, .xls) để xem và ký số" />
 
                                 <!-- NÚT 3: MỞ FILE PDF TRỰC TIẾP -->
-                                <Button Grid.Column="2" x:Name="BtnSelectPdf" Content="📑 Mở File PDF" 
+                                <Button Grid.Column="2" x:Name="BtnSelectPdf" Content="Mở tệp PDF" 
                                         Style="{StaticResource ToolbarPdfButton}" 
                                         Click="BtnSelectPdf_Click" Margin="0,0,10,0" 
-                                        ToolTip="Mở trực tiếp tài liệu PDF để ký số điện tử" />
+                                        ToolTip="Mở trực tiếp tài liệu PDF để ký số" />
 
                                 <!-- TÊN FILE & TRẠNG THÁI HIỆN TẠI KÈM NÚT ĐÓNG TỆP AN TOÀN -->
                                 <Grid Grid.Column="3" VerticalAlignment="Center" Margin="0,0,10,0">
@@ -784,18 +784,18 @@
                                         <TextBlock x:Name="TxtCurrentFileName" Text="Chưa chọn tệp tin nào." FontWeight="Bold" FontSize="12" Foreground="#1E293B" TextTrimming="CharacterEllipsis" />
                                         <TextBlock x:Name="TxtCurrentFileStatus" Text="Chọn file Word, Excel hoặc PDF để làm việc." FontSize="11" Foreground="#64748B" TextTrimming="CharacterEllipsis" />
                                     </StackPanel>
-                                    <Button Grid.Column="1" x:Name="BtnCloseCurrentFile" Content="✕ Đóng Tệp" 
+                                    <Button Grid.Column="1" x:Name="BtnCloseCurrentFile" Content="Đóng tệp" 
                                             Style="{StaticResource SecondaryButton}" 
                                             Foreground="#DC2626" BorderBrush="#FCA5A5" Background="#FEF2F2"
                                             Padding="8,4" FontSize="11" FontWeight="SemiBold"
                                             Margin="8,0,0,0" Visibility="Collapsed"
                                             Click="BtnCloseCurrentFile_Click" 
-                                            ToolTip="Đóng an toàn tệp đang mở và giải phóng bộ nhớ hệ thống" />
+                                            ToolTip="Đóng tệp đang mở" />
                                 </Grid>
 
                                 <!-- NÚT 4: CHUYỂN QUA PDF ĐỂ KÝ -->
                                 <Button Grid.Column="4" x:Name="BtnConvertToPdfAndReadySign" 
-                                        Content="⚡ Chuyển PDF Để Ký" 
+                                        Content="Chuyển sang PDF" 
                                         Style="{StaticResource ConvertButton}" 
                                         IsEnabled="False" Margin="0,0,6,0" 
                                         Click="BtnExecuteConvertDocument_Click" 
@@ -803,25 +803,25 @@
 
                                 <!-- NÚT 5: CHÈN CHỮ KÝ (KÉO THẢ TRỰC TIẾP TRÊN TRANG VĂN BẢN) -->
                                 <Button Grid.Column="5" x:Name="BtnInsertSignatureStamp" 
-                                        Content="📍 Chèn Vị Trí Ký" 
+                                        Content="Đặt vị trí ký" 
                                         Style="{StaticResource SecondaryButton}" 
-                                        Background="#FEF3C7" BorderBrush="#F59E0B" Foreground="#92400E" FontWeight="Bold" 
+                                        Background="#FEF3C7" BorderBrush="#F59E0B" Foreground="#92400E" FontWeight="SemiBold" 
                                         IsEnabled="False" Margin="0,0,6,0" 
                                         Click="BtnInsertSignatureStamp_Click" 
-                                        ToolTip="Nhấp chuột để chọn vị trí đóng dấu / ký tên trực tiếp trên trang tài liệu" />
+                                        ToolTip="Chọn vị trí đóng dấu hoặc ký tên trên trang tài liệu" />
 
                                 <!-- NÚT 6: KÝ CÁ NHÂN -->
                                 <Button Grid.Column="6" x:Name="BtnSignCurrentDocument" 
-                                        Content="✍️ Ký Cá Nhân" 
+                                        Content="Ký cá nhân" 
                                         Style="{StaticResource SignButton}" 
                                         IsEnabled="False" 
                                         Click="BtnSignDocument_Click" 
-                                        ToolTip="Thực hiện ký số cá nhân giáo viên chuẩn PAdES theo Nghị định 30/2020/NĐ-CP" />
+                                        ToolTip="Thực hiện ký số cá nhân chuẩn PAdES" />
 
                                 <!-- NÚT 7: ĐÓNG DẤU (USB TOKEN BAN CƠ YẾU) -->
                                 <Button Grid.Column="7" x:Name="BtnStampOfficial" 
-                                        Content="🔴 Đóng dấu" 
-                                        Style="{StaticResource OfficialSealButton}" 
+                                        Content="Đóng dấu" 
+                                        Style="{StaticResource OfficialSealButton}"
                                         IsEnabled="False" Margin="6,0,0,0"
                                         Click="BtnStampOfficial_Click" 
                                         ToolTip="Đóng dấu pháp nhân trường học bằng USB Token Ban Cơ yếu (Dành cho Ban Giám hiệu / Văn thư)" />
@@ -838,7 +838,7 @@
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                     <Border Background="#FEF3C7" CornerRadius="4" Padding="6,3" Margin="0,0,10,0">
-                                        <TextBlock x:Name="TxtEditorModeBadge" Text="✏ Soạn thảo &amp; Điều chỉnh trực tiếp" FontSize="11" FontWeight="Bold" Foreground="#92400E" />
+                                        <TextBlock x:Name="TxtEditorModeBadge" Text="Soạn thảo trực tiếp" FontSize="11" FontWeight="Bold" Foreground="#92400E" />
                                     </Border>
                                     <Button Content="B" ToolTip="In đậm (Bold)" Style="{StaticResource FormatButton}" Click="BtnFormatBold_Click" />
                                     <Button Content="I" ToolTip="In nghiêng (Italic)" Style="{StaticResource FormatButton}" FontStyle="Italic" Click="BtnFormatItalic_Click" />
@@ -849,13 +849,13 @@
                                     <Button Content="⇥ Phải" ToolTip="Căn lề phải" Style="{StaticResource FormatButton}" Click="BtnAlignRight_Click" />
                                     <Button Content="⇿ Đều" ToolTip="Căn đều hai bên" Style="{StaticResource FormatButton}" Click="BtnAlignJustify_Click" />
                                     <Separator Width="1" Height="16" Margin="6,0" Background="#CBD5E1" />
-                                    <Button x:Name="BtnSaveWordCopy" Content="💾 Lưu Bản Sao Word..." ToolTip="Lưu nội dung đã chỉnh sửa thành một tệp Word mới (bảo toàn tuyệt đối tệp gốc)" Style="{StaticResource FormatButton}" Padding="8,2" Click="BtnSaveWordCopy_Click" />
+                                    <Button x:Name="BtnSaveWordCopy" Content="Lưu bản sao Word..." ToolTip="Lưu nội dung đã chỉnh sửa thành một tệp Word mới" Style="{StaticResource FormatButton}" Padding="8,2" Click="BtnSaveWordCopy_Click" />
 
                                     <!-- NÚT ĐỊNH DẠNG KHỔ IN EXCEL (HIỆN KHI MỞ FILE EXCEL) -->
                                     <StackPanel x:Name="PnlExcelToolbarControls" Orientation="Horizontal" Visibility="Collapsed" Margin="8,0,0,0">
                                         <Separator Width="1" Height="16" Margin="0,0,8,0" Background="#CBD5E1" />
-                                        <Button Content="📄 Khổ Ngang A4" ToolTip="Định dạng in bảng tính theo khổ ngang A4" Style="{StaticResource FormatButton}" Padding="8,2" Click="BtnExcelLandscape_Click" />
-                                        <Button Content="📄 Khổ Dọc A4" ToolTip="Định dạng in bảng tính theo khổ dọc A4" Style="{StaticResource FormatButton}" Padding="8,2" Margin="4,0,0,0" Click="BtnExcelPortrait_Click" />
+                                        <Button Content="Khổ ngang A4" ToolTip="Định dạng in bảng tính theo khổ ngang A4" Style="{StaticResource FormatButton}" Padding="8,2" Click="BtnExcelLandscape_Click" />
+                                        <Button Content="Khổ dọc A4" ToolTip="Định dạng in bảng tính theo khổ dọc A4" Style="{StaticResource FormatButton}" Padding="8,2" Margin="4,0,0,0" Click="BtnExcelPortrait_Click" />
                                     </StackPanel>
                                 </StackPanel>
 
@@ -868,8 +868,8 @@
                                     <Border x:Name="BadgeTab2Stamp" Background="#F0FDF4" BorderBrush="#86EFAC" BorderThickness="1" CornerRadius="4" Padding="6,3" Margin="0,0,10,0" VerticalAlignment="Center">
                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                             <Image x:Name="ImgTab2StampThumb" Width="18" Height="18" Stretch="Uniform" Margin="0,0,6,0" Visibility="Collapsed" />
-                                            <TextBlock x:Name="TxtTab2StampStatus" Text="🔴 Con dấu: Chưa chọn" FontSize="11" FontWeight="Bold" Foreground="#15803D" VerticalAlignment="Center" />
-                                            <Button x:Name="BtnTab2SelectStamp" Content="🖼 Đổi mẫu..." Style="{StaticResource SecondaryButton}" Padding="5,1" Margin="6,0,0,0" FontSize="10" Click="BtnTab2ChangeStamp_Click" />
+                                            <TextBlock x:Name="TxtTab2StampStatus" Text="Con dấu: Chưa chọn" FontSize="11" FontWeight="SemiBold" Foreground="#15803D" VerticalAlignment="Center" />
+                                            <Button x:Name="BtnTab2SelectStamp" Content="Đổi mẫu..." Style="{StaticResource SecondaryButton}" Padding="5,1" Margin="6,0,0,0" FontSize="10" Click="BtnTab2ChangeStamp_Click" />
                                         </StackPanel>
                                     </Border>
 
@@ -891,16 +891,16 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="📋" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" />
-                                    <TextBlock x:Name="TxtWorkflowReviewNoticeHeader" Text="CHẾ ĐỘ PHÊ DUYỆT BÁO CÁO LIÊN THÔNG (CẤP 2)" 
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8A5;" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="#1E40AF" />
+                                    <TextBlock x:Name="TxtWorkflowReviewNoticeHeader" Text="Chế độ phê duyệt báo cáo liên thông" 
                                                FontWeight="Bold" Foreground="#1E40AF" FontSize="12" VerticalAlignment="Center" />
                                 </StackPanel>
-                                <TextBlock x:Name="TxtWorkflowReviewNoticeDetail" Text="Văn bản được tải từ hệ thống trình ký. Vui lòng kiểm tra nội dung và cắm USB Token để ký số phê duyệt." 
-                                           FontSize="11" Foreground="#2563EB" Margin="22,2,0,0" />
+                                <TextBlock x:Name="TxtWorkflowReviewNoticeDetail" Text="Văn bản được tải từ hệ thống trình ký. Vui lòng kiểm tra nội dung và ký số phê duyệt." 
+                                           FontSize="11" Foreground="#2563EB" Margin="20,2,0,0" />
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button x:Name="BtnReturnWorkflowReport" Content="↩️ Trả Về Báo Cáo" Background="#EA580C" Foreground="White" 
-                                        FontWeight="Bold" Padding="12,5" FontSize="11" Margin="0,0,8,0" BorderThickness="0"
+                                <Button x:Name="BtnReturnWorkflowReport" Content="Trả về báo cáo" Background="#EA580C" Foreground="White" 
+                                        FontWeight="SemiBold" Padding="12,5" FontSize="11" Margin="0,0,8,0" BorderThickness="0"
                                         Cursor="Hand" Click="BtnReturnWorkflowReport_Click">
                                     <Button.Resources>
                                         <Style TargetType="Border">
@@ -908,7 +908,7 @@
                                         </Style>
                                     </Button.Resources>
                                 </Button>
-                                <Button Content="✕ Thoát Chế Độ Duyệt" Style="{StaticResource SecondaryButton}" 
+                                <Button Content="Thoát chế độ duyệt" Style="{StaticResource SecondaryButton}" 
                                         Padding="10,5" FontSize="11" Click="BtnExitWorkflowReviewMode_Click" />
                             </StackPanel>
                         </Grid>
@@ -924,32 +924,32 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="✅" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" />
-                                    <TextBlock Text="VĂN BẢN ĐÃ KÝ SỐ THÀNH CÔNG (CHUẨN PAdES LTV BAN CƠ YẾU CHÍNH PHỦ)" 
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE73E;" FontSize="14" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="#065F46" />
+                                    <TextBlock Text="Văn bản đã ký số thành công chuẩn PAdES LTV" 
                                                FontWeight="Bold" Foreground="#065F46" FontSize="12" VerticalAlignment="Center" />
                                 </StackPanel>
-                                <TextBlock x:Name="TxtSignedSummaryNotice" Text="Tài liệu đã ký được hiển thị trực tiếp bên dưới để kiểm tra con dấu và nội dung." 
-                                           FontSize="11" Foreground="#047857" Margin="22,2,0,0" />
+                                <TextBlock x:Name="TxtSignedSummaryNotice" Text="Tài liệu đã ký hiển thị bên dưới để kiểm tra con dấu và nội dung." 
+                                           FontSize="11" Foreground="#047857" Margin="20,2,0,0" />
                             </StackPanel>
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button Content="📥 Lưu Bản Sao..." Style="{StaticResource SecondaryButton}" 
+                                <Button Content="Lưu bản sao..." Style="{StaticResource SecondaryButton}" 
                                         Padding="10,5" FontSize="11" Margin="0,0,6,0" Click="BtnSaveSignedCopy_Click" />
-                                <Button Content="📂 Mở Tệp Đã Ký" Style="{StaticResource SecondaryButton}" 
+                                <Button Content="Mở tệp đã ký" Style="{StaticResource SecondaryButton}" 
                                         Padding="10,5" FontSize="11" Margin="0,0,6,0" Click="BtnOpenSignedPdfExternal_Click" />
-                                <Button Content="📁 Mở Thư Mục" Style="{StaticResource SecondaryButton}" 
+                                <Button Content="Mở thư mục" Style="{StaticResource SecondaryButton}" 
                                         Padding="10,5" FontSize="11" Margin="0,0,6,0" Click="BtnOpenSignedFolder_Click" />
-                                <Button x:Name="BtnSubmitWorkflowReport" Content="📤 Trình Ký Báo Cáo (Tab 3) ➡" Style="{StaticResource SuccessButton}" 
+                                <Button x:Name="BtnSubmitWorkflowReport" Content="Trình ký báo cáo" Style="{StaticResource SuccessButton}" 
                                         Background="#0D9488" BorderBrush="#0F766E"
-                                        Padding="12,5" FontSize="11" FontWeight="Bold" Margin="0,0,6,0" Click="BtnSubmitWorkflowReport_Click" />
-                                <Button x:Name="BtnCommitWorkflowApproval" Content="✅ Nộp Báo Cáo Đã Duyệt ➡" Style="{StaticResource SuccessButton}" 
+                                        Padding="12,5" FontSize="11" FontWeight="SemiBold" Margin="0,0,6,0" Click="BtnSubmitWorkflowReport_Click" />
+                                <Button x:Name="BtnCommitWorkflowApproval" Content="Nộp báo cáo đã duyệt" Style="{StaticResource SuccessButton}" 
                                         Background="#2563EB" BorderBrush="#1D4ED8"
-                                        Padding="12,5" FontSize="11" FontWeight="Bold" Margin="0,0,6,0" Visibility="Collapsed" Click="BtnCommitWorkflowApproval_Click" />
-                                <Button x:Name="BtnForwardWorkflowReport" Content="➡ Chuyển Tiếp BGH / Người Duyệt Tiếp" Style="{StaticResource PrimaryButton}" 
+                                        Padding="12,5" FontSize="11" FontWeight="SemiBold" Margin="0,0,6,0" Visibility="Collapsed" Click="BtnCommitWorkflowApproval_Click" />
+                                <Button x:Name="BtnForwardWorkflowReport" Content="Chuyển tiếp người duyệt" Style="{StaticResource PrimaryButton}" 
                                         Background="#7C3AED" BorderBrush="#6D28D9"
-                                        Padding="12,5" FontSize="11" FontWeight="Bold" Margin="0,0,6,0" Visibility="Collapsed" Click="BtnForwardWorkflowReport_Click" />
-                                <Button x:Name="BtnCommitWorkflowSeal" Content="🔴 Nộp Báo Cáo Đã Đóng Dấu ➡" Style="{StaticResource SuccessButton}" 
+                                        Padding="12,5" FontSize="11" FontWeight="SemiBold" Margin="0,0,6,0" Visibility="Collapsed" Click="BtnForwardWorkflowReport_Click" />
+                                <Button x:Name="BtnCommitWorkflowSeal" Content="Nộp báo cáo đã đóng dấu" Style="{StaticResource SuccessButton}" 
                                         Background="#DC2626" BorderBrush="#B91C1C"
-                                        Padding="12,5" FontSize="11" FontWeight="Bold" Visibility="Collapsed" Click="BtnCommitWorkflowSeal_Click" />
+                                        Padding="12,5" FontSize="11" FontWeight="SemiBold" Visibility="Collapsed" Click="BtnCommitWorkflowSeal_Click" />
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -970,9 +970,9 @@
                             
                             <Border x:Name="PnlPreviewPlaceholder" Background="#F8FAFC" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <TextBlock Text="📑" FontSize="56" HorizontalAlignment="Center" Foreground="#94A3B8" />
-                                    <TextBlock Text="KHÔNG GIAN HIỂN THỊ &amp; SOẠN THẢO VĂN BẢN TRỰC TIẾP" FontWeight="Bold" FontSize="16" Foreground="#334155" HorizontalAlignment="Center" Margin="0,8,0,4" />
-                                    <TextBlock Text="Tải file Word (.docx) hoặc PDF lên. Nội dung sẽ được hiển thị nguyên bản tại đây cho phép bạn đọc, điều chỉnh nội dung trực tiếp trước khi ký." 
+                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8A5;" FontSize="48" HorizontalAlignment="Center" Foreground="#94A3B8" />
+                                    <TextBlock Text="Không gian xem và xử lý văn bản" FontWeight="Bold" FontSize="16" Foreground="#334155" HorizontalAlignment="Center" Margin="0,8,0,4" />
+                                    <TextBlock Text="Mở tệp Word, Excel hoặc PDF để xem nội dung và thực hiện ký số." 
                                                FontSize="13" Foreground="#64748B" HorizontalAlignment="Center" MaxWidth="600" TextWrapping="Wrap" TextAlignment="Center" />
                                 </StackPanel>
                             </Border>
@@ -987,15 +987,15 @@
                                 <DropShadowEffect BlurRadius="20" ShadowDepth="4" Opacity="0.08" />
                             </Border.Effect>
                             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                                <TextBlock Text="🔒" FontSize="56" HorizontalAlignment="Center" Margin="0,0,0,12" />
-                                <TextBlock Text="CHỨC NĂNG KÝ SỐ ĐANG BỊ TẠM KHÓA" FontWeight="Bold" FontSize="16" Foreground="#1E293B" HorizontalAlignment="Center" Margin="0,0,0,8" />
-                                <TextBlock Text="Để đảm bảo an toàn pháp lý và tính toàn vẹn theo quy chuẩn của Ban Cơ yếu Chính phủ, bạn cần đăng nhập tài khoản chữ ký số VGCA Virtual CSP tại Tab 1 trước khi thực hiện soạn thảo và ký số văn bản." 
+                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE72E;" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,12" Foreground="#64748B" />
+                                <TextBlock Text="Chức năng ký số đang khóa" FontWeight="Bold" FontSize="16" Foreground="#1E293B" HorizontalAlignment="Center" Margin="0,0,0,8" />
+                                <TextBlock Text="Để đảm bảo tính pháp lý và an toàn dữ liệu, vui lòng cắm USB Token hoặc mở VGCA Virtual CSP để kết nối chữ ký số." 
                                            TextWrapping="Wrap" TextAlignment="Center" FontSize="13" Foreground="#64748B" LineHeight="20" Margin="0,0,0,20" />
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <Button Content="🔄 Nhận Diện Chữ Ký Số VGCA (Mở Khóa Ngay)" Style="{StaticResource SuccessButton}" 
-                                            FontSize="13" FontWeight="Bold" Padding="16,10" Margin="0,0,10,0" Click="BtnSyncVgcaCertificate_Click" />
-                                    <Button Content="🔑 Chuyển Sang Tab 1 Để Đăng Nhập" Style="{StaticResource PrimaryButton}" 
-                                            Background="#1E40AF" FontSize="13" FontWeight="Bold" Padding="16,10" Click="BtnGoToLoginTab_Click" />
+                                    <Button Content="Nhận diện chữ ký số" Style="{StaticResource SuccessButton}" 
+                                            FontSize="13" FontWeight="SemiBold" Padding="16,10" Margin="0,0,10,0" Click="BtnSyncVgcaCertificate_Click" />
+                                    <Button Content="Chuyển sang tab nhận diện" Style="{StaticResource PrimaryButton}" 
+                                            Background="#1E40AF" FontSize="13" FontWeight="SemiBold" Padding="16,10" Click="BtnGoToLoginTab_Click" />
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -1008,7 +1008,7 @@
             </TabItem>
 
             <!-- ================= TAB 3: HỘP THƯ TRÌNH KÝ BÁO CÁO LIÊN THÔNG ================= -->
-            <TabItem x:Name="TabItemWorkflow" Header="  3. 📬 Hộp Thư Trình Ký  " FontSize="13" FontWeight="SemiBold">
+            <TabItem x:Name="TabItemWorkflow" Header="  Hộp thư trình ký  " FontSize="13" FontWeight="SemiBold">
                 <Grid Margin="0,10,0,0">
                     <Grid.RowDefinitions>
                         <!-- THANH ĐIỀU KHIỂN & CHỈ SỐ NHANH -->
@@ -1030,7 +1030,7 @@
                             <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
                                 <Border Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="1" CornerRadius="6" Padding="10,6" Margin="0,0,12,0">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="👤" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE77B;" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center" Foreground="#1E40AF" />
                                         <StackPanel VerticalAlignment="Center">
                                             <TextBlock x:Name="TxtWorkflowUserGreeting" Text="Giáo viên: Chưa xác định" FontWeight="Bold" FontSize="12" Foreground="#1E40AF" />
                                             <TextBlock x:Name="TxtWorkflowUserUnit" Text="Trường THCS Chu Văn An" FontSize="11" Foreground="#3B82F6" />
@@ -1041,7 +1041,7 @@
                                 <!-- THẺ ĐẾM BÁO CÁO CHỜ DUYỆT -->
                                 <Border Background="#FEF3C7" BorderBrush="#FDE68A" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="0,0,8,0">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="📥 Chờ tôi duyệt: " FontSize="11" Foreground="#92400E" FontWeight="SemiBold" />
+                                        <TextBlock Text="Chờ duyệt: " FontSize="11" Foreground="#92400E" FontWeight="SemiBold" />
                                         <TextBlock x:Name="TxtCountInbox" Text="0" FontWeight="Bold" FontSize="13" Foreground="#B45309" Margin="4,0,0,0" />
                                     </StackPanel>
                                 </Border>
@@ -1049,7 +1049,7 @@
                                 <!-- THẺ ĐẾM BÁO CÁO TÔI ĐÃ GỬI -->
                                 <Border Background="#F0FDF4" BorderBrush="#BBF7D0" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="0,0,8,0">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="📤 Tôi đã gửi: " FontSize="11" Foreground="#166534" FontWeight="SemiBold" />
+                                        <TextBlock Text="Đã gửi: " FontSize="11" Foreground="#166534" FontWeight="SemiBold" />
                                         <TextBlock x:Name="TxtCountOutbox" Text="0" FontWeight="Bold" FontSize="13" Foreground="#15803D" Margin="4,0,0,0" />
                                     </StackPanel>
                                 </Border>
@@ -1057,7 +1057,7 @@
                                 <!-- THẺ ĐẾM BÁO CÁO BỊ TRẢ VỀ -->
                                 <Border Background="#FFF7ED" BorderBrush="#FED7AA" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="0,0,8,0">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="↩️ Bị trả về: " FontSize="11" Foreground="#C2410C" FontWeight="SemiBold" />
+                                        <TextBlock Text="Bị trả về: " FontSize="11" Foreground="#C2410C" FontWeight="SemiBold" />
                                         <TextBlock x:Name="TxtCountReturned" Text="0" FontWeight="Bold" FontSize="13" Foreground="#EA580C" Margin="4,0,0,0" />
                                     </StackPanel>
                                 </Border>
@@ -1065,7 +1065,7 @@
                                 <!-- THẺ ĐẾM BÁO CÁO CHỜ ĐÓNG DẤU (HIỂN THỊ KHI CÓ QUYỀN ĐÓNG DẤU) -->
                                 <Border x:Name="BorderWaitingSealCount" Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1" CornerRadius="6" Padding="10,4" Margin="0,0,8,0" Visibility="Collapsed">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="🔴 Chờ đóng dấu: " FontSize="11" Foreground="#991B1B" FontWeight="SemiBold" />
+                                        <TextBlock Text="Chờ đóng dấu: " FontSize="11" Foreground="#991B1B" FontWeight="SemiBold" />
                                         <TextBlock x:Name="TxtCountWaitingSeal" Text="0" FontWeight="Bold" FontSize="13" Foreground="#DC2626" Margin="4,0,0,0" />
                                     </StackPanel>
                                 </Border>
@@ -1073,17 +1073,17 @@
                                 <!-- THẺ ĐẾM TOÀN TRƯỜNG HOÀN TẤT -->
                                 <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="10,4">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="📁 Toàn trường hoàn tất: " FontSize="11" Foreground="#475569" FontWeight="SemiBold" />
+                                        <TextBlock Text="Lưu trữ: " FontSize="11" Foreground="#475569" FontWeight="SemiBold" />
                                         <TextBlock x:Name="TxtCountCompleted" Text="0" FontWeight="Bold" FontSize="13" Foreground="#334155" Margin="4,0,0,0" />
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                                <Button x:Name="BtnRefreshWorkflow" Content="🔄 Làm Mới Dữ Liệu" Style="{StaticResource SecondaryButton}" 
+                                <Button x:Name="BtnRefreshWorkflow" Content="Làm mới" Style="{StaticResource SecondaryButton}" 
                                         FontSize="12" FontWeight="SemiBold" Padding="12,6" Margin="0,0,8,0" Click="BtnRefreshWorkflow_Click" />
-                                <Button Content="➕ Soạn Báo Cáo Mới" Style="{StaticResource PrimaryButton}" 
-                                        FontSize="12" FontWeight="Bold" Padding="14,6" Click="BtnNewReportFromTab3_Click" />
+                                <Button Content="Soạn báo cáo mới" Style="{StaticResource PrimaryButton}" 
+                                        FontSize="12" FontWeight="SemiBold" Padding="14,6" Click="BtnNewReportFromTab3_Click" />
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -1093,7 +1093,7 @@
                         <TabControl x:Name="TabControlWorkflowSub" Background="Transparent" BorderThickness="0">
                             
                             <!-- SUB-TAB 1: BÁO CÁO CHỜ TÔI DUYỆT (INBOX) -->
-                            <TabItem x:Name="TabItemInbox" Header="  📥 Báo Cáo Chờ Tôi Duyệt  " FontSize="13" FontWeight="SemiBold">
+                            <TabItem x:Name="TabItemInbox" Header="  Chờ tôi duyệt  " FontSize="13" FontWeight="SemiBold">
                                 <Grid Margin="4,8,4,4">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="*" />
@@ -1145,18 +1145,18 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="💡 Gợi ý: Nhấp đúp chuột vào văn bản trong danh sách để mở và ký số ngay." 
+                                            <TextBlock Grid.Column="0" Text="Nhấp đúp chuột vào văn bản trong danh sách để mở và ký số ngay." 
                                                        FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
-                                            <Button Grid.Column="1" x:Name="BtnOpenForReview" Content="📥 Mở &amp; Ký Duyệt Báo Cáo ➡" 
+                                            <Button Grid.Column="1" x:Name="BtnOpenForReview" Content="Mở và ký duyệt" 
                                                     Style="{StaticResource PrimaryButton}" 
-                                                    FontSize="12" FontWeight="Bold" Padding="16,8" Click="BtnOpenForReview_Click" />
+                                                    FontSize="12" FontWeight="SemiBold" Padding="16,8" Click="BtnOpenForReview_Click" />
                                         </Grid>
                                     </Border>
                                 </Grid>
                             </TabItem>
 
                             <!-- SUB-TAB 2: BÁO CÁO TÔI ĐÃ GỬI (OUTBOX) -->
-                            <TabItem x:Name="TabItemOutbox" Header="  📤 Báo Cáo Tôi ĐÃ Gửi  " FontSize="13" FontWeight="SemiBold">
+                            <TabItem x:Name="TabItemOutbox" Header="  Tôi đã gửi  " FontSize="13" FontWeight="SemiBold">
                                 <Grid Margin="4,8,4,4">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="*" />
@@ -1174,11 +1174,11 @@
                                                   MouseDoubleClick="LvOutboxReports_MouseDoubleClick">
                                             <ListView.View>
                                                 <GridView>
-                                                    <GridViewColumn Header="Mã Báo Cáo" Width="155" DisplayMemberBinding="{Binding ReportId}" />
-                                                    <GridViewColumn Header="Tiêu Đề Báo Cáo" Width="320" DisplayMemberBinding="{Binding Title}" />
-                                                    <GridViewColumn Header="Thời Gian Gửi" Width="140" DisplayMemberBinding="{Binding CreatedTimeFormatted}" />
-                                                    <GridViewColumn Header="Người Nhận" Width="180" DisplayMemberBinding="{Binding ApproverName}" />
-                                                    <GridViewColumn Header="Trạng Thái" Width="155">
+                                                    <GridViewColumn Header="Mã văn bản" Width="155" DisplayMemberBinding="{Binding ReportId}" />
+                                                    <GridViewColumn Header="Tiêu đề" Width="320" DisplayMemberBinding="{Binding Title}" />
+                                                    <GridViewColumn Header="Thời gian gửi" Width="140" DisplayMemberBinding="{Binding CreatedTimeFormatted}" />
+                                                    <GridViewColumn Header="Người nhận" Width="180" DisplayMemberBinding="{Binding ApproverName}" />
+                                                    <GridViewColumn Header="Trạng thái" Width="155">
                                                         <GridViewColumn.CellTemplate>
                                                             <DataTemplate>
                                                                 <Border Background="{Binding StatusBadgeColor}" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left" IsHitTestVisible="False">
@@ -1187,7 +1187,7 @@
                                                             </DataTemplate>
                                                         </GridViewColumn.CellTemplate>
                                                     </GridViewColumn>
-                                                    <GridViewColumn Header="Nội Dung H2" Width="150">
+                                                    <GridViewColumn Header="Nội dung H2" Width="150">
                                                         <GridViewColumn.CellTemplate>
                                                             <DataTemplate>
                                                                 <Border Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" ToolTip="{Binding SignedHashTooltip}" IsHitTestVisible="False">
@@ -1208,21 +1208,21 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="💡 Gợi ý: Nhấp đúp chuột vào văn bản để xem lại nội dung đã trình ký." 
+                                            <TextBlock Grid.Column="0" Text="Nhấp đúp chuột vào văn bản để xem lại nội dung đã trình ký." 
                                                        FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
                                             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                <Button x:Name="BtnDismissOutboxReport" Content="🗑 Xóa Khỏi Danh Sách" 
+                                                <Button x:Name="BtnDismissOutboxReport" Content="Xóa khỏi danh sách" 
                                                         Style="{StaticResource SecondaryButton}" 
                                                         Foreground="#475569" BorderBrush="#CBD5E1" Background="#F1F5F9"
                                                         FontSize="12" FontWeight="SemiBold" Padding="12,8" Margin="0,0,8,0" Click="BtnDismissOutboxReport_Click" />
-                                                <Button x:Name="BtnViewOutboxReport" Content="👁 Xem Lại Báo Cáo" 
+                                                <Button x:Name="BtnViewOutboxReport" Content="Xem lại báo cáo" 
                                                         Style="{StaticResource PrimaryButton}" 
                                                         Background="#4F46E5" BorderBrush="#4338CA"
-                                                        FontSize="12" FontWeight="Bold" Padding="14,8" Margin="0,0,8,0" Click="BtnViewOutboxReport_Click" />
-                                                <Button x:Name="BtnRecallReport" Content="🔴 Thu Hồi Báo Cáo" 
+                                                        FontSize="12" FontWeight="SemiBold" Padding="14,8" Margin="0,0,8,0" Click="BtnViewOutboxReport_Click" />
+                                                <Button x:Name="BtnRecallReport" Content="Thu hồi báo cáo" 
                                                         Style="{StaticResource SecondaryButton}" 
                                                         Foreground="#DC2626" BorderBrush="#FCA5A5" Background="#FEF2F2"
-                                                        FontSize="12" FontWeight="Bold" Padding="16,8" Click="BtnRecallReport_Click" />
+                                                        FontSize="12" FontWeight="SemiBold" Padding="16,8" Click="BtnRecallReport_Click" />
                                             </StackPanel>
                                         </Grid>
                                     </Border>
@@ -1230,7 +1230,7 @@
                             </TabItem>
 
                             <!-- SUB-TAB 3: BÁO CÁO TRẢ VỀ (RETURNED) -->
-                            <TabItem Header="  ↩️ Báo Cáo Trả Về  " FontSize="13" FontWeight="SemiBold">
+                            <TabItem Header="  Bị trả về  " FontSize="13" FontWeight="SemiBold">
                                 <Grid Margin="4,8,4,4">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="*" />
@@ -1272,17 +1272,17 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="💡 Gợi ý: Nhấp đúp chuột để mở xem lại báo cáo hoặc xem lý do Ban Giám Hiệu gửi phản hồi." 
+                                            <TextBlock Grid.Column="0" Text="Nhấp đúp chuột để mở xem lại báo cáo hoặc xem phản hồi." 
                                                        FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
                                             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                <Button x:Name="BtnDismissReturnedReport" Content="🗑 Xóa Khỏi Danh Sách" 
+                                                <Button x:Name="BtnDismissReturnedReport" Content="Xóa khỏi danh sách" 
                                                         Style="{StaticResource SecondaryButton}" 
                                                         Foreground="#475569" BorderBrush="#CBD5E1" Background="#F1F5F9"
                                                         FontSize="12" FontWeight="SemiBold" Padding="12,8" Margin="0,0,8,0" Click="BtnDismissReturnedReport_Click" />
-                                                <Button x:Name="BtnViewReturnedReport" Content="👁 Xem Lại Báo Cáo" 
+                                                <Button x:Name="BtnViewReturnedReport" Content="Xem lại báo cáo" 
                                                         Style="{StaticResource PrimaryButton}" 
                                                         Background="#EA580C" BorderBrush="#C2410C"
-                                                        FontSize="12" FontWeight="Bold" Padding="14,8" Click="BtnViewReturnedReport_Click" />
+                                                        FontSize="12" FontWeight="SemiBold" Padding="14,8" Click="BtnViewReturnedReport_Click" />
                                             </StackPanel>
                                         </Grid>
                                     </Border>
@@ -1290,7 +1290,7 @@
                             </TabItem>
 
                             <!-- SUB-TAB 4: BÁO CÁO CHỜ ĐÓNG DẤU (DÀNH CHO BGH / VĂN THƯ GIỮ TOKEN CON DẤU) -->
-                            <TabItem x:Name="TabItemWaitingSeal" Header="  🔴 Báo Cáo Chờ Đóng Dấu  " FontSize="13" FontWeight="SemiBold" Visibility="Collapsed">
+                            <TabItem x:Name="TabItemWaitingSeal" Header="  Chờ đóng dấu  " FontSize="13" FontWeight="SemiBold" Visibility="Collapsed">
                                 <Grid Margin="4,8,4,4">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="*" />
@@ -1317,7 +1317,7 @@
                                                         <GridViewColumn.CellTemplate>
                                                             <DataTemplate>
                                                                 <Border Background="#DC2626" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                                    <TextBlock Text="🔴 Chờ đóng dấu" Foreground="White" FontSize="11" FontWeight="Bold" />
+                                                                    <TextBlock Text="Chờ đóng dấu" Foreground="White" FontSize="11" FontWeight="Bold" />
                                                                 </Border>
                                                             </DataTemplate>
                                                         </GridViewColumn.CellTemplate>
@@ -1343,13 +1343,13 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="💡 Gợi ý: Nhấp đúp chuột hoặc chọn văn bản rồi nhấn 'Mở &amp; Đóng Dấu' để cắm USB Token Ban Cơ Yếu đóng con dấu pháp nhân trường học." 
+                                            <TextBlock Grid.Column="0" Text="Nhấp đúp chuột hoặc chọn văn bản rồi nhấn 'Mở và đóng dấu' để đóng con dấu cơ quan." 
                                                        FontSize="12" Foreground="#64748B" VerticalAlignment="Center" />
                                             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                <Button x:Name="BtnOpenForSealing" Content="🔴 Mở &amp; Đóng Dấu Pháp Nhân ➡" 
+                                                <Button x:Name="BtnOpenForSealing" Content="Mở và đóng dấu" 
                                                         Style="{StaticResource PrimaryButton}" 
                                                         Background="#DC2626" BorderBrush="#B91C1C"
-                                                        FontSize="12" FontWeight="Bold" Padding="16,8" Click="BtnOpenForSealing_Click" />
+                                                        FontSize="12" FontWeight="SemiBold" Padding="16,8" Click="BtnOpenForSealing_Click" />
                                             </StackPanel>
                                         </Grid>
                                     </Border>
@@ -1357,7 +1357,7 @@
                             </TabItem>
 
                             <!-- SUB-TAB 5: KHO BÁO CÁO TOÀN TRƯỜNG ĐÃ HOÀN TẤT (ARCHIVE) -->
-                            <TabItem x:Name="TabItemArchive" Header="  📁 Kho Báo Cáo Đã Duyệt Toàn Trường  " FontSize="13" FontWeight="SemiBold">
+                            <TabItem x:Name="TabItemArchive" Header="  Kho lưu trữ chung  " FontSize="13" FontWeight="SemiBold">
                                 <Grid Margin="4,8,4,4">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="*" />
@@ -1383,7 +1383,7 @@
                                                         <GridViewColumn.CellTemplate>
                                                             <DataTemplate>
                                                                 <Border Background="#16A34A" CornerRadius="4" Padding="8,3" HorizontalAlignment="Left" IsHitTestVisible="False">
-                                                                    <TextBlock Text="Đã duyệt &amp; Ký 2 cấp" Foreground="White" FontSize="11" FontWeight="Bold" />
+                                                                    <TextBlock Text="Đã duyệt và ký đủ" Foreground="White" FontSize="11" FontWeight="Bold" />
                                                                 </Border>
                                                             </DataTemplate>
                                                         </GridViewColumn.CellTemplate>
@@ -1410,13 +1410,13 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0" Text="✅ Các văn bản tại đây đã có đầy đủ 2 chữ ký số PAdES LTV hợp lệ theo Nghị định 130/2018/NĐ-CP." 
+                                            <TextBlock Grid.Column="0" Text="Các văn bản tại đây đã có đầy đủ chữ ký số hợp lệ theo quy định." 
                                                        FontSize="12" Foreground="#059669" FontWeight="SemiBold" VerticalAlignment="Center" />
                                             <StackPanel Grid.Column="1" Orientation="Horizontal">
-                                                <Button x:Name="BtnViewArchiveReport" Content="👁 Xem Tệp Đầy Đủ" Style="{StaticResource SecondaryButton}" 
+                                                <Button x:Name="BtnViewArchiveReport" Content="Xem tệp đầy đủ" Style="{StaticResource SecondaryButton}" 
                                                         FontSize="12" FontWeight="SemiBold" Padding="14,8" Margin="0,0,8,0" Click="BtnViewArchiveReport_Click" />
-                                                <Button x:Name="BtnDownloadArchiveReport" Content="💾 Tải Về Máy Tính" Style="{StaticResource SuccessButton}" 
-                                                        FontSize="12" FontWeight="Bold" Padding="16,8" Click="BtnDownloadArchiveReport_Click" />
+                                                <Button x:Name="BtnDownloadArchiveReport" Content="Tải về máy tính" Style="{StaticResource SuccessButton}" 
+                                                        FontSize="12" FontWeight="SemiBold" Padding="16,8" Click="BtnDownloadArchiveReport_Click" />
                                             </StackPanel>
                                         </Grid>
                                     </Border>
@@ -1428,26 +1428,26 @@
             </TabItem>
 
             <!-- ================= TAB 4: KIỂM TRA CHỮ KÝ ================= -->
-            <TabItem Header="  4. 🔍 Tra Cứu &amp; Xác Thực  " FontSize="13" FontWeight="SemiBold">
+            <TabItem Header="  Tra cứu và xác thực  " FontSize="13" FontWeight="SemiBold">
                 <Grid Margin="0,10,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
 
-                    <GroupBox Grid.Row="0" Header="Chọn File PDF Cần Tra Cứu &amp; Xác Minh Tính Toàn Vẹn">
+                    <GroupBox Grid.Row="0" Header="Chọn tệp PDF cần kiểm tra tính toàn vẹn">
                         <Grid Margin="6">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <TextBox Grid.Column="0" x:Name="TxtVerifyPdfPath" Background="#F8FAFC" Padding="6" Text="Chọn file PDF để kiểm tra..." />
-                            <Button Grid.Column="1" Content="🔍 Mở File &amp; Xác Thực" Style="{StaticResource PrimaryButton}" 
+                            <Button Grid.Column="1" Content="Mở tệp và xác thực" Style="{StaticResource PrimaryButton}" 
                                     Margin="8,0,0,0" Click="BtnVerifyPdf_Click" />
                         </Grid>
                     </GroupBox>
 
-                    <GroupBox Grid.Row="1" Header="Danh Sách Các Chữ Ký Số Phát Hiện Trong Tài Liệu">
+                    <GroupBox Grid.Row="1" Header="Danh sách chữ ký số trong tài liệu">
                         <ListView x:Name="ListSignatures" Background="White" BorderThickness="0" Margin="4">
                             <ListView.View>
                                 <GridView>
@@ -1475,7 +1475,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="TIẾN TRÌNH: " FontSize="10" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <TextBlock Grid.Column="1" x:Name="TxtStatusBar" Text="Sẵn sàng." FontSize="11" Foreground="#E2E8F0" FontFamily="Segoe UI" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                <TextBlock Grid.Column="2" x:Name="TxtAppVersion" Text="Phiên bản v2.3.0 • .NET 8 x64" FontSize="11" Foreground="#94A3B8" VerticalAlignment="Center" Margin="16,0,0,0" />
+                <TextBlock Grid.Column="2" x:Name="TxtAppVersion" Text="Phiên bản v2.5.0 • .NET 8 x64" FontSize="11" Foreground="#94A3B8" VerticalAlignment="Center" Margin="16,0,0,0" />
             </Grid>
         </Border>
 
@@ -1491,16 +1491,16 @@
                 <Border Background="White" BorderBrush="#94A3B8" BorderThickness="1.5" CornerRadius="16" 
                         Width="420" Padding="32,28">
                     <StackPanel HorizontalAlignment="Center">
-                        <!-- HUY HIỆU ICON CHỮ KÝ / TỆP TIN TĨNH (SIÊU MƯỢT, TRIỆT TIÊU HOÀN TOÀN HIỆN TƯỢNG LAG) -->
+                        <!-- HUY HIỆU ICON CHỮ KÝ / TỆP TIN TĨNH -->
                         <Border Width="64" Height="64" CornerRadius="32" 
                                 Background="#EFF6FF" BorderBrush="#BFDBFE" BorderThickness="2" 
                                 HorizontalAlignment="Center" Margin="0,0,0,16">
-                            <TextBlock x:Name="TxtPopupLoadingIcon" Text="✍️" FontSize="28" 
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <TextBlock x:Name="TxtPopupLoadingIcon" FontFamily="Segoe MDL2 Assets" Text="&#xE8D7;" FontSize="28" 
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#2563EB" />
                         </Border>
 
                         <!-- TIÊU ĐỀ THAO TÁC -->
-                        <TextBlock x:Name="TxtPopupLoadingTitle" Text="Đang mở file, vui lòng chờ..." 
+                        <TextBlock x:Name="TxtPopupLoadingTitle" Text="Đang xử lý, vui lòng chờ..." 
                                    FontWeight="Bold" FontSize="16" Foreground="#1E293B" 
                                    HorizontalAlignment="Center" TextAlignment="Center" Margin="0,0,0,6" />
 
@@ -1518,14 +1518,14 @@
                         <!-- HUY HIỆU BẢO MẬT & TIÊU CHUẨN KÝ SỐ -->
                         <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="6" Padding="12,5" HorizontalAlignment="Center">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="🔒" FontSize="11" Foreground="#0D9488" Margin="0,0,6,0" VerticalAlignment="Center" />
-                                <TextBlock Text="Động cơ hiển thị chuẩn VGCA &amp; Nghị định 30/2020/NĐ-CP" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" />
+                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE72E;" FontSize="11" Foreground="#0D9488" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                <TextBlock Text="Bảo vệ toàn vẹn tài liệu và chứng thư số" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" />
                             </StackPanel>
                         </Border>
 
-                        <!-- NÚT HỦY KÝ / HỦY CHỜ THAO TÁC (CHO PHÉP NGƯỜI DÙNG DỪNG BẤT KỲ LÚC NÀO) -->
+                        <!-- NÚT HỦY KÝ / HỦY CHỜ THAO TÁC -->
                         <Button x:Name="BtnCancelSigningOverlay" 
-                                Content="✕ Hủy Chờ Ký" 
+                                Content="Hủy chờ ký" 
                                 Style="{StaticResource SecondaryButton}" 
                                 Foreground="#DC2626" BorderBrush="#FCA5A5" Background="#FEF2F2"
                                 FontSize="12" FontWeight="SemiBold" 
@@ -1539,14 +1539,14 @@
             </Grid>
         </Popup>
 
-        <!-- POPUP TRÌNH KÝ BÁO CÁO LIÊN THÔNG (KHẮC PHỤC TRIỆT ĐỂ LỖI AIRSPACE CỦA WEBVIEW2) -->
+        <!-- POPUP TRÌNH KÝ BÁO CÁO LIÊN THÔNG -->
         <Popup x:Name="OverlaySubmitWorkflowPopup" 
                IsOpen="False" 
                Placement="Center" 
                PlacementTarget="{Binding ElementName=MainRootGrid}" 
                AllowsTransparency="True" 
                PopupAnimation="None" 
-               StaysOpen="True"
+               StaysOpen="True" 
                Focusable="True">
             <Grid Margin="24">
                 <Border Background="White" BorderBrush="#94A3B8" BorderThickness="1.5" CornerRadius="14" 
@@ -1554,11 +1554,11 @@
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                             <Border Background="#CCFBF1" CornerRadius="8" Padding="10" Margin="0,0,12,0">
-                                <TextBlock Text="📤" FontSize="26" />
+                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE72D;" FontSize="22" Foreground="#0D9488" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="TRÌNH KÝ BÁO CÁO LIÊN THÔNG" FontWeight="Bold" FontSize="16" Foreground="#0F766E" />
-                                <TextBlock Text="Gửi báo cáo lên hệ thống để Tổ trưởng / Ban Giám hiệu phê duyệt tiếp theo" FontSize="12" Foreground="#64748B" />
+                                <TextBlock Text="Trình ký báo cáo liên thông" FontWeight="Bold" FontSize="16" Foreground="#0F766E" />
+                                <TextBlock Text="Gửi báo cáo lên hệ thống để cấp trên phê duyệt" FontSize="12" Foreground="#64748B" />
                             </StackPanel>
                         </StackPanel>
 
@@ -1577,11 +1577,11 @@
                         <TextBox x:Name="TxtWorkflowSubmitNotes" Padding="8,6" FontSize="12" Height="50" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,20" Background="#F8FAFC" />
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="✕ Hủy Bỏ" Style="{StaticResource SecondaryButton}" 
+                            <Button Content="Hủy bỏ" Style="{StaticResource SecondaryButton}" 
                                     Padding="16,8" FontSize="13" Margin="0,0,10,0" Click="BtnCancelSubmitWorkflow_Click" />
-                            <Button x:Name="BtnConfirmSubmitWorkflow" Content="🚀 Xác Nhận Gửi Trình Ký" Style="{StaticResource SuccessButton}" 
+                            <Button x:Name="BtnConfirmSubmitWorkflow" Content="Xác nhận gửi trình ký" Style="{StaticResource SuccessButton}" 
                                     Background="#0D9488" BorderBrush="#0F766E"
-                                    Padding="20,8" FontSize="13" FontWeight="Bold" Click="BtnConfirmSubmitWorkflow_Click" />
+                                    Padding="20,8" FontSize="13" FontWeight="SemiBold" Click="BtnConfirmSubmitWorkflow_Click" />
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -1595,7 +1595,7 @@
                PlacementTarget="{Binding ElementName=MainRootGrid}" 
                AllowsTransparency="True" 
                PopupAnimation="None" 
-               StaysOpen="True"
+               StaysOpen="True" 
                Focusable="True">
             <Grid Margin="24">
                 <Border Background="White" BorderBrush="#2563EB" BorderThickness="2" CornerRadius="14" 
@@ -1603,11 +1603,11 @@
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                             <Border Background="#EFF6FF" CornerRadius="8" Padding="10" Margin="0,0,12,0">
-                                <TextBlock Text="✅" FontSize="26" />
+                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE73E;" FontSize="22" Foreground="#1D4ED8" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="KÝ SỐ PHÊ DUYỆT THÀNH CÔNG!" FontWeight="Bold" FontSize="17" Foreground="#1D4ED8" />
-                                <TextBlock Text="Văn bản đã được nhúng chữ ký số và tem thời gian TSA Ban Cơ Yếu" FontSize="12" Foreground="#64748B" />
+                                <TextBlock Text="Ký số phê duyệt thành công" FontWeight="Bold" FontSize="17" Foreground="#1D4ED8" />
+                                <TextBlock Text="Văn bản đã được nhúng chữ ký số và tem thời gian TSA Ban Cơ yếu" FontSize="12" Foreground="#64748B" />
                             </StackPanel>
                         </StackPanel>
 
@@ -1621,12 +1621,12 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="🏁" FontSize="22" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                <TextBlock Grid.Column="0" FontFamily="Segoe MDL2 Assets" Text="&#xE73E;" FontSize="20" Foreground="#059669" VerticalAlignment="Center" Margin="0,0,12,0" />
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Text="1. Phê Duyệt Hoàn Tất &amp; Lưu Kho Toàn Trường" FontWeight="Bold" FontSize="13" Foreground="#0F172A" />
+                                    <TextBlock Text="1. Phê duyệt hoàn tất và lưu trữ chung" FontWeight="Bold" FontSize="13" Foreground="#0F172A" />
                                     <TextBlock Text="Áp dụng khi bạn là người ký cuối cùng (văn bản cấp tổ, nội bộ hoặc BGH)." FontSize="11" Foreground="#64748B" TextWrapping="Wrap" />
                                 </StackPanel>
-                                <Button Grid.Column="2" Content="Chọn ➡" Style="{StaticResource SuccessButton}" Background="#059669" BorderBrush="#047857" FontSize="11" FontWeight="Bold" Padding="10,5" Click="ChoiceCommitApproval_Click" />
+                                <Button Grid.Column="2" Content="Chọn" Style="{StaticResource SuccessButton}" Background="#059669" BorderBrush="#047857" FontSize="11" FontWeight="SemiBold" Padding="12,5" Click="ChoiceCommitApproval_Click" />
                             </Grid>
                         </Border>
 
@@ -1638,17 +1638,17 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="➡" FontSize="22" Foreground="#7C3AED" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                <TextBlock Grid.Column="0" FontFamily="Segoe MDL2 Assets" Text="&#xE72D;" FontSize="20" Foreground="#7C3AED" VerticalAlignment="Center" Margin="0,0,12,0" />
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Text="2. Chuyển Tiếp Cho Ban Giám Hiệu / Người Duyệt Tiếp Theo" FontWeight="Bold" FontSize="13" Foreground="#6D28D9" />
+                                    <TextBlock Text="2. Chuyển tiếp cho Ban Giám hiệu / Người duyệt tiếp theo" FontWeight="Bold" FontSize="13" Foreground="#6D28D9" />
                                     <TextBlock Text="Áp dụng khi Tổ trưởng duyệt xong cần trình lên BGH phê duyệt và đóng dấu." FontSize="11" Foreground="#64748B" TextWrapping="Wrap" />
                                 </StackPanel>
-                                <Button Grid.Column="2" Content="Chọn ➡" Style="{StaticResource PrimaryButton}" Background="#7C3AED" BorderBrush="#6D28D9" FontSize="11" FontWeight="Bold" Padding="10,5" Click="ChoiceForwardApproval_Click" />
+                                <Button Grid.Column="2" Content="Chọn" Style="{StaticResource PrimaryButton}" Background="#7C3AED" BorderBrush="#6D28D9" FontSize="11" FontWeight="SemiBold" Padding="12,5" Click="ChoiceForwardApproval_Click" />
                             </Grid>
                         </Border>
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="👁 Xem Lại Bản Đã Ký" Style="{StaticResource SecondaryButton}" 
+                            <Button Content="Xem lại bản đã ký" Style="{StaticResource SecondaryButton}" 
                                     Padding="14,7" FontSize="12" Click="BtnCloseApprovalChoice_Click" />
                         </StackPanel>
                     </StackPanel>
@@ -1671,11 +1671,11 @@
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                             <Border Background="#F3E8FF" CornerRadius="8" Padding="10" Margin="0,0,12,0">
-                                <TextBlock Text="➡" FontSize="26" Foreground="#7C3AED" />
+                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE72D;" FontSize="22" Foreground="#7C3AED" VerticalAlignment="Center" />
                             </Border>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="CHUYỂN TIẾP BÁO CÁO LÊN CẤP TRÊN" FontWeight="Bold" FontSize="16" Foreground="#6D28D9" />
-                                <TextBlock Text="Trình văn bản đã ký duyệt lên Ban Giám Hiệu / Người duyệt tiếp theo" FontSize="12" Foreground="#64748B" />
+                                <TextBlock Text="Chuyển tiếp báo cáo lên cấp trên" FontWeight="Bold" FontSize="16" Foreground="#6D28D9" />
+                                <TextBlock Text="Trình văn bản đã ký duyệt lên Ban Giám hiệu hoặc người duyệt tiếp theo" FontSize="12" Foreground="#64748B" />
                             </StackPanel>
                         </StackPanel>
 
@@ -1696,11 +1696,11 @@
                         <TextBox x:Name="TxtForwardNotes" Padding="8,6" FontSize="12" Height="50" TextWrapping="Wrap" AcceptsReturn="True" Margin="0,0,0,20" Background="#F8FAFC" />
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="✕ Hủy Bỏ" Style="{StaticResource SecondaryButton}" 
+                            <Button Content="Hủy bỏ" Style="{StaticResource SecondaryButton}" 
                                     Padding="16,8" FontSize="13" Margin="0,0,10,0" Click="BtnCancelForwardWorkflow_Click" />
-                            <Button x:Name="BtnConfirmForwardWorkflow" Content="🚀 Xác Nhận Chuyển Tiếp" Style="{StaticResource PrimaryButton}" 
+                            <Button x:Name="BtnConfirmForwardWorkflow" Content="Xác nhận chuyển tiếp" Style="{StaticResource PrimaryButton}" 
                                     Background="#7C3AED" BorderBrush="#6D28D9"
-                                    Padding="20,8" FontSize="13" FontWeight="Bold" Click="BtnConfirmForwardWorkflow_Click" />
+                                    Padding="20,8" FontSize="13" FontWeight="SemiBold" Click="BtnConfirmForwardWorkflow_Click" />
                         </StackPanel>
                     </StackPanel>
                 </Border>

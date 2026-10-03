@@ -5,7 +5,7 @@
 ; ==============================================================================
 
 #define MyAppName "VGCA Sign Tool Pro"
-#define MyAppVersion "2.3.2"
+#define MyAppVersion "2.5.0"
 #define MyAppPublisher "Ban Co Yeu Chinh Phu & Nha Truong"
 #define MyAppURL "https://github.com/MrKhang-Khoi/cvakysoonline"
 #define MyAppExeName "VGCASignToolPro.exe"

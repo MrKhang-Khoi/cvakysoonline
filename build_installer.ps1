@@ -1,10 +1,10 @@
 # ==============================================================================
 # SCRIPT DONG GOI BO CAI DAT & GOI UPDATE TU DONG CHUAN MICROSOFT WINDOWS
-# Project: VGCA Sign Tool Pro (v2.3.0)
+# Project: VGCA Sign Tool Pro (v2.5.0)
 # ==============================================================================
 
 $ErrorActionPreference = "Stop"
-$appVersion = "2.3.2"
+$appVersion = "2.5.0"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $projectDir = $scriptDir
 $distDir = Join-Path $projectDir "dist\win-x64"
@@ -168,7 +168,7 @@ $releaseObj = @{
     minSupportedVersion = "2.0.0"
     releaseDate = (Get-Date -Format "yyyy-MM-dd")
     title = "Ban cap nhat VGCA Sign Tool Pro v$appVersion"
-    description = "Sua dut diem loi hop thoai Loading Overlay van quay sau khi xac nhan ky so thanh cong tren dien thoai: An Overlay ngay sau khi PDF da render xong tren WebView2 truoc khi hien dialog thong bao."
+    description = "Chuan hoa toan dien giao dien nguoi dung va cau tu UX theo he quy chieu Microsoft Fluent Design 2, Apple HIG va Google Material Design 3."
     downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v$appVersion/VGCASignToolPro_Update_v$appVersion.zip"
     installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v$appVersion/VGCASignToolPro_Setup_v$appVersion.exe"
     sha256 = $zipHash
@@ -176,10 +176,11 @@ $releaseObj = @{
     mandatory = $false
     status = "ACTIVE"
     changelog = @(
-        "Khac phuc triet de loi hop thoai Loading Overlay (Tien trinh ky) van quay sau khi xac nhan tren dien thoai thanh cong: Tu dong an Overlay va giai phong con tro cho ngay khi PDF render xong truoc khi hien dialog thong bao",
-        "Bao ve tuyet doi khoi catch va finally de luon dam bao Overlay duoc an ngay lap tuc ke ca khi xay ra loi hoac nguoi dung bam huy",
-        "Tu dong chay nen VGCA Virtual CSP khong hien hop thoai modal chan ngang gay treo ung dung",
-        "Bao ton 100% tinh nang chuyen tiep Ban Giam Hieu, nap Word, Excel, PDF va Hop Thu Trinh Ky thoi gian thuc SSE"
+        "Chuan hoa toan bo typography va cau tu sang Sentence case theo Microsoft Writing Style Guide",
+        "Thay the toan bo Unicode Emoji mau bang he thong Segoe MDL2 Assets vector glyphs sac net cao cap",
+        "Toi uu hoa he thong phan cap hanh dong (Action Hierarchy) va bang mau thanh cong cu Toolbar",
+        "Loai bo danh so thu tu tab roi rac, tinh gon nhan dieu huong chuan Fluent Design",
+        "Bao toan 100% tinh nang ky so PAdES LTV, hop thu trinh ky SSE va dong bo danh ba"
     )
 }
 $jsonPayload = $releaseObj | ConvertTo-Json -Depth 5
