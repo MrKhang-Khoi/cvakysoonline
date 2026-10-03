@@ -37,6 +37,8 @@ CẤM TUYỆT ĐỐI dừng lại ở việc tạo file zip trên đĩa cứng c
 
 ### Bước 4: Đóng gói Nhị phân & Tính Checksum SHA-256
 - Tạo gói cập nhật đè (chỉ chứa các dll/exe đã sửa) tại `releases/VGCASignToolPro_Update_v<version>.zip`.
+  - **LƯU Ý CỐT LÕI (HostFxr Invariant)**: TUYỆT ĐỐI KHÔNG đưa file `VGCASignToolPro.Updater.*` vào gói cập nhật patch zip nếu nó là Framework-Dependent, vì khi giải nén ra thư mục tạm `%TEMP%\staging`, nó sẽ thiếu `hostfxr.dll` và làm Windows báo lỗi bắt cài .NET Desktop Runtime. Hãy để `UpdateService.cs` tự động sao chép Updater từ thư mục cài đặt gốc (nơi có sẵn runtime self-contained)!
+  - **Bắt buộc Smoke Test**: Giải nén thử nghiệm gói zip ra một thư mục tạm ngẫu nhiên, kiểm tra chạy thử trước khi tạo release.
 - Tạo gói Portable đầy đủ tại `releases/VGCASignToolPro_v<version>_Standalone_Portable.zip`.
 - Tính mã băm SHA-256 của file zip và cập nhật file `releases/app_release.json`:
   ```json
