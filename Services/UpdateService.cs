@@ -18,7 +18,7 @@ namespace VGCASignToolPro.Services
     {
         private static readonly HttpClient _httpClient = new HttpClient { Timeout = TimeSpan.FromMinutes(5) };
         private readonly string _configFilePath;
-        public string CurrentVersionString { get; private set; } = "2.5.3";
+        public string CurrentVersionString { get; private set; } = "2.6.2";
 
         public UpdateService()
         {
@@ -58,8 +58,9 @@ namespace VGCASignToolPro.Services
 
                 if (string.IsNullOrEmpty(firebaseUrl))
                 {
+                    // URL public fallback — không hardcode secret, /app_release phải public read
                     firebaseUrl = "https://cva-kyso-lienthong-default-rtdb.asia-southeast1.firebasedatabase.app";
-                    dbSecret = "TOdsGaw1iflR0dCDtHqQ8pBii9UgiqLaq8nfF250";
+                    dbSecret = string.Empty;
                 }
 
                 string endpoint = $"{firebaseUrl}/app_release.json" +

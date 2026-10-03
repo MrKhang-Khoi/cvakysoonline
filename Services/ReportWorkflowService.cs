@@ -356,25 +356,34 @@ namespace VGCASignToolPro.Services
                 string reportId = $"REP_{DateTime.Now:yyyyMMdd}_{now.ToString()[^6..]}";
                 string baseHash = ComputeSha256(localPdfPath);
 
-                // 1. Tải tệp PDF lên Firebase /files
+                // 1. Tải tệp PDF — ưu tiên Google Drive qua GAS, fallback Firebase base64 (giới hạn 6MB)
                 byte[] fileBytes = await File.ReadAllBytesAsync(localPdfPath).ConfigureAwait(false);
-                string fileDataBase64 = Convert.ToBase64String(fileBytes);
-                string fileId = $"FILE_{reportId}_V1";
+                string fileId;
 
-                var filePayload = new
+                if (!string.IsNullOrWhiteSpace(_googleAppsScriptUrl))
                 {
-                    fileName = Path.GetFileName(localPdfPath),
-                    fileData = fileDataBase64,
-                    fileSize = fileBytes.Length,
-                    createdAt = now
-                };
+                    // Route GAS → Google Drive (không giới hạn kích thước Firebase)
+                    var driveRes = await UploadToGoogleDriveAsync(localPdfPath, reportId, Path.GetFileName(localPdfPath)).ConfigureAwait(false);
+                    if (!driveRes.Success || string.IsNullOrEmpty(driveRes.FileId))
+                        return (false, $"Lỗi khi tải tệp lên Google Drive: {driveRes.Message}", string.Empty);
+                    fileId = !string.IsNullOrEmpty(driveRes.DownloadUrl) ? driveRes.DownloadUrl : driveRes.FileId!;
+                }
+                else
+                {
+                    // Fallback Firebase base64 — chặn file > 6MB để tránh vỡ giới hạn 10MB/node
+                    const long MaxFirebaseFileBytes = 6 * 1024 * 1024;
+                    if (fileBytes.Length > MaxFirebaseFileBytes)
+                        return (false, $"Tệp PDF quá lớn ({fileBytes.Length / 1048576.0:F1} MB). Vui lòng cấu hình googleAppsScriptUrl trong workflow_config.json để tải lên Google Drive.", string.Empty);
 
-                string fileUrl = BuildUrl($"files/{fileId}");
-                var fileContent = new StringContent(JsonConvert.SerializeObject(filePayload), Encoding.UTF8, "application/json");
-                var fileRes = await _http.PutAsync(fileUrl, fileContent).ConfigureAwait(false);
-                if (!fileRes.IsSuccessStatusCode)
-                {
-                    return (false, $"Lỗi khi lưu trữ tệp lên đám mây: {fileRes.StatusCode}", string.Empty);
+                    string fileDataBase64 = Convert.ToBase64String(fileBytes);
+                    string fbFileId = $"FILE_{reportId}_V1";
+                    var filePayload = new { fileName = Path.GetFileName(localPdfPath), fileData = fileDataBase64, fileSize = fileBytes.Length, createdAt = now };
+                    string fileUrl = BuildUrl($"files/{fbFileId}");
+                    var fileContent = new StringContent(JsonConvert.SerializeObject(filePayload), Encoding.UTF8, "application/json");
+                    var fileRes = await _http.PutAsync(fileUrl, fileContent).ConfigureAwait(false);
+                    if (!fileRes.IsSuccessStatusCode)
+                        return (false, $"Lỗi khi lưu trữ tệp lên đám mây: {fileRes.StatusCode}", string.Empty);
+                    fileId = fbFileId;
                 }
 
                 // 2. Tạo bản ghi báo cáo trong /reports
@@ -1071,8 +1080,7 @@ namespace VGCASignToolPro.Services
                         var payload = new { action = "getFile", fileId = gDriveFileId };
                         string jsonContent = JsonConvert.SerializeObject(payload);
                         using var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-                        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
-                        var res = await client.PostAsync(_googleAppsScriptUrl, content).ConfigureAwait(false);
+                        var res = await _http.PostAsync(_googleAppsScriptUrl, content).ConfigureAwait(false);
                         if (res.IsSuccessStatusCode)
                         {
                             string respJson = await res.Content.ReadAsStringAsync().ConfigureAwait(false);
