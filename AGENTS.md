@@ -85,3 +85,12 @@ CẤM TUYỆT ĐỐI dừng lại ở việc tạo file zip trên đĩa cứng c
 ### Bước 8: Đo đạc & Nghiệm thu Thực tế (Empirical Verification)
 - Query lại Firebase RTDB và GitHub Releases xem bản mới đã sẵn sàng chưa (phải trả về mã HTTP 200 và phiên bản mới).
 - Nếu người dùng cần kiểm tra nóng ngay trên máy cục bộ, hỗ trợ copy đè các file từ `bin/Release/net8.0-windows/` vào thư mục cài đặt `C:\Users\HPZBook\AppData\Local\Programs\VGCASignToolPro\`.
+
+---
+
+## 3. Lệnh Tắt Nhanh (Instant Shorthand Commands)
+Người dùng chỉ cần gõ các từ khóa ngắn sau, Hermes tự động kích hoạt 100% quy trình trên mà không cần gõ lại câu lệnh dài:
+- `fix: <mô tả>` hoặc `sửa: <mô tả>`: Tự động chạy CodeGraph -> Sửa Surgical-fix -> Build Release sạch.
+- `update` hoặc `cập nhật`: Tự động chạy toàn bộ chu trình 8 bước từ sửa code đến đóng gói và phát hành OTA lên GitHub & Firebase.
+- `audit` hoặc `kiểm tra`: Quét kiến trúc CodeGraph và kiểm tra ranh giới logic.
+- Mọi câu nói thông thường (như "nút này đơ", "sửa lỗi X"): Mặc định tự động kích hoạt quy trình trên.
