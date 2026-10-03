@@ -1,12 +1,32 @@
 # ==============================================================================
 # SCRIPT DONG GOI BO CAI DAT & GOI UPDATE TU DONG CHUAN MICROSOFT WINDOWS
-# Project: VGCA Sign Tool Pro (v2.6.2)
+# Project: VGCA Sign Tool Pro
 # ==============================================================================
 
 $ErrorActionPreference = "Stop"
-$appVersion = "2.6.2"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $projectDir = $scriptDir
+
+# Tu dong trich xuat Version chuan tu tap tin VGCASignToolPro.csproj (Single Source of Truth)
+$csprojPath = Join-Path $projectDir "VGCASignToolPro.csproj"
+[xml]$csprojXml = Get-Content -Path $csprojPath
+$appVersion = $csprojXml.Project.PropertyGroup.Version
+if ([string]::IsNullOrWhiteSpace($appVersion)) {
+    throw "Khong tim thay the <Version> trong tap tin $csprojPath"
+}
+Write-Host "Phat hien phien ban phat hanh tu VGCASignToolPro.csproj: v$appVersion" -ForegroundColor Cyan
+
+# Dong bo phien ban sang installer/VGCASignToolPro_Setup.iss
+$issPath = Join-Path $projectDir "installer\VGCASignToolPro_Setup.iss"
+if (Test-Path $issPath) {
+    $issContent = Get-Content -Path $issPath -Raw
+    $newIssContent = [System.Text.RegularExpressions.Regex]::Replace($issContent, '(?m)^#define\s+MyAppVersion\s+"[^"]+"', "#define MyAppVersion `"$appVersion`"")
+    if ($issContent -ne $newIssContent) {
+        Set-Content -Path $issPath -Value $newIssContent -NoNewline
+        Write-Host "  + Da tu dong dong bo MyAppVersion v$appVersion sang VGCASignToolPro_Setup.iss" -ForegroundColor Green
+    }
+}
+
 $distDir = Join-Path $projectDir "dist\win-x64"
 $outputInstallerDir = Join-Path $projectDir "Output_Installer"
 $innoCompiler = "C:\Users\HPZBook\AppData\Local\Programs\Inno Setup 6\ISCC.exe"
@@ -188,7 +208,19 @@ Write-Host $jsonPayload -ForegroundColor Green
 
 # Tu dong dong bo metadata len Firebase Realtime Database bang byte UTF-8
 Write-Host "`nDang dong bo metadata cap nhat len Firebase Realtime Database (UTF-8 Bytes)..." -ForegroundColor Yellow
-$firebaseEndpoint = "https://cva-kyso-lienthong-default-rtdb.asia-southeast1.firebasedatabase.app/app_release.json?auth=TOdsGaw1iflR0dCDtHqQ8pBii9UgiqLaq8nfF250"
+
+$cfgPath = Join-Path $projectDir "workflow_config.json"
+$firebaseUrl = "https://cva-kyso-lienthong-default-rtdb.asia-southeast1.firebasedatabase.app"
+$dbSecret = ""
+if (Test-Path $cfgPath) {
+    try {
+        $cfgJson = Get-Content -Path $cfgPath -Raw | ConvertFrom-Json
+        if (![string]::IsNullOrWhiteSpace($cfgJson.firebaseUrl)) { $firebaseUrl = $cfgJson.firebaseUrl.TrimEnd('/') }
+        if (![string]::IsNullOrWhiteSpace($cfgJson.databaseSecret)) { $dbSecret = $cfgJson.databaseSecret.Trim() }
+    } catch { }
+}
+
+$firebaseEndpoint = "$firebaseUrl/app_release.json" + $(if (![string]::IsNullOrWhiteSpace($dbSecret)) { "?auth=$dbSecret" } else { "" })
 try {
     $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($jsonPayload)
     $null = Invoke-RestMethod -Uri $firebaseEndpoint -Method Put -Body $bodyBytes -ContentType "application/json; charset=utf-8"
