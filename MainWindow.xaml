@@ -584,10 +584,16 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <ComboBox Grid.Column="0" x:Name="CmbCertificates" Padding="6" SelectionChanged="CmbCertificates_SelectionChanged" />
                                         <Button Grid.Column="1" Content="Quét lại" Style="{StaticResource SecondaryButton}" 
                                                 Margin="6,0,0,0" Padding="8,4" Click="BtnRefreshCertificates_Click" />
+                                        <Button Grid.Column="2" x:Name="BtnSaveCertPreference" Content="Lưu lựa chọn"
+                                                Style="{StaticResource SecondaryButton}"
+                                                Margin="6,0,0,0" Padding="8,4"
+                                                ToolTip="Ghi nhớ chứng thư này (VGCA Cloud / USB Token cá nhân / USB dấu nhà trường) để tự động chọn lại sau khi quét"
+                                                Click="BtnSaveCertPreference_Click" />
                                     </Grid>
                                 </StackPanel>
                             </GroupBox>

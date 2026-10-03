@@ -47,6 +47,7 @@ namespace VGCASignToolPro
         private List<CertificateModel> _certificates = new();
         private List<SignatureProfile> _profiles = new();
         private CertificateModel? _currentActiveCert;
+        private CertPreferenceModel? _certPreference;
 
         private string? _originalWordFilePath;
         private bool _isWordModified = false;
@@ -696,8 +697,17 @@ namespace VGCASignToolPro
                     return;
                 }
 
-                // Tìm chứng thư VGCA chuyên dùng của Ban Cơ yếu Chính phủ
-                CertificateModel? vgcaCert = _certService.GetActiveVGCACertificate();
+                // Load preference đã lưu (nếu có) và khớp với cert thực tế trong kho
+                _certPreference ??= CertPreferenceService.Load();
+                CertificateModel? preferredCert = null;
+                if (_certPreference != null && !string.IsNullOrEmpty(_certPreference.Thumbprint))
+                {
+                    preferredCert = _certificates.FirstOrDefault(c =>
+                        string.Equals(c.Thumbprint, _certPreference.Thumbprint, StringComparison.OrdinalIgnoreCase));
+                }
+
+                // Nếu cert ưu tiên không còn trong kho (rút token), fallback về auto-detect
+                CertificateModel? vgcaCert = preferredCert ?? _certService.GetActiveVGCACertificate();
 
                 if (vgcaCert != null)
                 {
@@ -827,6 +837,43 @@ namespace VGCASignToolPro
         {
             UpdateStatus("Đang quét lại danh sách chứng thư số...");
             LoadCertificatesAndVerifyVGCALogin();
+        }
+
+        private void BtnSaveCertPreference_Click(object sender, RoutedEventArgs e)
+        {
+            if (_currentActiveCert == null)
+            {
+                MessageBox.Show(
+                    "Chưa chọn chứng thư số nào. Vui lòng chọn chứng thư từ danh sách trước khi lưu.",
+                    "Chưa chọn chứng thư", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            string mode = CertPreferenceService.DetectMode(_currentActiveCert);
+            string modeLabel = mode switch
+            {
+                "USB_SEAL" => "USB Token con dấu nhà trường (đóng dấu pháp nhân)",
+                "USB_PERSONAL" => "USB Token cá nhân BGH / giáo viên (ký số cá nhân)",
+                _ => "VGCA Cloud / Virtual CSP (giáo viên ký qua điện thoại)"
+            };
+
+            var pref = new CertPreferenceModel
+            {
+                Thumbprint = _currentActiveCert.Thumbprint,
+                Mode = mode,
+                DisplayName = _currentActiveCert.CommonName,
+                SavedAt = DateTime.UtcNow
+            };
+            CertPreferenceService.Save(pref);
+            _certPreference = pref;
+
+            UpdateStatus($"Đã lưu lựa chọn: {_currentActiveCert.CommonName} [{modeLabel}]");
+            MessageBox.Show(
+                $"Đã ghi nhớ chứng thư số:\n\n" +
+                $"• Tên: {_currentActiveCert.CommonName}\n" +
+                $"• Chế độ: {modeLabel}\n\n" +
+                $"Lần sau khi quét hoặc khởi động lại ứng dụng, hệ thống sẽ tự động ưu tiên chứng thư này.",
+                "Đã lưu lựa chọn chứng thư", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         private void BtnLaunchVgcaManager_Click(object sender, RoutedEventArgs e)
