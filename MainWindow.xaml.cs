@@ -1268,6 +1268,22 @@ namespace VGCASignToolPro
             {
                 TxtDimensions.Text = $"{profile.SignatureWidth}x{profile.SignatureHeight}";
 
+                bool isSealProfile = profile.ProfileType == 4 || profile.Name.Contains("Dấu Đỏ", StringComparison.OrdinalIgnoreCase) || profile.Name.Contains("Cơ Quan", StringComparison.OrdinalIgnoreCase);
+                if (LblStampImageTitle != null)
+                {
+                    LblStampImageTitle.Text = isSealProfile ? "Hình ảnh con dấu đỏ cơ quan:" : "Hình ảnh chữ ký tay cá nhân:";
+                }
+                if (TxtStampPlaceholderTitle != null)
+                {
+                    TxtStampPlaceholderTitle.Text = isSealProfile ? "Chưa chọn hình ảnh con dấu đỏ cho cơ quan" : "Chưa chọn hình ảnh chữ ký tay cá nhân";
+                }
+                if (TxtProfileImageGuide != null)
+                {
+                    TxtProfileImageGuide.Text = isSealProfile
+                        ? "🔴 Mẫu con dấu đỏ cơ quan: Chọn tệp hình ảnh con dấu tròn đỏ (.png nền trong suốt) phục vụ chức năng đóng dấu pháp nhân."
+                        : "🔵 Mẫu chữ ký cá nhân: Chọn tệp hình ảnh chữ ký tay (.png nền trong suốt) phục vụ ký số cá nhân.";
+                }
+
                 if (CmbDisplayMode != null)
                 {
                     CmbDisplayMode.SelectedIndex = profile.Mode switch
@@ -3317,31 +3333,48 @@ namespace VGCASignToolPro
             bool isAnyDocLoaded = isPdfReady || !string.IsNullOrWhiteSpace(_originalWordFilePath) || !string.IsNullOrWhiteSpace(_originalExcelFilePath);
             bool hasSealRight = _vgcaAuth.CurrentTeacher?.CanSeal == true;
 
-            bool canSign = isAnyDocLoaded && isLoggedIn;
+            // Nếu đang trong chế độ đóng dấu chuyên trách (_isWorkflowSealingMode): Ẩn hoàn toàn nút Ký cá nhân để tránh bấm nhầm
+            bool canSign = isAnyDocLoaded && isLoggedIn && !_isWorkflowSealingMode;
             bool canSeal = isAnyDocLoaded && isLoggedIn && hasSealRight;
 
             if (BtnSignCurrentDocument != null)
             {
-                BtnSignCurrentDocument.IsEnabled = canSign;
-                if (!isLoggedIn)
+                if (_isWorkflowSealingMode)
                 {
-                    BtnSignCurrentDocument.ToolTip = "Vui lòng đăng nhập tài khoản để ký tài liệu.";
-                }
-                else if (!isAnyDocLoaded)
-                {
-                    BtnSignCurrentDocument.ToolTip = "Vui lòng mở tệp Word, Excel hoặc PDF trước khi ký.";
-                }
-                else if (!isPdfReady)
-                {
-                    BtnSignCurrentDocument.ToolTip = "Ký số văn bản (Hệ thống sẽ tự động chuyển đổi Word/Excel sang PDF để ký số chuẩn PAdES).";
+                    BtnSignCurrentDocument.Visibility = Visibility.Collapsed;
+                    BtnSignCurrentDocument.IsEnabled = false;
                 }
                 else
                 {
-                    BtnSignCurrentDocument.ToolTip = "Tiến hành ký số văn bản PDF chuẩn PAdES Ban Cơ yếu Chính phủ.";
+                    BtnSignCurrentDocument.Visibility = Visibility.Visible;
+                    BtnSignCurrentDocument.IsEnabled = canSign;
+                    if (!isLoggedIn)
+                    {
+                        BtnSignCurrentDocument.ToolTip = "Vui lòng đăng nhập tài khoản để ký tài liệu.";
+                    }
+                    else if (!isAnyDocLoaded)
+                    {
+                        BtnSignCurrentDocument.ToolTip = "Vui lòng mở tệp Word, Excel hoặc PDF trước khi ký.";
+                    }
+                    else if (!isPdfReady)
+                    {
+                        BtnSignCurrentDocument.ToolTip = "Ký số văn bản (Hệ thống sẽ tự động chuyển đổi Word/Excel sang PDF để ký số chuẩn PAdES).";
+                    }
+                    else
+                    {
+                        BtnSignCurrentDocument.ToolTip = "Tiến hành ký số văn bản PDF chuẩn PAdES Ban Cơ yếu Chính phủ.";
+                    }
                 }
             }
 
-            if (BtnInsertSignatureStamp != null) BtnInsertSignatureStamp.IsEnabled = isPdfReady && isLoggedIn;
+            if (BtnInsertSignatureStamp != null)
+            {
+                BtnInsertSignatureStamp.IsEnabled = isPdfReady && isLoggedIn;
+                BtnInsertSignatureStamp.Content = _isWorkflowSealingMode ? "Đặt vị trí dấu" : "Chữ ký, dấu";
+                BtnInsertSignatureStamp.ToolTip = _isWorkflowSealingMode
+                    ? "Chọn vị trí đóng con dấu pháp nhân lên văn bản (trùm 1/3 chữ ký bên trái)"
+                    : "Chọn vị trí con dấu pháp nhân hoặc chữ ký trên trang tài liệu";
+            }
 
             if (BtnStampOfficial != null)
             {
@@ -5183,6 +5216,8 @@ namespace VGCASignToolPro
                 BtnSubmitWorkflowReport.Visibility = Visibility.Collapsed;
                 BtnReturnWorkflowReport.Visibility = Visibility.Collapsed;
 
+                UpdateSignAndSealButtonsState(true);
+
                 await LoadPdfDocumentAsync(destPath);
 
                 MainTabControl.SelectedIndex = 1;
@@ -5242,6 +5277,7 @@ namespace VGCASignToolPro
                     _activeWorkflowReportId = null;
                     _activeWorkflowExpectedBaseHash = null;
                     _isWorkflowSealingMode = false;
+                    UpdateSignAndSealButtonsState(!string.IsNullOrWhiteSpace(_currentWorkingPdfPath));
 
                     BorderWorkflowReviewNotice.Visibility = Visibility.Collapsed;
                     BtnCommitWorkflowSeal.Visibility = Visibility.Collapsed;

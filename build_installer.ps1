@@ -1,10 +1,10 @@
 # ==============================================================================
 # SCRIPT DONG GOI BO CAI DAT & GOI UPDATE TU DONG CHUAN MICROSOFT WINDOWS
-# Project: VGCA Sign Tool Pro (v2.5.3)
+# Project: VGCA Sign Tool Pro (v2.6.2)
 # ==============================================================================
 
 $ErrorActionPreference = "Stop"
-$appVersion = "2.5.3"
+$appVersion = "2.6.2"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $projectDir = $scriptDir
 $distDir = Join-Path $projectDir "dist\win-x64"
