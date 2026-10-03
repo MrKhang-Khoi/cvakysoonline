@@ -355,6 +355,7 @@ namespace VGCASignToolPro.Updater
 
         private readonly Label _lblTitle;
         private readonly Label _lblStatus;
+        private readonly Label _lblPercent;
         private readonly ProgressBar _progressBar;
 
         public UpdaterProgressForm(int targetPid, string sourceDir, string targetDir, string restartExe)
@@ -365,7 +366,7 @@ namespace VGCASignToolPro.Updater
             _restartExe = restartExe;
 
             Text = "VGCA Sign Tool Pro - Đang Cập Nhật Hệ Thống";
-            Size = new System.Drawing.Size(460, 180);
+            Size = new System.Drawing.Size(460, 200);
             StartPosition = FormStartPosition.CenterScreen;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -386,8 +387,18 @@ namespace VGCASignToolPro.Updater
                 Text = "Khởi tạo tiến trình cập nhật...",
                 Font = new System.Drawing.Font("Segoe UI", 9f),
                 Location = new System.Drawing.Point(20, 48),
-                Size = new System.Drawing.Size(410, 20),
+                Size = new System.Drawing.Size(340, 20),
                 ForeColor = System.Drawing.Color.FromArgb(71, 85, 105)
+            };
+
+            _lblPercent = new Label
+            {
+                Text = "0%",
+                Font = new System.Drawing.Font("Segoe UI", 9f, System.Drawing.FontStyle.Bold),
+                Location = new System.Drawing.Point(370, 48),
+                Size = new System.Drawing.Size(60, 20),
+                TextAlign = System.Drawing.ContentAlignment.MiddleRight,
+                ForeColor = System.Drawing.Color.FromArgb(37, 99, 235)
             };
 
             _progressBar = new ProgressBar
@@ -400,6 +411,7 @@ namespace VGCASignToolPro.Updater
 
             Controls.Add(_lblTitle);
             Controls.Add(_lblStatus);
+            Controls.Add(_lblPercent);
             Controls.Add(_progressBar);
 
             Shown += (s, e) => StartUpdateThread();
@@ -418,6 +430,7 @@ namespace VGCASignToolPro.Updater
                             Invoke(new Action(() =>
                             {
                                 _lblStatus.Text = status;
+                                _lblPercent.Text = $"{percent}%";
                                 _progressBar.Value = Math.Min(100, Math.Max(0, percent));
                             }));
                         }
