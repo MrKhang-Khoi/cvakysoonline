@@ -1124,7 +1124,7 @@
                                                             </DataTemplate>
                                                         </GridViewColumn.CellTemplate>
                                                     </GridViewColumn>
-                                                    <GridViewColumn Header="Nội Dung H2" Width="150">
+                                                    <GridViewColumn Header="Mã xác thực (H2)" Width="150">
                                                         <GridViewColumn.CellTemplate>
                                                             <DataTemplate>
                                                                 <Border Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" ToolTip="{Binding SignedHashTooltip}" IsHitTestVisible="False">
@@ -1209,7 +1209,7 @@
                                                             </DataTemplate>
                                                         </GridViewColumn.CellTemplate>
                                                     </GridViewColumn>
-                                                    <GridViewColumn Header="Nội dung H2" Width="150">
+                                                    <GridViewColumn Header="Mã xác thực (H2)" Width="150">
                                                         <GridViewColumn.CellTemplate>
                                                             <DataTemplate>
                                                                 <Border Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" ToolTip="{Binding SignedHashTooltip}" IsHitTestVisible="False">
@@ -1355,7 +1355,7 @@
                                                             </DataTemplate>
                                                         </GridViewColumn.CellTemplate>
                                                     </GridViewColumn>
-                                                    <GridViewColumn Header="Nội Dung H2" Width="150">
+                                                    <GridViewColumn Header="Mã xác thực (H2)" Width="150">
                                                         <GridViewColumn.CellTemplate>
                                                             <DataTemplate>
                                                                 <Border Background="#FEF2F2" BorderBrush="#FECACA" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" ToolTip="{Binding SignedHashTooltip}" IsHitTestVisible="False">
@@ -1432,7 +1432,7 @@
                                                             </DataTemplate>
                                                         </GridViewColumn.CellTemplate>
                                                     </GridViewColumn>
-                                                    <GridViewColumn Header="Nội Dung H2" Width="150">
+                                                    <GridViewColumn Header="Mã xác thực (H2)" Width="150">
                                                         <GridViewColumn.CellTemplate>
                                                             <DataTemplate>
                                                                 <Border Background="#ECFDF5" BorderBrush="#A7F3D0" BorderThickness="1" CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" ToolTip="{Binding SignedHashTooltip}" IsHitTestVisible="False">

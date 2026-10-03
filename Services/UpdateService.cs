@@ -200,26 +200,49 @@ namespace VGCASignToolPro.Services
             string randSuffix = Guid.NewGuid().ToString("N").Substring(0, 6);
             string targetZipPath = Path.Combine(tempDir, $"update_package_{DateTime.Now:yyyyMMdd_HHmmss}_{randSuffix}.zip");
 
-            using var response = await _httpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, ct);
+            using var request = new HttpRequestMessage(HttpMethod.Get, downloadUrl);
+            // Thiết lập User-Agent tiêu chuẩn để GitHub Release CDN không từ chối hoặc chặn response stream
+            request.Headers.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) VGCASignToolPro/2.6.0");
+
+            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
             long? totalBytes = response.Content.Headers.ContentLength;
 
-            await using var contentStream = await response.Content.ReadAsStreamAsync(ct);
+            // Nếu content-length vắng mặt trên redirect URL, cố gắng lấy từ HEAD hoặc ước lượng
+            if ((!totalBytes.HasValue || totalBytes.Value <= 0) && response.Headers.Location != null)
+            {
+                try
+                {
+                    using var headReq = new HttpRequestMessage(HttpMethod.Head, response.Headers.Location);
+                    using var headRes = await _httpClient.SendAsync(headReq, ct).ConfigureAwait(false);
+                    if (headRes.Content.Headers.ContentLength.HasValue && headRes.Content.Headers.ContentLength.Value > 0)
+                    {
+                        totalBytes = headRes.Content.Headers.ContentLength;
+                    }
+                }
+                catch { }
+            }
+
+            await using var contentStream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
             await using var fileStream = new FileStream(targetZipPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true);
 
             byte[] buffer = new byte[81920];
             long totalRead = 0;
             int bytesRead;
             var stopwatch = Stopwatch.StartNew();
+            long lastReportTime = 0;
 
-            while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length, ct)) > 0)
+            while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length, ct).ConfigureAwait(false)) > 0)
             {
-                await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), ct);
+                await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), ct).ConfigureAwait(false);
                 totalRead += bytesRead;
 
-                if (progress != null)
+                long now = stopwatch.ElapsedMilliseconds;
+                // Báo cáo định kỳ mỗi 50ms hoặc khi đọc xong để cập nhật mượt trên UI
+                if (progress != null && (now - lastReportTime >= 50 || bytesRead == 0))
                 {
+                    lastReportTime = now;
                     int percentage = totalBytes.HasValue && totalBytes.Value > 0
                         ? (int)((double)totalRead / totalBytes.Value * 100)
                         : 0;
@@ -230,10 +253,22 @@ namespace VGCASignToolPro.Services
                     {
                         BytesReceived = totalRead,
                         TotalBytesToReceive = totalBytes,
-                        ProgressPercentage = percentage,
+                        ProgressPercentage = Math.Min(100, percentage),
                         SpeedKbs = speedKbs
                     });
                 }
+            }
+
+            // Đảm bảo báo cáo tiến trình 100% khi hoàn tất tải file
+            if (progress != null)
+            {
+                progress.Report(new UpdateDownloadProgress
+                {
+                    BytesReceived = totalRead,
+                    TotalBytesToReceive = totalBytes ?? totalRead,
+                    ProgressPercentage = 100,
+                    SpeedKbs = totalRead / 1024.0 / Math.Max(0.1, stopwatch.Elapsed.TotalSeconds)
+                });
             }
 
             return targetZipPath;

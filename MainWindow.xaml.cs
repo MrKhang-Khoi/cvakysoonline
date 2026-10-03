@@ -4063,10 +4063,13 @@ namespace VGCASignToolPro
                 // 4. Archive: Toàn trường đã hoàn tất
                 var archive = all.Where(r => r.Status == "SIGNED_COMMITTED").ToList();
 
-                // 5. WaitingSeal: Báo cáo chờ đóng dấu (Dành cho tài khoản có quyền CanSeal)
+                // 5. WaitingSeal: Báo cáo chờ đóng dấu (Dành cho tài khoản có quyền CanSeal hoặc Ban Giám Hiệu theo dõi)
                 bool canSeal = _vgcaAuth.CurrentTeacher?.CanSeal ?? false;
+                bool isLeadershipUser = IsLeadership(_vgcaAuth.CurrentTeacher?.Title);
+                bool canViewWaitingSeal = canSeal || isLeadershipUser;
+
                 List<ReportModel> waitingSeal = new();
-                if (canSeal)
+                if (canViewWaitingSeal)
                 {
                     waitingSeal = all.Where(r => r.Status == "WAITING_SEAL").OrderByDescending(r => r.UpdatedAt).ToList();
                     for (int i = 0; i < waitingSeal.Count; i++)
@@ -4086,7 +4089,7 @@ namespace VGCASignToolPro
                 LvReturnedReports.ItemsSource = returned;
                 LvArchiveReports.ItemsSource = archive;
 
-                if (canSeal)
+                if (canViewWaitingSeal)
                 {
                     LvWaitingSealReports.ItemsSource = waitingSeal;
                     TabItemWaitingSeal.Visibility = Visibility.Visible;
@@ -4778,7 +4781,7 @@ namespace VGCASignToolPro
                         CloseForwardWorkflowPopup();
 
                         MainTabControl.SelectedIndex = 2;
-                        if (_vgcaAuth.CurrentTeacher?.CanSeal == true)
+                        if (_vgcaAuth.CurrentTeacher?.CanSeal == true || IsLeadership(_vgcaAuth.CurrentTeacher?.Title))
                         {
                             TabControlWorkflowSub.SelectedItem = TabItemWaitingSeal;
                         }
@@ -5076,7 +5079,8 @@ namespace VGCASignToolPro
                 return;
             }
 
-            if (!_vgcaAuth.CurrentTeacher.CanSeal)
+            bool canSealUser = _vgcaAuth.CurrentTeacher.CanSeal || IsLeadership(_vgcaAuth.CurrentTeacher.Title);
+            if (!canSealUser)
             {
                 MessageBox.Show("Tài khoản của bạn chưa được phân quyền 'Đóng Dấu Cơ Quan'.\n\nChỉ Ban Giám Hiệu, Văn thư hoặc người được phân quyền quản lý thiết bị USB Token mới được phép thực hiện chức năng này.",
                     "Chưa Cấp Quyền Đóng Dấu", MessageBoxButton.OK, MessageBoxImage.Warning);
