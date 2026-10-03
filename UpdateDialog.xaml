@@ -47,7 +47,7 @@
                         <TextBlock Grid.Column="1" Text="➔" FontSize="20" FontWeight="Bold" Foreground="#3B82F6" VerticalAlignment="Center" Margin="10,0" />
                         <StackPanel Grid.Column="2" HorizontalAlignment="Center">
                             <TextBlock Text="Phiên bản mới" FontSize="11" Foreground="#059669" HorizontalAlignment="Center" />
-                            <TextBlock x:Name="TxtNewVer" Text="v2.5.0" FontWeight="Bold" FontSize="15" Foreground="#059669" HorizontalAlignment="Center" Margin="0,2,0,0" />
+                            <TextBlock x:Name="TxtNewVer" Text="v2.5.1" FontWeight="Bold" FontSize="15" Foreground="#059669" HorizontalAlignment="Center" Margin="0,2,0,0" />
                         </StackPanel>
                     </Grid>
                 </Border>

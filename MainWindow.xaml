@@ -703,18 +703,24 @@
                                     <CheckBox x:Name="ChkUseTSA" Content="Đóng dấu thời gian TSA Ban Cơ yếu (http://ca.gov.vn/tsa)" 
                                               IsChecked="True" FontWeight="Normal" FontSize="11" Margin="0,0,0,12" />
 
-                                    <!-- NÚT LƯU CẤU HÌNH & CHUYỂN SANG TAB SOẠN THẢO -->
+                                    <!-- NÚT LƯU CẤU HÌNH, ĐỒNG BỘ ĐÁM MÂY & CHUYỂN SANG TAB SOẠN THẢO -->
                                     <Grid Margin="0,0,0,4">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="1.1*" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <Button Grid.Column="0" Content="Lưu mẫu chữ ký" 
-                                                Style="{StaticResource SecondaryButton}" Padding="10,8" Margin="0,0,4,0" 
-                                                Click="BtnSaveProfile_Click" />
-                                        <Button Grid.Column="1" Content="Sang soạn thảo và ký số" 
-                                                Style="{StaticResource PrimaryButton}" Padding="10,8" Margin="4,0,0,0" 
-                                                Click="BtnGoToSignWorkspace_Click" />
+                                        <Button Grid.Column="0" Content="Lưu mẫu ký" 
+                                                Style="{StaticResource SecondaryButton}" Padding="8,8" Margin="0,0,3,0" 
+                                                Click="BtnSaveProfile_Click" ToolTip="Lưu lại thay đổi mẫu chữ ký hiện tại" />
+                                        <Button Grid.Column="1" x:Name="BtnSyncCloudProfile" Content="Đồng bộ đám mây" 
+                                                Style="{StaticResource SecondaryButton}" Padding="8,8" Margin="3,0,3,0" 
+                                                Background="#F0FDF4" BorderBrush="#BBF7D0" Foreground="#15803D" FontWeight="SemiBold"
+                                                Click="BtnSyncCloudProfile_Click" 
+                                                ToolTip="Mã hóa AES-256 an toàn và tự động sao lưu hoặc khôi phục mẫu chữ ký từ đám mây Firebase" />
+                                        <Button Grid.Column="2" Content="Sang soạn thảo" 
+                                                Style="{StaticResource PrimaryButton}" Padding="8,8" Margin="3,0,0,0" 
+                                                Click="BtnGoToSignWorkspace_Click" ToolTip="Chuyển sang tab soạn thảo và ký số" />
                                     </Grid>
                                 </StackPanel>
                             </GroupBox>
@@ -1475,7 +1481,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="TIẾN TRÌNH: " FontSize="10" FontWeight="Bold" Foreground="#38BDF8" VerticalAlignment="Center" Margin="0,0,8,0" />
                 <TextBlock Grid.Column="1" x:Name="TxtStatusBar" Text="Sẵn sàng." FontSize="11" Foreground="#E2E8F0" FontFamily="Segoe UI" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
-                <TextBlock Grid.Column="2" x:Name="TxtAppVersion" Text="Phiên bản v2.5.0 • .NET 8 x64" FontSize="11" Foreground="#94A3B8" VerticalAlignment="Center" Margin="16,0,0,0" />
+                <TextBlock Grid.Column="2" x:Name="TxtAppVersion" Text="Phiên bản v2.5.1 • .NET 8 x64" FontSize="11" Foreground="#94A3B8" VerticalAlignment="Center" Margin="16,0,0,0" />
             </Grid>
         </Border>
 

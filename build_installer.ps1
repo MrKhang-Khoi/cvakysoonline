@@ -1,10 +1,10 @@
 # ==============================================================================
 # SCRIPT DONG GOI BO CAI DAT & GOI UPDATE TU DONG CHUAN MICROSOFT WINDOWS
-# Project: VGCA Sign Tool Pro (v2.5.0)
+# Project: VGCA Sign Tool Pro (v2.5.1)
 # ==============================================================================
 
 $ErrorActionPreference = "Stop"
-$appVersion = "2.5.0"
+$appVersion = "2.5.1"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $projectDir = $scriptDir
 $distDir = Join-Path $projectDir "dist\win-x64"
@@ -168,7 +168,7 @@ $releaseObj = @{
     minSupportedVersion = "2.0.0"
     releaseDate = (Get-Date -Format "yyyy-MM-dd")
     title = "Ban cap nhat VGCA Sign Tool Pro v$appVersion"
-    description = "Chuan hoa toan dien giao dien nguoi dung va cau tu UX theo he quy chieu Microsoft Fluent Design 2, Apple HIG va Google Material Design 3."
+    description = "Tich hop co che tu dong ma hoa AES-256 GCM va dong bo/khoi phuc mau chu ky, hinh anh con dau len Cloud Firebase: Cai lai Windows hay doi may tinh khong bao gio bi mat file anh."
     downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v$appVersion/VGCASignToolPro_Update_v$appVersion.zip"
     installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v$appVersion/VGCASignToolPro_Setup_v$appVersion.exe"
     sha256 = $zipHash
@@ -176,11 +176,11 @@ $releaseObj = @{
     mandatory = $false
     status = "ACTIVE"
     changelog = @(
-        "Chuan hoa toan bo typography va cau tu sang Sentence case theo Microsoft Writing Style Guide",
-        "Thay the toan bo Unicode Emoji mau bang he thong Segoe MDL2 Assets vector glyphs sac net cao cap",
-        "Toi uu hoa he thong phan cap hanh dong (Action Hierarchy) va bang mau thanh cong cu Toolbar",
-        "Loai bo danh so thu tu tab roi rac, tinh gon nhan dieu huong chuan Fluent Design",
-        "Bao toan 100% tinh nang ky so PAdES LTV, hop thu trinh ky SSE va dong bo danh ba"
+        "Tich hop co che ma hoa AES-256 GCM client-side voi khoa dan xuat tu CCCD, dong bo mau chu ky len Firebase an toan tuyet doi",
+        "Tu dong khoi phuc anh chu ky va con dau tu Cloud khi cai lai may tinh hoac dang nhap tren thiet bi moi",
+        "Bo sung nut Dong Bo Dam May chu dong tai Tab 1 cho phep nguoi dung chu dong sao luu/khoi phuc",
+        "Bao ve toan ven du lieu voi ma bam SHA-256 chat che truoc va sau khi giai ma",
+        "Bao toan 100% tinh nang ky so PAdES LTV, hop thu trinh ky SSE va giao dien Fluent chuan Windows 11"
     )
 }
 $jsonPayload = $releaseObj | ConvertTo-Json -Depth 5

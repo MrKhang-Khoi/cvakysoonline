@@ -477,6 +477,37 @@ namespace VGCASignToolPro
                     PopulateWorkflowApprovers(teacher.Cccd);
                     _ = RefreshWorkflowDataAsync();
 
+                    // Tự động khôi phục mẫu chữ ký & ảnh con dấu từ Cloud nếu máy mới chưa có ảnh
+                    if (!string.IsNullOrWhiteSpace(teacher.Cccd))
+                    {
+                        bool hasAnyStamp = _profiles != null && _profiles.Any(p => !string.IsNullOrEmpty(p.Image) || (!string.IsNullOrEmpty(p.ImagePath) && File.Exists(p.ImagePath)));
+                        if (!hasAnyStamp)
+                        {
+                            _ = Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    var restored = await _profileManager.RestoreProfilesFromCloudAsync(teacher.Cccd);
+                                    if (restored != null && restored.Count > 0 && restored.Any(p => !string.IsNullOrEmpty(p.Image) || (!string.IsNullOrEmpty(p.ImagePath) && File.Exists(p.ImagePath))))
+                                    {
+                                        Dispatcher.Invoke(() =>
+                                        {
+                                            _profiles = restored;
+                                            CmbProfiles.ItemsSource = null;
+                                            CmbProfiles.ItemsSource = _profiles;
+                                            if (_profiles.Count > 0) CmbProfiles.SelectedIndex = 0;
+                                            UpdateStatus($"Đã tự động khôi phục {restored.Count} mẫu chữ ký và ảnh con dấu từ đám mây!");
+                                        });
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    System.Diagnostics.Trace.TraceWarning($"Lỗi khôi phục chữ ký từ Cloud: {ex.Message}");
+                                }
+                            });
+                        }
+                    }
+
                     // Mở khóa Tab 2
                     TabItemSignWorkspace.Header = "  Soạn Thảo & Ký Số  ";
                     TabItemSignWorkspace.IsEnabled = true;
@@ -1235,6 +1266,12 @@ namespace VGCASignToolPro
                         profile.ImagePath = filePath;
                     }
                     _profileManager.SaveProfiles(_profiles);
+
+                    string? curCccd = _vgcaAuth.CurrentTeacher?.Cccd;
+                    if (!string.IsNullOrWhiteSpace(curCccd))
+                    {
+                        _ = _profileManager.BackupProfilesToCloudAsync(curCccd, _profiles);
+                    }
                 }
 
                 UpdateStatus($"Đã nạp và lưu trữ an toàn ảnh con dấu: {Path.GetFileName(filePath)}");
@@ -1335,6 +1372,13 @@ namespace VGCASignToolPro
                 try
                 {
                     _profileManager.SaveProfiles(_profiles);
+
+                    string? curCccd = _vgcaAuth.CurrentTeacher?.Cccd;
+                    if (!string.IsNullOrWhiteSpace(curCccd))
+                    {
+                        _ = _profileManager.BackupProfilesToCloudAsync(curCccd, _profiles);
+                    }
+
                     UpdateStatus($"Đã lưu thành công cấu hình mẫu chữ ký: '{profile.Name}'");
                     MessageBox.Show($"Đã lưu mẫu chữ ký '{profile.Name}' thành công!\nẢnh con dấu: {(profile.ImagePath != null ? Path.GetFileName(profile.ImagePath) : "Chưa chọn")}\nKích thước: {profile.SignatureWidth}x{profile.SignatureHeight}px", 
                         "Lưu Cấu Hình Mẫu Ký", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -1344,6 +1388,55 @@ namespace VGCASignToolPro
                     System.Diagnostics.Trace.TraceError($"Lỗi lưu profile: {ex}");
                     UpdateStatus($"Lỗi lưu profile: {ex.Message}");
                 }
+            }
+        }
+
+        private async void BtnSyncCloudProfile_Click(object sender, RoutedEventArgs e)
+        {
+            string? currentCccd = _vgcaAuth.CurrentTeacher?.Cccd;
+            if (string.IsNullOrWhiteSpace(currentCccd))
+            {
+                MessageBox.Show("Vui lòng cắm USB Token hoặc mở Virtual CSP để nhận diện tài khoản trước khi đồng bộ chữ ký với đám mây.", 
+                    "Chưa Nhận Diện Chữ Ký", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                UpdateStatus("Đang kiểm tra và đồng bộ mẫu chữ ký với đám mây...");
+
+                // Thử khôi phục từ Cloud trước nếu cục bộ chưa có ảnh hoặc có bản sao lưu trên Cloud
+                var cloudProfiles = await _profileManager.RestoreProfilesFromCloudAsync(currentCccd);
+                if (cloudProfiles != null && cloudProfiles.Count > 0 && cloudProfiles.Any(p => !string.IsNullOrEmpty(p.Image) || (!string.IsNullOrEmpty(p.ImagePath) && File.Exists(p.ImagePath))))
+                {
+                    _profiles = cloudProfiles;
+                    CmbProfiles.ItemsSource = null;
+                    CmbProfiles.ItemsSource = _profiles;
+                    if (_profiles.Count > 0) CmbProfiles.SelectedIndex = 0;
+
+                    UpdateStatus($"Đã khôi phục thành công {cloudProfiles.Count} mẫu chữ ký từ đám mây!");
+                    MessageBox.Show($"Đã khôi phục và giải mã thành công {cloudProfiles.Count} mẫu chữ ký kèm ảnh con dấu từ đám mây an toàn!", 
+                        "Đồng Bộ Đám Mây", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // Nếu trên Cloud chưa có hoặc máy đã có sẵn ảnh -> Tiến hành sao lưu lên Cloud
+                bool backedUp = await _profileManager.BackupProfilesToCloudAsync(currentCccd, _profiles);
+                if (backedUp)
+                {
+                    UpdateStatus("Đã sao lưu toàn bộ mẫu chữ ký và ảnh con dấu lên đám mây an toàn (Mã hóa AES-256)!");
+                    MessageBox.Show("Đã sao lưu toàn bộ mẫu chữ ký và ảnh con dấu lên đám mây an toàn (Mã hóa AES-256)!\nKhi cài lại máy tính hoặc sang máy mới, dữ liệu sẽ tự động khôi phục.", 
+                        "Đồng Bộ Đám Mây", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                else
+                {
+                    MessageBox.Show("Không thể sao lưu lên đám mây. Vui lòng kiểm tra kết nối mạng.", 
+                        "Lỗi Đồng Bộ", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi trong quá trình đồng bộ đám mây:\n{ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
