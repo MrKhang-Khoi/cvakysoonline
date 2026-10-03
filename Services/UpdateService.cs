@@ -244,10 +244,11 @@ namespace VGCASignToolPro.Services
         /// </summary>
         public bool VerifyPackageSha256(string zipFilePath, string expectedSha256)
         {
+            // Bug #9 fix: expectedSha256 rỗng = server chưa set hash = FAIL an toàn, không phải pass
             if (string.IsNullOrWhiteSpace(expectedSha256))
             {
-                // Nếu Firebase không thiết lập sha256, chấp nhận file tải về
-                return true;
+                System.Diagnostics.Trace.TraceWarning("[UpdateService] Không có SHA-256 trên server — từ chối xác nhận gói cập nhật để bảo vệ toàn vẹn.");
+                return false;
             }
 
             if (!File.Exists(zipFilePath)) return false;

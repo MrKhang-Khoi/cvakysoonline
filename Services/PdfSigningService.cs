@@ -175,7 +175,13 @@ namespace VGCASignToolPro.Services
                     }
                     else
                     {
-                        // Chế độ 0: Chỉ hiển thị thông tin chữ ký điện tử dạng chữ
+                        // Bug #7 fix: Khi không có ảnh, displayMode vẫn có ý nghĩa:
+                        // mode 0 hoặc 2: chỉ text; mode 1 (yêu cầu ảnh nhưng không có): cảnh báo và fallback text
+                        if (displayMode == 1)
+                        {
+                            StatusChanged?.Invoke("Cảnh báo: Profile yêu cầu ảnh con dấu nhưng không tìm thấy file ảnh. Hiển thị dạng chữ thay thế.");
+                        }
+                        // Chế độ 0 hoặc fallback: Chỉ hiển thị thông tin chữ ký điện tử dạng chữ
                         appearance.SetContent(signInfoText);
                     }
 

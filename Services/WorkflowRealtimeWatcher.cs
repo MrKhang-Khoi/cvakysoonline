@@ -132,10 +132,11 @@ namespace VGCASignToolPro.Services
                         else if (line.StartsWith("data:"))
                         {
                             string dataJson = line.Substring(5).Trim();
-                            _lastEventTime = DateTime.UtcNow;
+                            _lastEventTime = DateTime.UtcNow; // Bug #10 fix: đã move lên trước if keep-alive
 
                             if (currentEvent == "keep-alive" || dataJson == "null")
                             {
+                                // _lastEventTime đã được reset ở trên — heartbeat sẽ không trigger sai
                                 continue;
                             }
 

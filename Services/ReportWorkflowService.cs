@@ -146,7 +146,9 @@ namespace VGCASignToolPro.Services
         public string StatusText => Status switch
         {
             "WAITING_OPEN" => "Chưa mở (Chờ nhận)",
-            "ACQUIRED_LOCKED" => "Đã nhận (Đang xem)",
+            "ACQUIRED_LOCKED" => (LockedAt > 0 && (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - LockedAt > 3600000))
+                                    ? "Quá hạn 60 phút"   // Bug #8 fix: computed từ LockedAt, không mutate Status
+                                    : "Đã nhận (Đang xem)",
             "WAITING_SEAL" => "Chờ đóng dấu",
             "SIGNED_COMMITTED" => "Đã duyệt & Ký số",
             "RECALLED" => "Đã thu hồi",
@@ -307,10 +309,13 @@ namespace VGCASignToolPro.Services
                     if (item == null) continue;
                     item.ReportId = kvp.Key;
 
-                    // Kiểm tra tự động quá hạn 60 phút
+                    // Bug #8 fix: Không mutate Status trong RAM — client chỉ đọc, server là source of truth.
+                    // LOCK_TIMEOUT chỉ là UI hint cục bộ, không ghi đè trường Status thực.
+                    // Dùng computed property IsLockExpired thay vì thay đổi Status.
                     if (item.Status == "ACQUIRED_LOCKED" && item.LockedAt > 0 && (now - item.LockedAt > LockTimeoutMs))
                     {
-                        item.Status = "LOCK_TIMEOUT";
+                        // Không gán item.Status = "LOCK_TIMEOUT" — để client khác thấy cùng state từ server
+                        // StatusText property sẽ hiển thị đúng dựa trên LockedAt elapsed
                     }
 
                     list.Add(item);
@@ -433,7 +438,7 @@ namespace VGCASignToolPro.Services
 
                 long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-                // Kiểm tra xung đột khóa
+                // Kiểm tra xung đột khóa (pre-check để trả lỗi sớm, không thay thế verify sau)
                 if (report.Status == "ACQUIRED_LOCKED")
                 {
                     bool isExpired = report.LockedAt > 0 && (now - report.LockedAt > LockTimeoutMs);
@@ -443,12 +448,15 @@ namespace VGCASignToolPro.Services
                     }
                 }
 
-                // Cập nhật trạng thái khóa
+                // Bug #1 fix: Ghi lock với lockedBy rồi verify lại để phát hiện race condition.
+                // Firebase REST không có optimistic-lock native; ta verify bằng cách GET lại sau PATCH.
+                string lockToken = $"{approverCccd}_{now}";
                 var lockPayload = new
                 {
                     status = "ACQUIRED_LOCKED",
                     lockedBy = approverCccd,
                     lockedAt = now,
+                    lockToken = lockToken,
                     updatedAt = now
                 };
                 var patchContent = new StringContent(JsonConvert.SerializeObject(lockPayload), Encoding.UTF8, "application/json");
@@ -456,6 +464,19 @@ namespace VGCASignToolPro.Services
                 if (!patchRes.IsSuccessStatusCode)
                 {
                     return (false, "Không thể khóa báo cáo để xử lý.", null, null);
+                }
+
+                // Verify: GET lại để xác nhận chính mình đang giữ lock (chống race condition)
+                await Task.Delay(150).ConfigureAwait(false); // chờ Firebase propagate
+                var verifyRes = await _http.GetAsync(reportUrl).ConfigureAwait(false);
+                if (verifyRes.IsSuccessStatusCode)
+                {
+                    string verifyContent = await verifyRes.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    var verifyReport = JsonConvert.DeserializeObject<ReportModel>(verifyContent);
+                    if (verifyReport != null && verifyReport.LockedBy != approverCccd)
+                    {
+                        return (false, "Xung đột: Báo cáo vừa bị người duyệt khác chiếm quyền xử lý. Vui lòng thử lại.", null, null);
+                    }
                 }
 
                 // Tải nội dung tệp PDF
@@ -596,12 +617,19 @@ namespace VGCASignToolPro.Services
                     return (false, "Không thể trả về: Báo cáo đã bị người lập thu hồi trước đó!");
                 }
 
+                // Bug #5 fix: Chỉ người được phân công duyệt mới có quyền trả về
+                if (!string.Equals(report.ApproverCccd, approverCccd, StringComparison.Ordinal))
+                {
+                    return (false, "Không có quyền: Bạn không phải người được phân công duyệt báo cáo này.");
+                }
+
                 long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
                 var updatePayload = new
                 {
                     status = "RETURNED",
-                    returnedBy = approverName,
+                    returnedBy = approverCccd,      // Bug #5 fix: dùng CCCD để audit trail chính xác
+                    returnedByName = approverName,  // Bug #5 fix: lưu tên riêng vào field riêng
                     returnedAt = now,
                     returnReason = returnReason.Trim(),
                     updatedAt = now
@@ -657,10 +685,10 @@ namespace VGCASignToolPro.Services
                     return (false, "Từ chối nộp: Báo cáo này đã bị người lập thu hồi trước đó!");
                 }
 
-                // Chốt chặn 2: Cryptographic Base Hash Check (Anti-Split-Brain)
-                if (!string.IsNullOrEmpty(report.BaseHash) && report.BaseHash != expectedBaseHash)
+                // Bug #6 fix: BaseHash rỗng là lỗi dữ liệu — phải fail, không được bỏ qua
+                if (string.IsNullOrEmpty(report.BaseHash) || report.BaseHash != expectedBaseHash)
                 {
-                    return (false, "Xung đột phiên bản: Tệp gốc trên hệ thống đã thay đổi hoặc cập nhật phiên bản mới!");
+                    return (false, "Xung đột phiên bản: Không thể xác minh tính toàn vẹn tệp gốc. Vui lòng tải lại văn bản và thử lại.");
                 }
 
                 long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -669,6 +697,8 @@ namespace VGCASignToolPro.Services
                 // 1. Kiểm tra và ưu tiên đẩy lên Google Drive nếu đã cấu hình Google Apps Script Web App
                 string googleDriveViewUrl = string.Empty;
                 string finalDriveFileId = string.Empty;
+
+                string oldDriveFileId = report.DriveFileId; // Bug #2: lưu lại để xóa SAU khi PATCH thành công
 
                 if (!string.IsNullOrWhiteSpace(_googleAppsScriptUrl))
                 {
@@ -679,12 +709,6 @@ namespace VGCASignToolPro.Services
                         {
                             googleDriveViewUrl = driveRes.ViewUrl;
                             finalDriveFileId = !string.IsNullOrEmpty(driveRes.DownloadUrl) ? driveRes.DownloadUrl : (driveRes.FileId ?? string.Empty);
-
-                            // Giải phóng 100% dung lượng Firebase: Xóa bản nháp V1 ngay lập tức khỏi /files
-                            if (!string.IsNullOrEmpty(report.DriveFileId))
-                            {
-                                _ = DeleteFileFromFirebaseAsync(report.DriveFileId);
-                            }
                         }
                     }
                     catch (Exception gEx)
@@ -741,6 +765,13 @@ namespace VGCASignToolPro.Services
                     return (false, "Không thể hoàn tất trạng thái phê duyệt trên máy chủ.");
                 }
 
+                // Bug #2 fix: Chỉ xóa V1 SAU KHI PATCH status đã thành công, tránh mất file khi PATCH thất bại
+                if (!string.IsNullOrEmpty(oldDriveFileId) && oldDriveFileId != finalDriveFileId
+                    && !oldDriveFileId.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                {
+                    _ = DeleteFileFromFirebaseAsync(oldDriveFileId);
+                }
+
                 string successMsg = isLeadershipSigner
                     ? "Ký số phê duyệt thành công! Báo cáo đã được chuyển vào mục 'Chờ Đóng Dấu'."
                     : "Phê duyệt và ký số báo cáo thành công!";
@@ -790,9 +821,16 @@ namespace VGCASignToolPro.Services
                     return (false, "Từ chối chuyển tiếp: Báo cáo này đã bị người lập thu hồi trước đó!");
                 }
 
-                if (!string.IsNullOrEmpty(report.BaseHash) && report.BaseHash != expectedBaseHash)
+                // Bug #4 fix: Chỉ người được phân công duyệt mới có quyền forward
+                if (!string.Equals(report.ApproverCccd, currentSignerCccd, StringComparison.Ordinal))
                 {
-                    return (false, "Xung đột phiên bản: Tệp gốc trên hệ thống đã thay đổi hoặc cập nhật phiên bản mới!");
+                    return (false, "Không có quyền: Bạn không phải người được phân công duyệt báo cáo này.");
+                }
+
+                // Bug #6 fix: BaseHash rỗng là lỗi dữ liệu — phải fail, không được bỏ qua
+                if (string.IsNullOrEmpty(report.BaseHash) || report.BaseHash != expectedBaseHash)
+                {
+                    return (false, "Xung đột phiên bản: Không thể xác minh tính toàn vẹn tệp gốc. Vui lòng tải lại văn bản và thử lại.");
                 }
 
                 long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -913,6 +951,12 @@ namespace VGCASignToolPro.Services
                 if (report.Status == "RECALLED")
                 {
                     return (false, "Từ chối: Báo cáo này đã bị thu hồi trước đó!");
+                }
+
+                // Bug #3 fix: Chỉ cho phép đóng dấu khi đang ở đúng trạng thái WAITING_SEAL
+                if (report.Status != "WAITING_SEAL")
+                {
+                    return (false, $"Không thể đóng dấu: Báo cáo đang ở trạng thái '{report.StatusText}', chỉ chấp nhận trạng thái 'Chờ đóng dấu'.");
                 }
 
                 long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
