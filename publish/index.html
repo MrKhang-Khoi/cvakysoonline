@@ -8,109 +8,214 @@
     :root {
       --primary: #0F766E;
       --primary-hover: #0D9488;
-      --primary-light: #CCFBF1;
+      --primary-light: #F0FDFA;
+      --primary-border: #CCFBF1;
+      --primary-ring: rgba(13, 148, 136, 0.16);
       --bg: #F8FAFC;
       --card-bg: #FFFFFF;
       --text: #0F172A;
       --text-muted: #64748B;
       --border: #E2E8F0;
+      --border-hover: #CBD5E1;
       --danger: #DC2626;
-      --danger-light: #FEE2E2;
+      --danger-hover: #B91C1C;
+      --danger-light: #FEF2F2;
+      --danger-border: #FECACA;
       --warning: #D97706;
-      --warning-light: #FEF3C7;
+      --warning-light: #FFFBEB;
+      --warning-border: #FDE68A;
       --success: #16A34A;
-      --success-light: #DCFCE7;
+      --success-light: #F0FDF4;
+      --success-border: #BBF7D0;
       --indigo: #4F46E5;
+      --indigo-hover: #4338CA;
       --indigo-light: #EEF2FF;
-      --radius: 8px;
-      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+      --indigo-border: #C7D2FE;
+      --radius-sm: 6px;
+      --radius: 12px;
+      --radius-lg: 16px;
+      --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 24px; min-height: 100vh; }
-    .container { max-width: 1280px; margin: 0 auto; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 24px; min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    .container { max-width: 1320px; margin: 0 auto; }
 
-    /* Header */
-    header { background: var(--card-bg); border-radius: var(--radius); padding: 20px 24px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
-    .header-title h1 { font-size: 20px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 8px; }
-    .header-title p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
-    .badge-status { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; font-size: 12px; font-weight: 600; background: var(--primary-light); color: var(--primary); }
+    /* Header with top accent gradient */
+    header {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 20px 26px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #0F766E 0%, #2563EB 50%, #4F46E5 100%);
+    }
+    .header-title h1 { font-size: 20px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 10px; letter-spacing: -0.2px; }
+    .header-title p { font-size: 13px; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 12.5px;
+      font-weight: 600;
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid var(--primary-border);
+      box-shadow: var(--shadow-xs);
+    }
 
     /* Cards Grid */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 20px; }
-    .stat-card { background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px; border: 1px solid var(--border); box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between; }
-    .stat-info .stat-label { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-    .stat-info .stat-val { font-size: 24px; font-weight: 700; color: var(--text); margin-top: 4px; }
-    .stat-icon { width: 44px; height: 44px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .stat-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-hover);
+    }
+    .stat-info .stat-label { font-size: 11.5px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; }
+    .stat-info .stat-val { font-size: 28px; font-weight: 800; color: var(--text); margin-top: 4px; font-feature-settings: "tnum"; }
+    .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; border: 1px solid rgba(0, 0, 0, 0.04); }
 
     /* Config panel */
-    .config-panel { background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px; border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 20px; }
-    .config-header { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
-    .config-grid { display: grid; grid-template-columns: 2fr 1.5fr auto; gap: 12px; align-items: end; }
+    .config-panel { background: var(--card-bg); border-radius: var(--radius); padding: 18px 22px; border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 20px; }
+    .config-header { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+    .config-grid { display: grid; grid-template-columns: 2fr 1.5fr auto; gap: 14px; align-items: end; }
     @media (max-width: 860px) { .config-grid { grid-template-columns: 1fr; } }
-    .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
-    .form-control { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; transition: border-color 0.2s; background: #FFF; }
-    .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1); }
+    .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+    .form-control {
+      width: 100%;
+      padding: 9px 13px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      outline: none;
+      transition: all 0.2s ease;
+      background: #FFF;
+      color: var(--text);
+    }
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-ring);
+    }
 
     /* Action bar */
     .action-bar { background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px; border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-    .search-box { display: flex; gap: 10px; flex: 1; max-width: 500px; }
+    .search-box { display: flex; gap: 10px; flex: 1; max-width: 520px; }
     .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
 
     /* Buttons */
-    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; text-decoration: none; }
-    .btn-primary { background: var(--primary); color: #FFF; }
-    .btn-primary:hover { background: var(--primary-hover); }
-    .btn-success { background: var(--success); color: #FFF; }
-    .btn-success:hover { background: #15803D; }
-    .btn-indigo { background: var(--indigo); color: #FFF; }
-    .btn-indigo:hover { background: #4338CA; }
-    .btn-outline { background: #FFF; border-color: var(--border); color: var(--text); }
-    .btn-outline:hover { background: #F1F5F9; }
-    .btn-danger { background: var(--danger); color: #FFF; }
-    .btn-danger:hover { background: #B91C1C; }
-    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+      text-decoration: none;
+      user-select: none;
+    }
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+    }
+    .btn:active:not(:disabled) { transform: translateY(0); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+    .btn-primary { background: linear-gradient(135deg, #0F766E 0%, #0D9488 100%); color: #FFF; box-shadow: 0 2px 4px rgba(15, 118, 110, 0.2); }
+    .btn-primary:hover:not(:disabled) { background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%); }
+    .btn-success { background: linear-gradient(135deg, #16A34A 0%, #15803D 100%); color: #FFF; box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2); }
+    .btn-success:hover:not(:disabled) { background: linear-gradient(135deg, #15803D 0%, #166534 100%); }
+    .btn-indigo { background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%); color: #FFF; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2); }
+    .btn-indigo:hover:not(:disabled) { background: linear-gradient(135deg, #4338CA 0%, #3730A3 100%); }
+    .btn-outline { background: #FFF; border-color: var(--border); color: #334155; }
+    .btn-outline:hover:not(:disabled) { background: #F8FAFC; border-color: var(--border-hover); color: var(--text); }
+    .btn-danger { background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); color: #FFF; box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2); }
+    .btn-danger:hover:not(:disabled) { background: linear-gradient(135deg, #B91C1C 0%, #991B1B 100%); }
+    .btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 6px; }
 
     /* Table */
     .table-container { background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); overflow-x: auto; margin-bottom: 24px; }
-    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
-    thead { background: #F1F5F9; border-bottom: 1px solid var(--border); }
-    th { padding: 12px 16px; font-weight: 600; color: #475569; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
-    td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    tbody tr:hover { background: #F8FAFC; }
+    table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: left; font-size: 13px; }
+    thead th {
+      background: #F8FAFC;
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.6px;
+      position: sticky;
+      top: 0;
+    }
+    tbody td { padding: 13px 16px; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr { transition: background-color 0.15s ease; }
+    tbody tr:hover { background-color: #F8FAFC; }
 
-    /* Role badges */
-    .badge-role { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-    .badge-hieutruong { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
-    .badge-hieupho { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
-    .badge-totruong { background: #EFF6FF; color: #1E40AF; border: 1px solid #BFDBFE; }
-    .badge-giaovien { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+    /* Role & Status badges */
+    .badge-role { display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px; border-radius: 6px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+    .badge-hieutruong { background: var(--danger-light); color: var(--danger); border: 1px solid var(--danger-border); }
+    .badge-hieupho { background: var(--warning-light); color: var(--warning); border: 1px solid var(--warning-border); }
+    .badge-totruong { background: var(--indigo-light); color: var(--indigo); border: 1px solid var(--indigo-border); }
+    .badge-giaovien { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
 
     /* Modal */
-    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); display: none; align-items: center; justify-content: center; z-index: 9999; padding: 16px; backdrop-filter: blur(2px); }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.65); display: none; align-items: center; justify-content: center; z-index: 9999; padding: 16px; backdrop-filter: blur(4px); }
     .modal-overlay.active { display: flex; }
-    .modal-card { background: #FFF; width: 100%; max-width: 620px; border-radius: 12px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); overflow: hidden; animation: modalIn 0.2s ease-out; }
-    @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-    .modal-header { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; }
+    .modal-card { background: #FFF; width: 100%; max-width: 640px; border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); border: 1px solid var(--border); overflow: hidden; animation: modalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .modal-header { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; }
     .modal-header h3 { font-size: 16px; font-weight: 700; color: var(--text); }
     .modal-body { padding: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     @media (max-width: 600px) { .modal-body { grid-template-columns: 1fr; } }
     .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; background: #F8FAFC; }
 
     /* Toast notification */
-    .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 8px; color: #FFF; font-size: 13px; font-weight: 600; box-shadow: var(--shadow-lg); z-index: 10000; display: none; align-items: center; gap: 8px; animation: toastIn 0.25s ease-out; }
+    .toast { position: fixed; bottom: 24px; right: 24px; padding: 14px 22px; border-radius: 10px; color: #FFF; font-size: 13.5px; font-weight: 600; box-shadow: var(--shadow-lg); z-index: 10000; display: none; align-items: center; gap: 10px; animation: toastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
     @keyframes toastIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    .toast.success { background: var(--success); }
-    .toast.error { background: var(--danger); }
-    .toast.info { background: var(--primary); }
+    .toast.success { background: linear-gradient(135deg, #16A34A 0%, #15803D 100%); }
+    .toast.error { background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); }
+    .toast.info { background: linear-gradient(135deg, #0F766E 0%, #0D9488 100%); }
 
     /* Help Accordion */
-    .help-card { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: var(--radius); padding: 16px 20px; margin-bottom: 20px; font-size: 13px; line-height: 1.6; }
-    .help-card h4 { color: #1E40AF; font-size: 14px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+    .help-card { background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: var(--radius); padding: 18px 22px; margin-bottom: 20px; font-size: 13px; line-height: 1.6; }
+    .help-card h4 { color: #1E40AF; font-size: 14px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
     .help-card ol { padding-left: 20px; color: #1E3A8A; }
-    .help-card li { margin-bottom: 4px; }
-    .help-card code { background: #DBEAFE; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 12px; }
+    .help-card li { margin-bottom: 6px; }
+    .help-card code { background: #DBEAFE; padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -127,55 +232,19 @@
     </div>
   </header>
 
-  <!-- Hướng dẫn sử dụng nhanh -->
-  <div class="help-card">
-    <h4>💡 HƯỚNG DẪN KẾT NỐI VÀ LƯU TRỮ TRÊN GITHUB</h4>
-    <ol>
-      <li><strong>Cách 1 (Khuyên dùng - 1 Click Đồng Bộ):</strong> Nhập thông tin giáo viên vào bảng &rarr; Bấm <strong>"☁️ Đồng Bộ Lên Firebase"</strong>. Toàn bộ phần mềm máy tính trong trường sẽ tự động cập nhật danh sách ngay lập tức.</li>
-      <li><strong>Cách 2 (Lưu tệp trên GitHub):</strong> Bấm <strong>"📥 Tải File JSON"</strong> &rarr; Upload tệp <code>school_roster.json</code> lên Repository GitHub của bạn. Copy link raw (dạng <code>https://raw.githubusercontent.com/.../school_roster.json</code>) dán vào ô <em>rosterUrl</em> trong file <code>workflow_config.json</code> của ứng dụng.</li>
-      <li><strong>Cách 3 (Lưu trang HTML này trên GitHub):</strong> Đặt tên file là <code>index.html</code> hoặc <code>admin_roster.html</code> đưa lên GitHub Repo &rarr; Bật <strong>GitHub Pages</strong> để truy cập quản trị mọi lúc mọi nơi trên điện thoại, máy tính bảng hoặc máy tính giáo viên.</li>
-    </ol>
+  <!-- Thanh điều hướng Phân Hệ: Danh Bạ vs Kho Báo Cáo -->
+  <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+    <button id="navTabRoster" class="btn btn-primary" onclick="switchMainTab('roster')" style="padding: 10px 20px; font-size: 14px;">👥 Quản Trị Danh Bạ Giáo Viên</button>
+    <button id="navTabReports" class="btn btn-outline" onclick="switchMainTab('reports')" style="padding: 10px 20px; font-size: 14px;">📁 Quản Trị Kho Báo Cáo (Admin)</button>
   </div>
 
-  <!-- Thống kê -->
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-info">
-        <div class="stat-label">Tổng Số Nhân Sự</div>
-        <div class="stat-val" id="statTotal">0</div>
-      </div>
-      <div class="stat-icon" style="background:#EFF6FF; color:#2563EB;">👥</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-info">
-        <div class="stat-label">Ban Giám Hiệu</div>
-        <div class="stat-val" id="statLeadership">0</div>
-      </div>
-      <div class="stat-icon" style="background:#FEF2F2; color:#DC2626;">⭐</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-info">
-        <div class="stat-label">Tổ Trưởng Chuyên Môn</div>
-        <div class="stat-val" id="statDepts">0</div>
-      </div>
-      <div class="stat-icon" style="background:#FFFBEB; color:#D97706;">📋</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-info">
-        <div class="stat-label">Giáo Viên Bộ Môn</div>
-        <div class="stat-val" id="statTeachers">0</div>
-      </div>
-      <div class="stat-icon" style="background:#F0FDF4; color:#16A34A;">🎓</div>
-    </div>
-  </div>
-
-  <!-- Bảng cấu hình kết nối Firebase / GitHub -->
+  <!-- Bảng cấu hình kết nối Firebase / Google Drive -->
   <div class="config-panel">
     <div class="config-header">
-      <span>⚙️ Cấu Hình Máy Chủ Đám Mây (Firebase Realtime Database)</span>
+      <span>⚙️ Cấu Hình Máy Chủ Đám Mây (Firebase &amp; Google Drive Gateway)</span>
       <button class="btn btn-outline btn-sm" onclick="toggleConfig()">Thu gọn / Mở rộng</button>
     </div>
-    <div class="config-grid" id="configGrid">
+    <div class="config-grid" id="configGrid" style="grid-template-columns: 1.5fr 1.2fr 1.5fr auto;">
       <div class="form-group">
         <label for="cfgFirebaseUrl">Firebase Realtime Database URL:</label>
         <input type="text" id="cfgFirebaseUrl" class="form-control" placeholder="https://your-project-rtdb.firebaseio.com" value="https://cva-kyso-lienthong-default-rtdb.asia-southeast1.firebasedatabase.app">
@@ -184,57 +253,197 @@
         <label for="cfgDbSecret">Database Secret (Khóa xác thực bí mật):</label>
         <input type="password" id="cfgDbSecret" class="form-control" placeholder="Nhập secret nếu database có bảo mật" value="TOdsGaw1iflR0dCDtHqQ8pBii9UgiqLaq8nfF250">
       </div>
+      <div class="form-group">
+        <label for="cfgGasUrl">Google Apps Script URL (Quản lý Drive):</label>
+        <input type="text" id="cfgGasUrl" class="form-control" placeholder="https://script.google.com/macros/s/.../exec" value="https://script.google.com/macros/s/AKfycbzR1sFg4meKC1N6vrlKDup3u3o8MTeWhvItrSL_bF7FZfUIO1ethNTzGd3szTbKLlpT6Q/exec">
+      </div>
       <div>
         <button class="btn btn-outline" onclick="saveConnectionSettings()">💾 Lưu Cấu Hình</button>
       </div>
     </div>
   </div>
 
-  <!-- Thanh thao tác & Tìm kiếm -->
-  <div class="action-bar">
-    <div class="search-box">
-      <input type="text" id="searchInput" class="form-control" placeholder="🔍 Tìm theo Họ tên, CCCD, Số điện thoại..." oninput="filterTable()">
-      <select id="filterRole" class="form-control" style="max-width: 160px;" onchange="filterTable()">
-        <option value="">Tất cả chức vụ</option>
-        <option value="Hiệu trưởng">Hiệu trưởng</option>
-        <option value="Phó hiệu trưởng">Phó hiệu trưởng</option>
-        <option value="Tổ trưởng">Tổ trưởng</option>
-        <option value="Giáo viên">Giáo viên</option>
-      </select>
+  <!-- ================= PHÂN HỆ 1: QUẢN TRỊ DANH BẠ GIÁO VIÊN ================= -->
+  <div id="sectionRoster">
+    <!-- Hướng dẫn sử dụng nhanh -->
+    <div class="help-card">
+      <h4>💡 HƯỚNG DẪN KẾT NỐI VÀ LƯU TRỮ TRÊN GITHUB</h4>
+      <ol>
+        <li><strong>Cách 1 (Khuyên dùng - 1 Click Đồng Bộ):</strong> Nhập thông tin giáo viên vào bảng &rarr; Bấm <strong>"☁️ Đồng Bộ Lên Firebase"</strong>. Toàn bộ phần mềm máy tính trong trường sẽ tự động cập nhật danh sách ngay lập tức.</li>
+        <li><strong>Cách 2 (Lưu tệp trên GitHub):</strong> Bấm <strong>"📥 Tải File JSON"</strong> &rarr; Upload tệp <code>school_roster.json</code> lên Repository GitHub của bạn. Copy link raw (dạng <code>https://raw.githubusercontent.com/.../school_roster.json</code>) dán vào ô <em>rosterUrl</em> trong file <code>workflow_config.json</code> của ứng dụng.</li>
+        <li><strong>Cách 3 (Lưu trang HTML này trên GitHub):</strong> Đặt tên file là <code>index.html</code> hoặc <code>admin_roster.html</code> đưa lên GitHub Repo &rarr; Bật <strong>GitHub Pages</strong> để truy cập quản trị mọi lúc mọi nơi trên điện thoại, máy tính bảng hoặc máy tính giáo viên.</li>
+      </ol>
     </div>
 
-    <div class="btn-group">
-      <button class="btn btn-primary" onclick="openAddModal()">➕ Thêm Giáo Viên</button>
-      <button class="btn btn-success" onclick="syncToFirebase()">☁️ Đồng Bộ Lên Firebase</button>
-      <button class="btn btn-indigo" onclick="loadFromFirebase()">🔄 Tải Từ Firebase</button>
-      <button class="btn btn-outline" style="border-color:#D97706; color:#D97706; font-weight:700;" onclick="openReleaseModal()">🚀 Quản Trị Cập Nhật App</button>
-      <button class="btn btn-outline" onclick="exportJsonFile()">📥 Tải File JSON</button>
-      <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">📤 Nhập File JSON</button>
-      <input type="file" id="fileInput" accept=".json" style="display:none" onchange="importJsonFile(event)">
+    <!-- Thống kê danh bạ -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Tổng Số Nhân Sự</div>
+          <div class="stat-val" id="statTotal">0</div>
+        </div>
+        <div class="stat-icon" style="background:#EFF6FF; color:#2563EB;">👥</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Ban Giám Hiệu</div>
+          <div class="stat-val" id="statLeadership">0</div>
+        </div>
+        <div class="stat-icon" style="background:#FEF2F2; color:#DC2626;">⭐</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Tổ Trưởng Chuyên Môn</div>
+          <div class="stat-val" id="statDepts">0</div>
+        </div>
+        <div class="stat-icon" style="background:#FFFBEB; color:#D97706;">📋</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Giáo Viên Bộ Môn</div>
+          <div class="stat-val" id="statTeachers">0</div>
+        </div>
+        <div class="stat-icon" style="background:#F0FDF4; color:#16A34A;">🎓</div>
+      </div>
+    </div>
+
+    <!-- Thanh thao tác & Tìm kiếm danh bạ -->
+    <div class="action-bar">
+      <div class="search-box">
+        <input type="text" id="searchInput" class="form-control" placeholder="🔍 Tìm theo Họ tên, CCCD, Số điện thoại..." oninput="filterTable()">
+        <select id="filterRole" class="form-control" style="max-width: 160px;" onchange="filterTable()">
+          <option value="">Tất cả chức vụ</option>
+          <option value="Hiệu trưởng">Hiệu trưởng</option>
+          <option value="Phó hiệu trưởng">Phó hiệu trưởng</option>
+          <option value="Tổ trưởng">Tổ trưởng</option>
+          <option value="Giáo viên">Giáo viên</option>
+        </select>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="openAddModal()">➕ Thêm Giáo Viên</button>
+        <button class="btn btn-success" onclick="syncToFirebase()">☁️ Đồng Bộ Lên Firebase</button>
+        <button class="btn btn-indigo" onclick="loadFromFirebase()">🔄 Tải Từ Firebase</button>
+        <button class="btn btn-outline" style="border-color:#D97706; color:#D97706; font-weight:700;" onclick="openReleaseModal()">🚀 Quản Trị Cập Nhật App</button>
+        <button class="btn btn-outline" onclick="exportJsonFile()">📥 Tải File JSON</button>
+        <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">📤 Nhập File JSON</button>
+        <input type="file" id="fileInput" accept=".json" style="display:none" onchange="importJsonFile(event)">
+      </div>
+    </div>
+
+    <!-- Bảng danh sách giáo viên -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 50px;">STT</th>
+            <th>Họ và Tên</th>
+            <th>Số CCCD (12 số)</th>
+            <th>Chức Vụ</th>
+            <th>Tổ Chuyên Môn</th>
+            <th>Số Điện Thoại</th>
+            <th>Email Công Vụ</th>
+            <th style="width: 120px; text-align: center;">Mật Khẩu App</th>
+            <th style="width: 130px; text-align: center;">Thiết Bị Ký</th>
+            <th style="width: 140px; text-align: center;">Đóng Dấu Cơ Quan</th>
+            <th style="width: 140px; text-align: center;">Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody id="rosterTableBody">
+          <!-- Render động bằng JavaScript -->
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <!-- Bảng danh sách giáo viên -->
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th style="width: 50px;">STT</th>
-          <th>Họ và Tên</th>
-          <th>Số CCCD (12 số)</th>
-          <th>Chức Vụ</th>
-          <th>Tổ Chuyên Môn</th>
-          <th>Số Điện Thoại</th>
-          <th>Email Công Vụ</th>
-          <th style="width: 120px; text-align: center;">Mật Khẩu App</th>
-          <th style="width: 140px; text-align: center;">Đóng Dấu Cơ Quan</th>
-          <th style="width: 140px; text-align: center;">Thao Tác</th>
-        </tr>
-      </thead>
-      <tbody id="rosterTableBody">
-        <!-- Render động bằng JavaScript -->
-      </tbody>
-    </table>
+  <!-- ================= PHÂN HỆ 2: QUẢN TRỊ KHO BÁO CÁO (ADMIN) ================= -->
+  <div id="sectionReports" style="display: none;">
+    <!-- Banner Thông Tin Admin -->
+    <div style="display: flex; justify-content: space-between; align-items: center; background: #FFF; padding: 14px 20px; border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 16px;">
+      <div>
+        <strong>🔐 Chế Độ Quản Trị Viên (Admin Kho Báo Cáo Lưu Trữ)</strong>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Cho phép tra cứu, xem trực tiếp file PDF và xóa chọn lọc hoặc xóa toàn bộ kho báo cáo trên Firebase &amp; Google Drive.</p>
+      </div>
+      <span class="badge-role badge-hieutruong" style="font-size: 12px; padding: 6px 12px;">Quyền Admin Cấp Cao</span>
+    </div>
+
+    <!-- Thống kê kho báo cáo -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Tổng Báo Cáo Trong Kho</div>
+          <div class="stat-val" id="repStatTotal">0</div>
+        </div>
+        <div class="stat-icon" style="background:#EFF6FF; color:#2563EB;">📁</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Đã Lưu Kho Toàn Trường</div>
+          <div class="stat-val" id="repStatArchived">0</div>
+        </div>
+        <div class="stat-icon" style="background:#F0FDF4; color:#16A34A;">✅</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Đang Chờ Ký Duyệt</div>
+          <div class="stat-val" id="repStatPending">0</div>
+        </div>
+        <div class="stat-icon" style="background:#FEF3C7; color:#D97706;">⏳</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-info">
+          <div class="stat-label">Bị Trả Về / Thu Hồi</div>
+          <div class="stat-val" id="repStatReturned">0</div>
+        </div>
+        <div class="stat-icon" style="background:#FEE2E2; color:#DC2626;">↩️</div>
+      </div>
+    </div>
+
+    <!-- Thanh thao tác & Tìm kiếm báo cáo -->
+    <div class="action-bar">
+      <div class="search-box">
+        <input type="text" id="repSearchInput" class="form-control" placeholder="🔍 Tìm theo Mã báo cáo, Tiêu đề, Người gửi, Người duyệt..." oninput="filterReportsTable()">
+        <select id="repFilterStatus" class="form-control" style="max-width: 180px;" onchange="filterReportsTable()">
+          <option value="">Tất cả trạng thái</option>
+          <option value="WAITING_OPEN">Chờ tôi duyệt</option>
+          <option value="SIGNED_COMMITTED">Đã duyệt (Chờ đóng dấu)</option>
+          <option value="SIGNED_ORGANIZATION_SEALED">Lưu kho toàn trường</option>
+          <option value="RETURNED">Bị trả về</option>
+          <option value="RECALLED">Đã thu hồi</option>
+        </select>
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-indigo" onclick="loadReportsFromFirebase()">🔄 Làm Mới</button>
+        <button class="btn btn-danger" id="btnDeleteSelectedReports" onclick="deleteSelectedReports()" disabled>🗑️ Xóa Đã Chọn (0)</button>
+        <button class="btn btn-outline" style="border-color:#DC2626; color:#DC2626; font-weight:700;" onclick="deleteAllReports()">⚠️ Xóa Toàn Bộ Kho</button>
+      </div>
+    </div>
+
+    <!-- Bảng danh sách báo cáo -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 40px; text-align: center;">
+              <input type="checkbox" id="chkSelectAllReports" onchange="toggleSelectAllReports(this)" style="cursor:pointer; width:16px; height:16px;">
+            </th>
+            <th style="width: 50px;">STT</th>
+            <th style="width: 150px;">Mã Văn Bản</th>
+            <th>Tiêu Đề Báo Cáo</th>
+            <th>Người Lập</th>
+            <th>Người Phê Duyệt</th>
+            <th style="width: 140px;">Thời Gian</th>
+            <th style="width: 150px; text-align: center;">Trạng Thái</th>
+            <th style="width: 110px; text-align: center;">File Drive</th>
+            <th style="width: 90px; text-align: center;">Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody id="reportsTableBody">
+          <!-- Render động bằng JavaScript -->
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -307,6 +516,18 @@
           </div>
           <p style="font-size: 11px; color: #64748B; margin: 6px 0 0 2px;">
             Mật khẩu này dùng để giáo viên đăng nhập phần mềm Desktop (kết hợp với số CCCD). Quản trị viên có thể thiết lập mật khẩu riêng cho BGH hoặc đặt lại về 123456 khi giáo viên quên.
+          </p>
+        </div>
+
+        <div class="form-group" style="grid-column: span 2; background: #F0FDF4; padding: 12px 16px; border-radius: 8px; border: 1px solid #BBF7D0;">
+          <label for="inpSigningMethod" style="font-weight: 600; color: #166534;">🔏 Phương Thức Ký Số VGCA:</label>
+          <select id="inpSigningMethod" class="form-control" style="margin-top: 6px; font-weight: 600;">
+            <option value="AUTO">🔄 Tự động (Ưu tiên USB Token nếu cắm, ngược lại dùng VGCA Cloud)</option>
+            <option value="USB_TOKEN">🔑 Bắt buộc USB Token Phần cứng (Cắm thiết bị Bit4id / Smart Card)</option>
+            <option value="VGCA_CLOUD">☁️ Bắt buộc Ký số từ xa VGCA Cloud (Virtual CSP v2.0)</option>
+          </select>
+          <p style="font-size: 11px; color: #15803D; margin: 6px 0 0 2px;">
+            Giúp phần mềm phân biệt chính xác: BGH dùng USB Token phần cứng riêng để ký số hoặc dùng VGCA Cloud.
           </p>
         </div>
 
@@ -487,16 +708,36 @@
   function loadSavedSettings() {
     const savedUrl = localStorage.getItem("vgca_firebase_url");
     const savedSec = localStorage.getItem("vgca_firebase_sec");
+    const savedGas = localStorage.getItem("vgca_gas_url");
     if (savedUrl) document.getElementById("cfgFirebaseUrl").value = savedUrl;
     if (savedSec) document.getElementById("cfgDbSecret").value = savedSec;
+    if (savedGas) document.getElementById("cfgGasUrl").value = savedGas;
   }
 
   function saveConnectionSettings() {
     const url = document.getElementById("cfgFirebaseUrl").value.trim();
     const sec = document.getElementById("cfgDbSecret").value.trim();
+    const gas = document.getElementById("cfgGasUrl")?.value.trim() || "";
     localStorage.setItem("vgca_firebase_url", url);
     localStorage.setItem("vgca_firebase_sec", sec);
-    showToast("Đã lưu cấu hình kết nối Firebase vào bộ nhớ trình duyệt.", "success");
+    localStorage.setItem("vgca_gas_url", gas);
+    showToast("Đã lưu cấu hình kết nối vào bộ nhớ trình duyệt.", "success");
+  }
+
+  function getFirebaseUrl() {
+    const el = document.getElementById("cfgFirebaseUrl");
+    const val = (el ? el.value : "") || localStorage.getItem("vgca_firebase_url") || "https://cva-kyso-lienthong-default-rtdb.asia-southeast1.firebasedatabase.app";
+    return val.trim().replace(/\/$/, "");
+  }
+
+  function getDbSecret() {
+    const el = document.getElementById("cfgDbSecret");
+    const val = (el ? el.value : "") || localStorage.getItem("vgca_firebase_sec") || "TOdsGaw1iflR0dCDtHqQ8pBii9UgiqLaq8nfF250";
+    return val.trim();
+  }
+
+  function getGasUrl() {
+    return (document.getElementById("cfgGasUrl")?.value.trim() || localStorage.getItem("vgca_gas_url") || "https://script.google.com/macros/s/AKfycbzR1sFg4meKC1N6vrlKDup3u3o8MTeWhvItrSL_bF7FZfUIO1ethNTzGd3szTbKLlpT6Q/exec").trim();
   }
 
   function loadTeachersFromStorage() {
@@ -610,7 +851,37 @@
       tdPass.appendChild(codePass);
       tr.appendChild(tdPass);
 
-      // 9. Quyền Đóng Dấu Cơ Quan (USB Token)
+      // 9. Phương thức Ký Số
+      const tdMethod = document.createElement("td");
+      tdMethod.style.textAlign = "center";
+      const spanMethod = document.createElement("span");
+      const method = t.signingMethod || "AUTO";
+      if (method === "USB_TOKEN") {
+        spanMethod.className = "badge-role";
+        spanMethod.style.background = "#F0FDF4";
+        spanMethod.style.color = "#166534";
+        spanMethod.style.border = "1px solid #BBF7D0";
+        spanMethod.textContent = "🔑 USB Token";
+        spanMethod.title = "Bắt buộc cắm USB Token phần cứng để ký";
+      } else if (method === "VGCA_CLOUD") {
+        spanMethod.className = "badge-role";
+        spanMethod.style.background = "#F3E8FF";
+        spanMethod.style.color = "#6B21A8";
+        spanMethod.style.border = "1px solid #E9D5FF";
+        spanMethod.textContent = "☁️ VGCA Cloud";
+        spanMethod.title = "Ký số từ xa qua ứng dụng VGCA Virtual CSP v2.0";
+      } else {
+        spanMethod.className = "badge-role";
+        spanMethod.style.background = "#EFF6FF";
+        spanMethod.style.color = "#1E40AF";
+        spanMethod.style.border = "1px solid #BFDBFE";
+        spanMethod.textContent = "🔄 Tự động";
+        spanMethod.title = "Tự động nhận diện thiết bị khả dụng";
+      }
+      tdMethod.appendChild(spanMethod);
+      tr.appendChild(tdMethod);
+
+      // 10. Quyền Đóng Dấu Cơ Quan (USB Token)
       const tdSeal = document.createElement("td");
       tdSeal.style.textAlign = "center";
       const spanSeal = document.createElement("span");
@@ -696,6 +967,7 @@
     document.getElementById("inpEmail").value = "";
     document.getElementById("inpOrg").value = "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ";
     document.getElementById("inpPassword").value = "123456";
+    document.getElementById("inpSigningMethod").value = "AUTO";
     document.getElementById("inpCanSeal").checked = false;
     document.getElementById("teacherModal").classList.add("active");
   }
@@ -715,6 +987,7 @@
     document.getElementById("inpEmail").value = teacher.email || "";
     document.getElementById("inpOrg").value = teacher.organization || "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ";
     document.getElementById("inpPassword").value = teacher.password || "123456";
+    document.getElementById("inpSigningMethod").value = teacher.signingMethod || "AUTO";
     document.getElementById("inpCanSeal").checked = Boolean(teacher.canSeal);
     document.getElementById("teacherModal").classList.add("active");
   }
@@ -734,6 +1007,7 @@
     const email = document.getElementById("inpEmail").value.trim();
     const organization = document.getElementById("inpOrg").value.trim();
     const password = document.getElementById("inpPassword").value.trim() || "123456";
+    const signingMethod = document.getElementById("inpSigningMethod").value || "AUTO";
     const canSeal = document.getElementById("inpCanSeal").checked;
 
     if (!/^[0-9]{12}$/.test(cccd)) {
@@ -747,7 +1021,7 @@
         alert("Số CCCD này đã tồn tại trong danh sách! Vui lòng kiểm tra lại.");
         return;
       }
-      teachers.push({ cccd, fullName, title, department, phone, email, organization, canSeal, password, status: "ACTIVE" });
+      teachers.push({ cccd, fullName, title, department, phone, email, organization, canSeal, signingMethod, password, status: "ACTIVE" });
       showToast(`Đã thêm thầy/cô ${fullName} thành công!`, "success");
     } else {
       // Chỉnh sửa
@@ -771,6 +1045,7 @@
         teachers[idx].email = email;
         teachers[idx].organization = organization;
         teachers[idx].password = password;
+        teachers[idx].signingMethod = signingMethod;
         teachers[idx].canSeal = canSeal;
         showToast(`Đã cập nhật thông tin thầy/cô ${fullName}!`, "success");
       }
@@ -1016,6 +1291,422 @@
       closeReleaseModal();
     } catch (err) {
       alert("Lỗi lưu release lên Firebase: " + err.message);
+    }
+  }
+
+  // ==========================================
+  // PHÂN HỆ QUẢN TRỊ KHO BÁO CÁO (ADMIN REPORTS)
+  // ==========================================
+  function switchMainTab(tab) {
+    const secRoster = document.getElementById("sectionRoster");
+    const secReports = document.getElementById("sectionReports");
+    const btnRoster = document.getElementById("navTabRoster");
+    const btnReports = document.getElementById("navTabReports");
+
+    if (tab === "roster") {
+      secRoster.style.display = "block";
+      secReports.style.display = "none";
+      btnRoster.className = "btn btn-primary";
+      btnReports.className = "btn btn-outline";
+    } else {
+      secRoster.style.display = "none";
+      secReports.style.display = "block";
+      btnRoster.className = "btn btn-outline";
+      btnReports.className = "btn btn-primary";
+
+      if (allReports.length === 0) {
+        loadReportsFromFirebase();
+      }
+    }
+  }
+
+  let allReports = [];
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  async function loadReportsFromFirebase() {
+    const firebaseUrl = getFirebaseUrl();
+    const secret = getDbSecret();
+    if (!firebaseUrl) {
+      alert("Vui lòng cấu hình Firebase Realtime Database URL!");
+      return;
+    }
+
+    const endpoint = `${firebaseUrl}/reports.json${secret ? `?auth=${encodeURIComponent(secret)}` : ''}`;
+    showToast("Đang nạp danh sách báo cáo từ Firebase...", "info");
+
+    try {
+      const res = await fetch(endpoint);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      allReports = [];
+      if (data && typeof data === "object") {
+        for (const [key, value] of Object.entries(data)) {
+          if (value && typeof value === "object") {
+            if (!value.reportId) value.reportId = key;
+            allReports.push(value);
+          }
+        }
+      }
+
+      // Sắp xếp báo cáo mới nhất lên đầu
+      allReports.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+      renderReportsTable();
+      updateReportsStats();
+      showToast(`Đã tải thành công ${allReports.length} báo cáo từ kho lưu trữ!`, "success");
+    } catch (err) {
+      showToast("Lỗi nạp báo cáo từ Firebase: " + err.message, "error");
+    }
+  }
+
+  function updateReportsStats() {
+    const total = allReports.length;
+    const archived = allReports.filter(r => r.status === "SIGNED_ORGANIZATION_SEALED" || r.status === "SIGNED_COMMITTED").length;
+    const pending = allReports.filter(r => r.status === "WAITING_OPEN" || r.status === "ACQUIRED_LOCKED").length;
+    const returned = allReports.filter(r => r.status === "RETURNED" || r.status === "RECALLED").length;
+
+    document.getElementById("repStatTotal").textContent = total;
+    document.getElementById("repStatArchived").textContent = archived;
+    document.getElementById("repStatPending").textContent = pending;
+    document.getElementById("repStatReturned").textContent = returned;
+  }
+
+  function filterReportsTable() {
+    const q = (document.getElementById("repSearchInput")?.value || "").trim().toLowerCase();
+    const st = document.getElementById("repFilterStatus")?.value || "";
+
+    const filtered = allReports.filter(r => {
+      const matchText = !q ||
+        (r.title && r.title.toLowerCase().includes(q)) ||
+        (r.reportId && r.reportId.toLowerCase().includes(q)) ||
+        (r.senderName && r.senderName.toLowerCase().includes(q)) ||
+        (r.approverName && r.approverName.toLowerCase().includes(q));
+
+      const matchStatus = !st || r.status === st;
+      return matchText && matchStatus;
+    });
+
+    renderReportsTable(filtered);
+  }
+
+  function renderReportsTable(data = null) {
+    const list = data || allReports;
+    const tbody = document.getElementById("reportsTableBody");
+    if (!tbody) return;
+
+    tbody.replaceChildren();
+
+    if (list.length === 0) {
+      const trEmpty = document.createElement("tr");
+      const tdEmpty = document.createElement("td");
+      tdEmpty.colSpan = 10;
+      tdEmpty.style.textAlign = "center";
+      tdEmpty.style.padding = "32px";
+      tdEmpty.style.color = "var(--text-muted)";
+      tdEmpty.textContent = "Không có báo cáo nào trong kho lưu trữ.";
+      trEmpty.appendChild(tdEmpty);
+      tbody.appendChild(trEmpty);
+      updateSelectedReportsCount();
+      return;
+    }
+
+    list.forEach((r, idx) => {
+      const tr = document.createElement("tr");
+
+      // 0. Checkbox
+      const tdChk = document.createElement("td");
+      tdChk.style.textAlign = "center";
+      const chk = document.createElement("input");
+      chk.type = "checkbox";
+      chk.className = "chk-report-item";
+      chk.value = r.reportId || "";
+      chk.setAttribute("data-fileid", r.driveFileId || "");
+      chk.style.cursor = "pointer";
+      chk.style.width = "16px";
+      chk.style.height = "16px";
+      chk.onchange = updateSelectedReportsCount;
+      tdChk.appendChild(chk);
+      tr.appendChild(tdChk);
+
+      // 1. STT
+      const tdStt = document.createElement("td");
+      tdStt.textContent = String(idx + 1);
+      tr.appendChild(tdStt);
+
+      // 2. Mã Văn Bản
+      const tdId = document.createElement("td");
+      const codeId = document.createElement("code");
+      codeId.style.background = "#F1F5F9";
+      codeId.style.padding = "2px 6px";
+      codeId.style.borderRadius = "4px";
+      codeId.style.fontSize = "11px";
+      codeId.textContent = r.reportId || "--";
+      tdId.appendChild(codeId);
+      tr.appendChild(tdId);
+
+      // 3. Tiêu Đề Báo Cáo
+      const tdTitle = document.createElement("td");
+      tdTitle.style.fontWeight = "600";
+      tdTitle.style.color = "#1E293B";
+      tdTitle.textContent = r.title || "Không có tiêu đề";
+      tr.appendChild(tdTitle);
+
+      // 4. Người Lập
+      const tdSender = document.createElement("td");
+      tdSender.textContent = r.senderName || "--";
+      tr.appendChild(tdSender);
+
+      // 5. Người Phê Duyệt
+      const tdApprover = document.createElement("td");
+      tdApprover.textContent = r.approverName || "--";
+      tr.appendChild(tdApprover);
+
+      // 6. Thời Gian
+      const tdTime = document.createElement("td");
+      tdTime.style.fontSize = "11px";
+      tdTime.style.color = "#64748B";
+      tdTime.textContent = r.createdAt ? new Date(r.createdAt).toLocaleString("vi-VN") : "---";
+      tr.appendChild(tdTime);
+
+      // 7. Trạng Thái Badge
+      const tdStatus = document.createElement("td");
+      tdStatus.style.textAlign = "center";
+      const spanBadge = document.createElement("span");
+      spanBadge.className = "badge-role";
+      if (r.status === "SIGNED_ORGANIZATION_SEALED") {
+        spanBadge.style.background = "#DCFCE7";
+        spanBadge.style.color = "#15803D";
+        spanBadge.textContent = "Đã đóng dấu";
+      } else if (r.status === "SIGNED_COMMITTED") {
+        spanBadge.style.background = "#EFF6FF";
+        spanBadge.style.color = "#1E40AF";
+        spanBadge.textContent = "Đã duyệt L1";
+      } else if (r.status === "WAITING_OPEN" || r.status === "ACQUIRED_LOCKED") {
+        spanBadge.style.background = "#FEF3C7";
+        spanBadge.style.color = "#B45309";
+        spanBadge.textContent = "Chờ phê duyệt";
+      } else if (r.status === "RETURNED") {
+        spanBadge.style.background = "#FEE2E2";
+        spanBadge.style.color = "#DC2626";
+        spanBadge.textContent = "Bị trả về";
+      } else if (r.status === "RECALLED") {
+        spanBadge.style.background = "#F1F5F9";
+        spanBadge.style.color = "#475569";
+        spanBadge.textContent = "Đã thu hồi";
+      } else {
+        spanBadge.textContent = r.status || "Chưa rõ";
+      }
+      tdStatus.appendChild(spanBadge);
+      tr.appendChild(tdStatus);
+
+      // 8. File Drive
+      const tdDrive = document.createElement("td");
+      tdDrive.style.textAlign = "center";
+      const driveUrl = r.googleDriveUrl || r.viewUrl || (r.driveFileId ? `https://drive.google.com/file/d/${r.driveFileId}/view` : '');
+      if (driveUrl) {
+        const aDrive = document.createElement("a");
+        aDrive.href = driveUrl;
+        aDrive.target = "_blank";
+        aDrive.className = "btn btn-outline btn-sm";
+        aDrive.style.color = "#0284C7";
+        aDrive.style.borderColor = "#BAE6FD";
+        aDrive.style.padding = "2px 8px";
+        aDrive.style.fontSize = "11px";
+        aDrive.textContent = "👁 Xem PDF";
+        tdDrive.appendChild(aDrive);
+      } else {
+        const spanNoDrive = document.createElement("span");
+        spanNoDrive.style.color = "#94A3B8";
+        spanNoDrive.style.fontSize = "11px";
+        spanNoDrive.textContent = "Chưa có";
+        tdDrive.appendChild(spanNoDrive);
+      }
+      tr.appendChild(tdDrive);
+
+      // 9. Thao Tác (Nút Xóa)
+      const tdAction = document.createElement("td");
+      tdAction.style.textAlign = "center";
+      const btnDel = document.createElement("button");
+      btnDel.className = "btn btn-danger btn-sm";
+      btnDel.textContent = "🗑️ Xóa";
+      btnDel.onclick = () => deleteSingleReport(r.reportId, r.driveFileId || "", r.title || "");
+      tdAction.appendChild(btnDel);
+      tr.appendChild(tdAction);
+
+      tbody.appendChild(tr);
+    });
+
+    updateSelectedReportsCount();
+  }
+
+  function toggleSelectAllReports(master) {
+    const checkboxes = document.querySelectorAll(".chk-report-item");
+    checkboxes.forEach(cb => cb.checked = master.checked);
+    updateSelectedReportsCount();
+  }
+
+  function updateSelectedReportsCount() {
+    const checked = document.querySelectorAll(".chk-report-item:checked");
+    const count = checked.length;
+    const btn = document.getElementById("btnDeleteSelectedReports");
+    if (btn) {
+      btn.disabled = count === 0;
+      btn.textContent = `🗑️ Xóa Đã Chọn (${count})`;
+    }
+
+    const all = document.querySelectorAll(".chk-report-item");
+    const master = document.getElementById("chkSelectAllReports");
+    if (master && all.length > 0) {
+      master.checked = count === all.length;
+    }
+  }
+
+  // Gửi lệnh xóa file vật lý sang Google Apps Script
+  async function callAppsScriptDelete(fileIds) {
+    const gasUrl = getGasUrl();
+    if (!gasUrl || !fileIds || fileIds.length === 0) return;
+
+    try {
+      if (fileIds.length === 1) {
+        await fetch(gasUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "deleteFile", fileId: fileIds[0] }),
+          mode: "no-cors"
+        });
+      } else {
+        await fetch(gasUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "deleteBatchFiles", fileIds: fileIds }),
+          mode: "no-cors"
+        });
+      }
+    } catch (e) {
+      console.warn("Không thể xóa file trên Google Drive qua Apps Script:", e);
+    }
+  }
+
+  // Xóa 1 báo cáo
+  async function deleteSingleReport(reportId, driveFileId, title) {
+    if (!confirm(`Xác nhận xóa vĩnh viễn báo cáo:\n"${title}" (Mã: ${reportId})?\n\nBáo cáo sẽ bị xóa khỏi Firebase và file trên Google Drive sẽ được chuyển vào thùng rác.`)) {
+      return;
+    }
+
+    const firebaseUrl = getFirebaseUrl();
+    const secret = getDbSecret();
+    const endpoint = `${firebaseUrl}/reports/${encodeURIComponent(reportId)}.json${secret ? `?auth=${encodeURIComponent(secret)}` : ''}`;
+
+    showToast(`Đang xóa báo cáo ${reportId}...`, "info");
+    try {
+      const res = await fetch(endpoint, { method: "DELETE" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      if (driveFileId) {
+        callAppsScriptDelete([driveFileId]);
+      }
+
+      allReports = allReports.filter(r => r.reportId !== reportId);
+      renderReportsTable();
+      updateReportsStats();
+      showToast(`Đã xóa thành công báo cáo ${reportId}!`, "success");
+    } catch (err) {
+      alert("Lỗi xóa báo cáo trên Firebase: " + err.message);
+    }
+  }
+
+  // Xóa các báo cáo đã chọn
+  async function deleteSelectedReports() {
+    const checked = Array.from(document.querySelectorAll(".chk-report-item:checked"));
+    if (checked.length === 0) return;
+
+    if (!confirm(`Xác nhận xóa vĩnh viễn ${checked.length} báo cáo đã chọn khỏi hệ thống và chuyển file trên Google Drive vào thùng rác?`)) {
+      return;
+    }
+
+    const firebaseUrl = getFirebaseUrl();
+    const secret = getDbSecret();
+    const fileIdsToDelete = [];
+
+    showToast(`Đang xóa ${checked.length} báo cáo...`, "info");
+
+    try {
+      const deletePromises = checked.map(async (cb) => {
+        const repId = cb.value;
+        const fid = cb.getAttribute("data-fileid");
+        if (fid) fileIdsToDelete.push(fid);
+
+        const endpoint = `${firebaseUrl}/reports/${encodeURIComponent(repId)}.json${secret ? `?auth=${encodeURIComponent(secret)}` : ''}`;
+        const res = await fetch(endpoint, { method: "DELETE" });
+        if (!res.ok) throw new Error(`Lỗi xóa ${repId}: HTTP ${res.status}`);
+        return repId;
+      });
+
+      const deletedIds = await Promise.all(deletePromises);
+
+      if (fileIdsToDelete.length > 0) {
+        callAppsScriptDelete(fileIdsToDelete);
+      }
+
+      allReports = allReports.filter(r => !deletedIds.includes(r.reportId));
+      renderReportsTable();
+      updateReportsStats();
+      showToast(`Đã xóa thành công ${deletedIds.length} báo cáo!`, "success");
+    } catch (err) {
+      alert("Lỗi xóa báo cáo: " + err.message);
+      loadReportsFromFirebase();
+    }
+  }
+
+  // Xóa toàn bộ kho báo cáo
+  async function deleteAllReports() {
+    if (allReports.length === 0) {
+      alert("Kho báo cáo hiện đang trống!");
+      return;
+    }
+
+    if (!confirm(`⚠️ CẢNH BÁO NGUY HIỂM:\nBạn có chắc chắn muốn xóa TOÀN BỘ ${allReports.length} báo cáo trong kho lưu trữ không?\n\nThao tác này sẽ xóa sạch dữ liệu trên Firebase!`)) {
+      return;
+    }
+
+    const confirmationCode = prompt(`Để xác nhận xóa TOÀN BỘ kho báo cáo, vui lòng nhập chữ "XOA" vào ô bên dưới:`);
+    if (confirmationCode !== "XOA") {
+      alert("Hủy bỏ thao tác xóa toàn bộ.");
+      return;
+    }
+
+    const firebaseUrl = getFirebaseUrl();
+    const secret = getDbSecret();
+    const endpoint = `${firebaseUrl}/reports.json${secret ? `?auth=${encodeURIComponent(secret)}` : ''}`;
+
+    showToast("Đang xóa toàn bộ kho báo cáo...", "info");
+
+    try {
+      const fileIdsToDelete = allReports.map(r => r.driveFileId).filter(Boolean);
+
+      const res = await fetch(endpoint, { method: "DELETE" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      if (fileIdsToDelete.length > 0) {
+        callAppsScriptDelete(fileIdsToDelete);
+      }
+
+      allReports = [];
+      renderReportsTable();
+      updateReportsStats();
+      showToast("Đã xóa sạch toàn bộ kho báo cáo trên hệ thống!", "success");
+    } catch (err) {
+      alert("Lỗi xóa kho báo cáo trên Firebase: " + err.message);
     }
   }
 </script>

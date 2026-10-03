@@ -13,11 +13,15 @@
 #>
 
 param(
-    [string]$Version = "2.1.0",
-    [switch]$BuildStandalone = $true,
-    [string]$DownloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v2.1.0/VGCASignToolPro_Update_v2.1.0.zip",
+    [string]$Version = "2.5.4",
+    [switch]$BuildStandalone,
+    [string]$DownloadUrl = "",
     [string]$FallbackDownloadUrl = "https://script.google.com/macros/s/AKfycbyCVA-KySo-AutoUpdate/exec"
 )
+
+if ([string]::IsNullOrWhiteSpace($DownloadUrl) -or $DownloadUrl -eq "True") {
+    $DownloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v$Version/VGCASignToolPro_Update_v$Version.zip"
+}
 
 $ErrorActionPreference = "Stop"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -46,7 +50,8 @@ $updatePublishDir = Join-Path $tempPackDir "publish_update"
 & dotnet publish "$scriptDir\VGCASignToolPro.csproj" `
     -c Release `
     -r win-x64 `
-    --self-contained false `
+    --self-contained true `
+    -p:PublishSingleFile=false `
     -o $updatePublishDir
 
 if ($LASTEXITCODE -ne 0) {
