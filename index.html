@@ -163,6 +163,10 @@
     .btn-outline:hover:not(:disabled) { background: #F8FAFC; border-color: var(--border-hover); color: var(--text); }
     .btn-danger { background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); color: #FFF; box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2); }
     .btn-danger:hover:not(:disabled) { background: linear-gradient(135deg, #B91C1C 0%, #991B1B 100%); }
+    .btn-excel { background: linear-gradient(135deg, #107C41 0%, #0E6B38 100%); color: #FFF; box-shadow: 0 2px 4px rgba(16, 124, 65, 0.25); }
+    .btn-excel:hover:not(:disabled) { background: linear-gradient(135deg, #0E6B38 0%, #0A532B 100%); color: #FFF; }
+    .btn-excel-outline { background: #F0FDF4; border: 1px solid #BBF7D0; color: #15803D; }
+    .btn-excel-outline:hover:not(:disabled) { background: #DCFCE7; border-color: #86EFAC; color: #166534; }
     .btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 6px; }
 
     /* Table */
@@ -217,6 +221,14 @@
     .help-card li { margin-bottom: 6px; }
     .help-card code { background: #DBEAFE; padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; }
   </style>
+<script src="xlsx.full.min.js"></script>
+<script>
+  if (typeof XLSX === 'undefined') {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    document.head.appendChild(s);
+  }
+</script>
 </head>
 <body>
 
@@ -272,6 +284,7 @@
         <li><strong>Cách 1 (Khuyên dùng - 1 Click Đồng Bộ):</strong> Nhập thông tin giáo viên vào bảng &rarr; Bấm <strong>"☁️ Đồng Bộ Lên Firebase"</strong>. Toàn bộ phần mềm máy tính trong trường sẽ tự động cập nhật danh sách ngay lập tức.</li>
         <li><strong>Cách 2 (Lưu tệp trên GitHub):</strong> Bấm <strong>"📥 Tải File JSON"</strong> &rarr; Upload tệp <code>school_roster.json</code> lên Repository GitHub của bạn. Copy link raw (dạng <code>https://raw.githubusercontent.com/.../school_roster.json</code>) dán vào ô <em>rosterUrl</em> trong file <code>workflow_config.json</code> của ứng dụng.</li>
         <li><strong>Cách 3 (Lưu trang HTML này trên GitHub):</strong> Đặt tên file là <code>index.html</code> hoặc <code>admin_roster.html</code> đưa lên GitHub Repo &rarr; Bật <strong>GitHub Pages</strong> để truy cập quản trị mọi lúc mọi nơi trên điện thoại, máy tính bảng hoặc máy tính giáo viên.</li>
+        <li><strong>Cách 4 (Nhập nhanh hàng loạt từ Excel):</strong> Bấm <strong>"📄 Tải Mẫu Excel"</strong> để xem định dạng &rarr; Điền danh bạ (hoặc dùng trực tiếp tệp Excel của trường như <code>Danh Sách GV-NV.xlsx</code>) &rarr; Bấm <strong>"📊 Nhập File Excel"</strong> để nạp toàn bộ nhân sự &rarr; Bấm <strong>"☁️ Đồng Bộ Lên Firebase"</strong> để hoàn tất.</li>
       </ol>
     </div>
 
@@ -322,12 +335,15 @@
 
       <div class="btn-group">
         <button class="btn btn-primary" onclick="openAddModal()">➕ Thêm Giáo Viên</button>
+        <button class="btn btn-excel" onclick="document.getElementById('excelFileInput').click()">📊 Nhập File Excel</button>
+        <button class="btn btn-excel-outline" onclick="downloadExcelTemplate()">📄 Tải Mẫu Excel</button>
         <button class="btn btn-success" onclick="syncToFirebase()">☁️ Đồng Bộ Lên Firebase</button>
         <button class="btn btn-indigo" onclick="loadFromFirebase()">🔄 Tải Từ Firebase</button>
         <button class="btn btn-outline" style="border-color:#D97706; color:#D97706; font-weight:700;" onclick="openReleaseModal()">🚀 Quản Trị Cập Nhật App</button>
         <button class="btn btn-outline" onclick="exportJsonFile()">📥 Tải File JSON</button>
         <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">📤 Nhập File JSON</button>
         <input type="file" id="fileInput" accept=".json" style="display:none" onchange="importJsonFile(event)">
+        <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display:none" onchange="handleExcelFileUpload(event)">
       </div>
     </div>
 
@@ -610,6 +626,62 @@
       <button type="button" class="btn btn-indigo" onclick="fetchReleaseFromFirebase()">🔄 Đọc Từ Firebase</button>
       <button type="button" class="btn btn-outline" onclick="closeReleaseModal()">Đóng</button>
       <button type="button" class="btn btn-success" onclick="publishReleaseToFirebase()">🚀 Lưu & Kích Hoạt Lên Firebase</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Xác Nhận Nhập Danh Sách Từ Excel -->
+<div class="modal-overlay" id="excelImportModal">
+  <div class="modal-card" style="max-width: 680px;">
+    <div class="modal-header">
+      <h3 style="display:flex; align-items:center; gap:8px;">📊 Xác Nhận Nhập Danh Sách Từ Excel</h3>
+      <button class="btn btn-outline btn-sm" onclick="closeExcelModal()">✕</button>
+    </div>
+    <div class="modal-body" style="grid-template-columns: 1fr; gap: 14px; padding: 20px 24px;">
+      <div id="excelSummaryAlert" style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 12px 16px; color: #166534; font-size: 13.5px; line-height: 1.6;">
+      </div>
+      
+      <div style="background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px;">
+        <label style="font-weight: 700; color: #1E293B; margin-bottom: 8px; display: block; font-size: 13px;">⚙️ Lựa chọn phương thức nhập:</label>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+            <input type="radio" name="excelImportMode" value="MERGE" checked style="margin-top: 3px;">
+            <div>
+              <strong style="color: var(--primary); font-size: 13px;">Gộp &amp; Cập nhật (Khuyên dùng)</strong>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Cập nhật thông tin nếu trùng số CCCD, thêm mới nếu chưa có. Giữ nguyên các tài khoản khác hiện có trong danh bạ.</p>
+            </div>
+          </label>
+          <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
+            <input type="radio" name="excelImportMode" value="REPLACE" style="margin-top: 3px;">
+            <div>
+              <strong style="color: var(--danger); font-size: 13px;">Thay thế toàn bộ danh bạ</strong>
+              <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Xóa sạch danh bạ hiện tại và thay bằng danh sách mới từ tệp Excel này (Thích hợp đầu năm học mới).</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <label style="font-weight: 700; color: #1E293B; margin-bottom: 6px; display: block; font-size: 12.5px;">👁️ Xem trước danh sách chuẩn bị nạp (5 dòng đầu):</label>
+        <div style="max-height: 160px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px;">
+          <table style="width: 100%; font-size: 12px;" id="excelPreviewTable">
+            <thead>
+              <tr style="background: #F1F5F9; position: sticky; top: 0;">
+                <th style="padding: 6px 10px; width: 40px;">STT</th>
+                <th style="padding: 6px 10px;">Họ và Tên</th>
+                <th style="padding: 6px 10px;">Chức Vụ</th>
+                <th style="padding: 6px 10px;">Số CCCD</th>
+                <th style="padding: 6px 10px;">Số ĐT</th>
+              </tr>
+            </thead>
+            <tbody id="excelPreviewTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" onclick="closeExcelModal()">Hủy Bỏ</button>
+      <button type="button" class="btn btn-excel" id="btnConfirmImportExcel" onclick="confirmImportExcel()">✅ Xác Nhận Nhập Danh Sách</button>
     </div>
   </div>
 </div>
@@ -1194,6 +1266,323 @@
     };
     reader.readAsText(file);
     e.target.value = "";
+  }
+
+  let pendingExcelTeachers = [];
+
+  // TẢI FILE EXCEL MẪU
+  function downloadExcelTemplate() {
+    try {
+      if (typeof XLSX !== "undefined") {
+        const wb = XLSX.utils.book_new();
+        const wsData = [
+          [],
+          ["STT", "Họ tên ", "Chức vụ", "Số CCCD", "Số Đt", "Tổ chuyên môn", "Email công vụ"],
+          [1, "NGUYỄN VĂN HIỀN", "Hiệu trưởng", "040077003374", "0905223269", "Ban Giám hiệu", "nvhien@quangngai.gov.vn"],
+          [2, "NGÔ THỊ LIỀN", "Hiệu phó", "034178009616", "0963167046", "Ban Giám hiệu", "ntlien@quangngai.gov.vn"],
+          [3, "NGUYỄN QUANG NHẬT", "Hiệu phó", "042077002074", "0844611179", "Ban Giám hiệu", "nqnhat@quangngai.gov.vn"],
+          [4, "ĐÀO THỊ THANH THÚY", "Tổ trưởng", "034179010376", "0932073116", "Tổ Tự nhiên", "dttthuy@quangngai.gov.vn"],
+          [5, "LẠI VĂN TRỌNG", "Giáo viên", "034073010250", "0852680429", "Tổ Xã hội", "lvtrong@quangngai.gov.vn"],
+          [6, "TRẦN THỊ CẨM TÚ", "Giáo viên", "048175000449", "0968474568", "Tổ Ngoại ngữ", "ttctu@quangngai.gov.vn"]
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        ws["!cols"] = [
+          { wch: 6 },
+          { wch: 28 },
+          { wch: 16 },
+          { wch: 18 },
+          { wch: 16 },
+          { wch: 20 },
+          { wch: 30 }
+        ];
+        XLSX.utils.book_append_sheet(wb, ws, "DanhSach");
+        XLSX.writeFile(wb, "Mau_Danh_Sach_GV_NV.xlsx");
+        showToast("Đã tải tệp Excel mẫu về máy tính thành công!", "success");
+      } else {
+        const a = document.createElement("a");
+        a.href = "Mau_Danh_Sach_GV_NV.xlsx";
+        a.download = "Mau_Danh_Sach_GV_NV.xlsx";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast("Đang tải tệp Excel mẫu...", "info");
+      }
+    } catch (err) {
+      showToast("Lỗi khi tải mẫu Excel: " + err.message, "error");
+    }
+  }
+
+  function normalizeHeaderString(str) {
+    if (!str) return "";
+    return String(str).toLowerCase().trim()
+      .replace(/[đĐ]/g, "d")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "");
+  }
+
+  // NHẬP DANH SÁCH TỪ TỆP EXCEL
+  function handleExcelFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (typeof XLSX === "undefined") {
+      alert("Thư viện xử lý Excel chưa sẵn sàng. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại sau vài giây.");
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
+        if (!firstSheetName) {
+          alert("Tệp Excel không có trang tính (Sheet) nào!");
+          return;
+        }
+
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rawRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+
+        if (!rawRows || rawRows.length === 0) {
+          alert("Tệp Excel không có dữ liệu!");
+          return;
+        }
+
+        let headerIdx = -1;
+        const colMap = { name: -1, role: -1, cccd: -1, phone: -1, dept: -1, email: -1, org: -1 };
+
+        for (let i = 0; i < Math.min(15, rawRows.length); i++) {
+          const row = rawRows[i];
+          if (!Array.isArray(row)) continue;
+          let hasName = false;
+          let hasCccd = false;
+
+          row.forEach((cell, cIdx) => {
+            const norm = normalizeHeaderString(cell);
+            if (norm.includes("hoten") || norm.includes("hovaten") || norm.includes("fullname") || norm === "ten") {
+              colMap.name = cIdx;
+              hasName = true;
+            } else if (norm.includes("cccd") || norm.includes("cmnd") || norm.includes("cancuoc") || norm.includes("dinhdanh")) {
+              colMap.cccd = cIdx;
+              hasCccd = true;
+            } else if (norm.includes("chucvu") || norm.includes("chucdanh") || norm.includes("vitri") || norm === "role") {
+              colMap.role = cIdx;
+            } else if (norm.includes("sodt") || norm.includes("sodienthoai") || norm.includes("dienthoai") || norm.includes("phone") || norm === "sdt") {
+              colMap.phone = cIdx;
+            } else if (norm.includes("tochuyenmon") || norm.includes("tocm") || norm === "to" || norm.includes("phongban") || norm.includes("department")) {
+              colMap.dept = cIdx;
+            } else if (norm.includes("email") || norm.includes("mail")) {
+              colMap.email = cIdx;
+            } else if (norm.includes("donvi") || norm.includes("coquan") || norm.includes("truong") || norm.includes("organization")) {
+              colMap.org = cIdx;
+            }
+          });
+
+          if (hasName && (hasCccd || colMap.role !== -1)) {
+            headerIdx = i;
+            break;
+          }
+        }
+
+        if (headerIdx === -1 || colMap.name === -1) {
+          alert("Không nhận diện được cột 'Họ và tên' hoặc 'Số CCCD' trong tệp Excel. Vui lòng bấm '📄 Tải Mẫu Excel' để xem định dạng chuẩn!");
+          return;
+        }
+
+        const defaultOrg = "TRƯỜNG TRUNG HỌC CƠ SỞ NGUYỄN HUỆ";
+        const parsedList = [];
+        const invalidRows = [];
+
+        for (let r = headerIdx + 1; r < rawRows.length; r++) {
+          const row = rawRows[r];
+          if (!row || !Array.isArray(row)) continue;
+
+          const rawName = colMap.name !== -1 ? String(row[colMap.name] || "").trim() : "";
+          if (!rawName) continue;
+
+          let rawCccd = colMap.cccd !== -1 ? String(row[colMap.cccd] || "").trim() : "";
+          rawCccd = rawCccd.replace(/[\s\.\-]/g, "");
+
+          // Tự động bù 0 vào đầu nếu bị Excel làm mất số 0
+          if (/^\d+$/.test(rawCccd) && rawCccd.length < 12) {
+            rawCccd = rawCccd.padStart(12, "0");
+          }
+
+          if (!rawCccd || !/^\d{12}$/.test(rawCccd)) {
+            invalidRows.push({ row: r + 1, name: rawName, cccd: rawCccd });
+          }
+
+          const rawRole = colMap.role !== -1 ? String(row[colMap.role] || "").trim() : "Giáo viên";
+          let title = "Giáo viên";
+          let canSeal = false;
+          let department = "Tổ Chuyên môn";
+
+          const normRole = normalizeHeaderString(rawRole);
+          if (normRole.includes("hieutruong")) {
+            title = "Hiệu trưởng";
+            canSeal = true;
+            department = "Ban Giám hiệu";
+          } else if (normRole.includes("hieupho") || normRole.includes("phohieutruong")) {
+            title = "Phó hiệu trưởng";
+            canSeal = true;
+            department = "Ban Giám hiệu";
+          } else if (normRole.includes("totruong")) {
+            title = "Tổ trưởng";
+            canSeal = false;
+            department = "Tổ Chuyên môn";
+          } else {
+            title = rawRole || "Giáo viên";
+          }
+
+          let rawPhone = colMap.phone !== -1 ? String(row[colMap.phone] || "").trim() : "";
+          rawPhone = rawPhone.replace(/[\s\.\-]/g, "");
+          if (/^\d{9}$/.test(rawPhone)) {
+            rawPhone = "0" + rawPhone;
+          }
+
+          const rawDept = colMap.dept !== -1 ? String(row[colMap.dept] || "").trim() : "";
+          if (rawDept) {
+            department = rawDept;
+          }
+
+          const rawEmail = colMap.email !== -1 ? String(row[colMap.email] || "").trim() : "";
+          const rawOrg = colMap.org !== -1 ? String(row[colMap.org] || "").trim() : defaultOrg;
+
+          parsedList.push({
+            fullName: rawName,
+            cccd: rawCccd,
+            title: title,
+            department: department,
+            phone: rawPhone,
+            email: rawEmail,
+            organization: rawOrg,
+            password: "123456",
+            signingMethod: "AUTO",
+            canSeal: canSeal,
+            status: "ACTIVE"
+          });
+        }
+
+        if (parsedList.length === 0) {
+          alert("Không tìm thấy dữ liệu giáo viên hợp lệ nào trong tệp Excel!");
+          return;
+        }
+
+        pendingExcelTeachers = parsedList;
+
+        const bghCount = parsedList.filter(t => t.title === "Hiệu trưởng" || t.title === "Phó hiệu trưởng").length;
+        const ttCount = parsedList.filter(t => t.title === "Tổ trưởng").length;
+        const gvCount = parsedList.filter(t => t.title === "Giáo viên" || (t.title !== "Hiệu trưởng" && t.title !== "Phó hiệu trưởng" && t.title !== "Tổ trưởng")).length;
+
+        const alertBox = document.getElementById("excelSummaryAlert");
+        alertBox.replaceChildren();
+
+        const pTitle = document.createElement("p");
+        pTitle.style.fontWeight = "700";
+        pTitle.style.fontSize = "14px";
+        pTitle.style.marginBottom = "4px";
+        pTitle.textContent = "🎉 Đọc thành công " + parsedList.length + ' nhân sự từ tệp Excel: "' + file.name + '"';
+        alertBox.appendChild(pTitle);
+
+        const pStats = document.createElement("p");
+        pStats.textContent = "• Ban Giám hiệu: " + bghCount + " | • Tổ trưởng: " + ttCount + " | • Giáo viên/Nhân viên: " + gvCount;
+        alertBox.appendChild(pStats);
+
+        if (invalidRows.length > 0) {
+          const pWarn = document.createElement("p");
+          pWarn.style.color = "var(--danger)";
+          pWarn.style.marginTop = "4px";
+          pWarn.style.fontWeight = "600";
+          pWarn.textContent = "⚠️ Có " + invalidRows.length + " dòng CCCD chưa đủ 12 số hoặc không hợp lệ. Hệ thống vẫn tạm ghi nhận để bạn điều chỉnh sau.";
+          alertBox.appendChild(pWarn);
+        }
+
+        const previewTbody = document.getElementById("excelPreviewTbody");
+        previewTbody.replaceChildren();
+
+        parsedList.slice(0, 5).forEach((item, pIdx) => {
+          const pTr = document.createElement("tr");
+
+          const pTdStt = document.createElement("td");
+          pTdStt.style.padding = "6px 10px";
+          pTdStt.style.textAlign = "center";
+          pTdStt.textContent = String(pIdx + 1);
+          pTr.appendChild(pTdStt);
+
+          const pTdName = document.createElement("td");
+          pTdName.style.padding = "6px 10px";
+          pTdName.style.fontWeight = "600";
+          pTdName.textContent = item.fullName;
+          pTr.appendChild(pTdName);
+
+          const pTdRole = document.createElement("td");
+          pTdRole.style.padding = "6px 10px";
+          pTdRole.textContent = item.title;
+          pTr.appendChild(pTdRole);
+
+          const pTdCccd = document.createElement("td");
+          pTdCccd.style.padding = "6px 10px";
+          pTdCccd.textContent = item.cccd;
+          pTr.appendChild(pTdCccd);
+
+          const pTdPhone = document.createElement("td");
+          pTdPhone.style.padding = "6px 10px";
+          pTdPhone.textContent = item.phone || "--";
+          pTr.appendChild(pTdPhone);
+
+          previewTbody.appendChild(pTr);
+        });
+
+        document.getElementById("excelImportModal").classList.add("active");
+      } catch (err) {
+        alert("Lỗi phân tích tệp Excel: " + err.message);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    event.target.value = "";
+  }
+
+  function closeExcelModal() {
+    document.getElementById("excelImportModal").classList.remove("active");
+    pendingExcelTeachers = [];
+  }
+
+  function confirmImportExcel() {
+    if (!pendingExcelTeachers || pendingExcelTeachers.length === 0) {
+      closeExcelModal();
+      return;
+    }
+
+    const selectedMode = document.querySelector('input[name="excelImportMode"]:checked')?.value || "MERGE";
+
+    if (selectedMode === "REPLACE") {
+      teachers = [...pendingExcelTeachers];
+      showToast("Đã thay thế toàn bộ danh bạ bằng " + teachers.length + " giáo viên từ Excel!", "success");
+    } else {
+      let addedCount = 0;
+      let updatedCount = 0;
+
+      pendingExcelTeachers.forEach((newItem) => {
+        const existingIdx = teachers.findIndex((t) => t.cccd === newItem.cccd);
+        if (existingIdx !== -1) {
+          const oldPass = teachers[existingIdx].password;
+          teachers[existingIdx] = { ...newItem, password: oldPass || newItem.password };
+          updatedCount++;
+        } else {
+          teachers.push(newItem);
+          addedCount++;
+        }
+      });
+
+      showToast("Đã gộp Excel: Thêm mới " + addedCount + ", Cập nhật " + updatedCount + " giáo viên!", "success");
+    }
+
+    saveTeachersToStorage();
+    renderTable();
+    updateStats();
+    closeExcelModal();
   }
 
   function toggleConfig() {

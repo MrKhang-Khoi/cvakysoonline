@@ -17,3 +17,5 @@ releases/
 temp_pack/
 school_roster.json*
 *.roster.key
+publish/*.zip
+publish/v*/
