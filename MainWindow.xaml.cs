@@ -616,24 +616,60 @@ namespace VGCASignToolPro
                     TxtVgcaGlobalStatusIcon.Text = "\uE73E";
                     TxtVgcaGlobalStatusText.Text = $"VGCA: {teacher.FullName}";
 
-                    TxtDetailSignerName.Text = teacher.FullName;
-                    TxtDetailEmail.Text = !string.IsNullOrWhiteSpace(teacher.Email) ? teacher.Email : "Chưa đăng ký email trong chứng thư";
-                    if (!string.IsNullOrWhiteSpace(teacher.Department) && !string.IsNullOrWhiteSpace(teacher.Organization))
+                    // Đồng bộ chứng thư trong kho Windows Store theo đối soát danh tính
+                    CertificateModel? matchedCert = _currentActiveCert ?? _certService.GetActiveVGCACertificate(teacher.FullName, teacher.Cccd, teacher.SigningMethod);
+                    if (matchedCert != null)
                     {
-                        TxtDetailOrg.Text = teacher.Department.Contains(teacher.Organization, StringComparison.OrdinalIgnoreCase) || teacher.Organization.Contains(teacher.Department, StringComparison.OrdinalIgnoreCase)
-                            ? (teacher.Department.Length >= teacher.Organization.Length ? teacher.Department : teacher.Organization)
-                            : $"{teacher.Department} - {teacher.Organization}";
+                        _currentActiveCert = matchedCert;
+                        CmbCertificates.SelectedItem = matchedCert;
+                        TxtDetailIssuer.Text = matchedCert.Issuer;
+                        TxtDetailSerial.Text = matchedCert.SerialNumber;
+                        TxtDetailValidity.Text = $"{matchedCert.NotBefore:dd/MM/yyyy} đến {matchedCert.NotAfter:dd/MM/yyyy} ({(matchedCert.IsValidNow ? "Còn hiệu lực" : "Đã hết hạn")})";
+                        TxtDetailAlgorithm.Text = matchedCert.KeyAlgorithm;
+                        TxtDetailThumbprint.Text = matchedCert.Thumbprint;
+                        CmbCertificates.ToolTip = matchedCert.DisplayText;
+
+                        // Đồng bộ tên đơn vị pháp lý chuẩn xác từ chứng thư chuyên dùng VGCA Ban Cơ Yếu
+                        if (!string.IsNullOrWhiteSpace(matchedCert.OrganizationUnit))
+                        {
+                            teacher.Organization = matchedCert.OrganizationUnit;
+                        }
                     }
-                    else if (!string.IsNullOrWhiteSpace(teacher.Department))
+
+                    TxtDetailSignerName.Text = matchedCert?.CommonName ?? teacher.FullName;
+                    TxtDetailEmail.Text = !string.IsNullOrWhiteSpace(matchedCert?.Email)
+                        ? matchedCert.Email
+                        : (!string.IsNullOrWhiteSpace(teacher.Email) ? teacher.Email : "Chưa đăng ký email trong chứng thư");
+
+                    // ĐƠN VỊ: LẤY TRỰC TIẾP TỪ CHỨNG THƯ SỐ VGCA CHUYÊN DÙNG (CHUẨN ỨNG DỤNG VGCA VIRTUAL CSP)
+                    if (matchedCert != null && !string.IsNullOrWhiteSpace(matchedCert.OrganizationUnit))
                     {
-                        TxtDetailOrg.Text = teacher.Department;
+                        if (!string.IsNullOrWhiteSpace(matchedCert.Organization) &&
+                            !matchedCert.OrganizationUnit.Contains(matchedCert.Organization, StringComparison.OrdinalIgnoreCase) &&
+                            !matchedCert.Organization.Contains(matchedCert.OrganizationUnit, StringComparison.OrdinalIgnoreCase))
+                        {
+                            TxtDetailOrg.Text = $"{matchedCert.OrganizationUnit} - {matchedCert.Organization}";
+                        }
+                        else
+                        {
+                            TxtDetailOrg.Text = matchedCert.OrganizationUnit;
+                        }
+                    }
+                    else if (matchedCert != null && !string.IsNullOrWhiteSpace(matchedCert.Organization))
+                    {
+                        TxtDetailOrg.Text = matchedCert.Organization;
+                    }
+                    else if (!string.IsNullOrWhiteSpace(teacher.Department) && !string.IsNullOrWhiteSpace(teacher.Organization))
+                    {
+                        TxtDetailOrg.Text = $"{teacher.Department} - {teacher.Organization}";
                     }
                     else
                     {
-                        TxtDetailOrg.Text = teacher.Organization ?? "Không rõ tổ chức";
+                        TxtDetailOrg.Text = teacher.Organization ?? teacher.Department ?? "Cơ quan / Đơn vị";
                     }
-                    TxtSignerDisplayName.Text = teacher.FullName;
-                    TxtQuickCertNotice.Text = $"Chứng thư: {teacher.FullName} (Ban Cơ yếu G2)";
+
+                    TxtSignerDisplayName.Text = matchedCert?.CommonName ?? teacher.FullName;
+                    TxtQuickCertNotice.Text = $"Chứng thư: {matchedCert?.CommonName ?? teacher.FullName} (Ban Cơ yếu G2)";
 
                     // Đồng bộ thông tin sang Hộp Thư Trình Ký (Tab 3)
                     // Reset sạch dữ liệu hiển thị Tab 3 của phiên trước để tránh nhầm lẫn / lộ báo cáo
@@ -702,18 +738,7 @@ namespace VGCASignToolPro
                         }
                     }
 
-                    // Đồng bộ chứng thư trong kho Windows Store theo đối soát danh tính
-                    CertificateModel? matchedCert = _currentActiveCert ?? _certService.GetActiveVGCACertificate(teacher.FullName, teacher.Cccd, teacher.SigningMethod);
-                    if (matchedCert != null)
-                    {
-                        _currentActiveCert = matchedCert;
-                        CmbCertificates.SelectedItem = matchedCert;
-                        TxtDetailIssuer.Text = matchedCert.Issuer;
-                        TxtDetailSerial.Text = matchedCert.SerialNumber;
-                        TxtDetailValidity.Text = $"{matchedCert.NotBefore:dd/MM/yyyy} đến {matchedCert.NotAfter:dd/MM/yyyy} ({(matchedCert.IsValidNow ? "Còn hiệu lực" : "Đã hết hạn")})";
-                        TxtDetailAlgorithm.Text = matchedCert.KeyAlgorithm;
-                        TxtDetailThumbprint.Text = matchedCert.Thumbprint;
-                    }
+
 
                     // Cập nhật trạng thái thiết bị ký số và banner chuẩn xác
                     UpdateVgcaDeviceStatusBanner(matchedCert, teacher);
@@ -1297,15 +1322,18 @@ namespace VGCASignToolPro
 
                 TxtDetailSignerName.Text = cert.CommonName;
                 TxtDetailEmail.Text = !string.IsNullOrWhiteSpace(cert.Email) ? cert.Email : "N/A";
-                if (!string.IsNullOrWhiteSpace(cert.OrganizationUnit) && !string.IsNullOrWhiteSpace(cert.Organization))
+                if (!string.IsNullOrWhiteSpace(cert.OrganizationUnit))
                 {
-                    TxtDetailOrg.Text = cert.OrganizationUnit.Contains(cert.Organization, StringComparison.OrdinalIgnoreCase) || cert.Organization.Contains(cert.OrganizationUnit, StringComparison.OrdinalIgnoreCase)
-                        ? (cert.OrganizationUnit.Length >= cert.Organization.Length ? cert.OrganizationUnit : cert.Organization)
-                        : $"{cert.OrganizationUnit} - {cert.Organization}";
-                }
-                else if (!string.IsNullOrWhiteSpace(cert.OrganizationUnit))
-                {
-                    TxtDetailOrg.Text = cert.OrganizationUnit;
+                    if (!string.IsNullOrWhiteSpace(cert.Organization) &&
+                        !cert.OrganizationUnit.Contains(cert.Organization, StringComparison.OrdinalIgnoreCase) &&
+                        !cert.Organization.Contains(cert.OrganizationUnit, StringComparison.OrdinalIgnoreCase))
+                    {
+                        TxtDetailOrg.Text = $"{cert.OrganizationUnit} - {cert.Organization}";
+                    }
+                    else
+                    {
+                        TxtDetailOrg.Text = cert.OrganizationUnit;
+                    }
                 }
                 else if (!string.IsNullOrWhiteSpace(cert.Organization))
                 {

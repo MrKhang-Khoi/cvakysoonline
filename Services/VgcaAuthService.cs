@@ -208,14 +208,15 @@ namespace VGCASignToolPro.Services
             {
                 if (!string.IsNullOrEmpty(certSerial)) matched.SerialNumber = certSerial;
                 if (!string.IsNullOrEmpty(cert.KeyContainerName)) matched.KeyContainer = cert.KeyContainerName;
-                if (string.IsNullOrEmpty(matched.Email) && !string.IsNullOrEmpty(certEmail)) matched.Email = certEmail;
-                if (string.IsNullOrWhiteSpace(matched.Organization) && !string.IsNullOrWhiteSpace(cert.Organization))
+                if (!string.IsNullOrEmpty(certEmail)) matched.Email = certEmail;
+                // LUÔN ĐỒNG BỘ ĐƠN VỊ TỪ CHỨNG THƯ BAN CƠ YẾU THỰC TẾ
+                if (!string.IsNullOrWhiteSpace(cert.OrganizationUnit))
+                {
+                    matched.Organization = cert.OrganizationUnit;
+                }
+                else if (!string.IsNullOrWhiteSpace(cert.Organization))
                 {
                     matched.Organization = cert.Organization;
-                }
-                if (string.IsNullOrWhiteSpace(matched.Department) && !string.IsNullOrWhiteSpace(cert.OrganizationUnit))
-                {
-                    matched.Department = cert.OrganizationUnit;
                 }
                 // Nếu cắm USB Token phần cứng có chứa chứng thư con dấu hoặc chứng thư lãnh đạo, mở quyền đóng dấu
                 if (cert.IsHardwareToken && cert.IsOrganizationCertificate)
