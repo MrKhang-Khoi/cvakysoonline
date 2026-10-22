@@ -188,7 +188,7 @@ $releaseObj = @{
     minSupportedVersion = "2.0.0"
     releaseDate = (Get-Date -Format "yyyy-MM-dd")
     title = "Ban cap nhat VGCA Sign Tool Pro v$appVersion"
-    description = "Bo sung che do Admin quan tri kho bao cao tren Web va Google Apps Script, dong thoi chuan hoa toan dien giao dien nhan dien chu ky Tab 1."
+    description = "Ban cap nhat v2.6.4: Sua dut diem loi hien thi icon Virtual CSP, chong cat cut chu giao dien, nhan dien chuan xac trang thai tien trinh KSP va triet tieu hardcode."
     downloadUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v$appVersion/VGCASignToolPro_Update_v$appVersion.zip"
     installerUrl = "https://github.com/MrKhang-Khoi/cvakysoonline/releases/download/v$appVersion/VGCASignToolPro_Setup_v$appVersion.exe"
     sha256 = $zipHash
@@ -196,11 +196,11 @@ $releaseObj = @{
     mandatory = $false
     status = "ACTIVE"
     changelog = @(
-        "Nang cap Google Apps Script code.gs: Bo sung action deleteFile va deleteBatchFiles xoa sach file PDF tren Drive khi Admin don dep",
-        "Nang cap Web Portal index.html: Bo sung che do Admin quan tri kho bao cao, cho phep xoa tung bao cao, xoa da chon hoac xoa toan bo kho",
-        "Chuan hoa toan dien giao dien Tab 1: Dong bo 100% phong chu Segoe UI, tinh gon nhan truc dien, toi uu ty le phan cap thong tin",
-        "Kiem soat chat che quyen xoa tren Web bang Database Secret, bao ve tuyet doi an toan du lieu",
-        "Bao toan 100% tinh nang ky so PAdES LTV, hop thu trinh ky SSE thoi gian thuc va dong bo dam may AES-256"
+        "Sua dut diem loi font 3 o vuong tren banner VGCA Virtual CSP bang ma glyph Segoe MDL2 Assets chuan",
+        "Chong cat cut chu (TextWrapping) tren toan bo cac truong thong tin chung thu, chuc vu va quyen dong dau",
+        "Nhan dien chuan xac trang thai tien trinh VGCA Virtual CSP: Chua cai dat / Chua mo / Chua dang nhap / Da san sang",
+        "Xoa bo triet de hardcode ten truong, tu dong trich xuat chinh xac don vi tu chung thu so thuc te",
+        "Bo sung ToolTip chi tiet cho ComboBox chung thu so giup xem day du thong tin ngay ca khi bi han che chieu rong"
     )
 }
 $jsonPayload = $releaseObj | ConvertTo-Json -Depth 5

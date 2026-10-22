@@ -483,7 +483,7 @@
                                                     <TextBlock x:Name="TxtDetailBannerIcon" FontFamily="Segoe MDL2 Assets" Text="&#xE730;" FontSize="16" Margin="0,0,6,0" VerticalAlignment="Center" Foreground="#15803D" />
                                                     <TextBlock x:Name="TxtDetailBannerTitle" Text="Đã nhận diện thiết bị ký số Ban Cơ yếu" FontWeight="Bold" Foreground="#15803D" FontSize="12" VerticalAlignment="Center" />
                                                 </StackPanel>
-                                                <TextBlock x:Name="TxtDetailBannerSubtitle" Text="Tự động phân quyền ký số và đóng dấu theo số định danh cá nhân." FontSize="11" Foreground="#166534" Margin="0,2,0,0" />
+                                                <TextBlock x:Name="TxtDetailBannerSubtitle" Text="Tự động phân quyền ký số và đóng dấu theo số định danh cá nhân." FontSize="11" Foreground="#166534" Margin="0,2,0,0" TextWrapping="Wrap" />
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                                 <Button x:Name="BtnDetailOpenVcsp" Content="Công cụ VGCA" Style="{StaticResource SecondaryButton}" 
@@ -538,7 +538,7 @@
 
                                             <!-- CHỨC VỤ -->
                                             <TextBlock Grid.Row="1" Grid.Column="0" Text="Chức vụ:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="TxtDetailRoleAndSeal" Text="---" FontWeight="SemiBold" FontSize="12" Foreground="#0F172A" Margin="0,4" />
+                                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="TxtDetailRoleAndSeal" Text="---" FontWeight="SemiBold" FontSize="12" Foreground="#0F172A" Margin="0,4" TextWrapping="Wrap" />
 
                                             <!-- TRẠNG THÁI THIẾT BỊ -->
                                             <TextBlock Grid.Row="2" Grid.Column="0" Text="Trạng thái thiết bị:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
@@ -546,7 +546,7 @@
 
                                             <!-- EMAIL -->
                                             <TextBlock Grid.Row="3" Grid.Column="0" Text="Email:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="TxtDetailEmail" Text="---" FontSize="12" Foreground="#0F172A" Margin="0,4" />
+                                            <TextBlock Grid.Row="3" Grid.Column="1" x:Name="TxtDetailEmail" Text="---" FontSize="12" Foreground="#0F172A" Margin="0,4" TextWrapping="Wrap" />
 
                                             <!-- ĐƠN VỊ -->
                                             <TextBlock Grid.Row="4" Grid.Column="0" Text="Đơn vị:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
@@ -554,19 +554,19 @@
 
                                             <!-- NHÀ CẤP CHỨNG THƯ -->
                                             <TextBlock Grid.Row="5" Grid.Column="0" Text="Nhà cấp chứng thư:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="5" Grid.Column="1" x:Name="TxtDetailIssuer" Text="---" FontSize="12" Foreground="#059669" FontWeight="SemiBold" Margin="0,4" />
+                                            <TextBlock Grid.Row="5" Grid.Column="1" x:Name="TxtDetailIssuer" Text="---" FontSize="12" Foreground="#059669" FontWeight="SemiBold" Margin="0,4" TextWrapping="Wrap" />
 
                                             <!-- SỐ SERI -->
                                             <TextBlock Grid.Row="6" Grid.Column="0" Text="Số seri:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="6" Grid.Column="1" x:Name="TxtDetailSerial" Text="---" FontSize="12" Foreground="#0F172A" Margin="0,4" />
+                                            <TextBlock Grid.Row="6" Grid.Column="1" x:Name="TxtDetailSerial" Text="---" FontSize="12" Foreground="#0F172A" Margin="0,4" TextWrapping="Wrap" />
 
                                             <!-- THỜI HẠN -->
                                             <TextBlock Grid.Row="7" Grid.Column="0" Text="Thời hạn:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="7" Grid.Column="1" x:Name="TxtDetailValidity" Text="---" FontSize="12" Foreground="#0F172A" Margin="0,4" />
+                                            <TextBlock Grid.Row="7" Grid.Column="1" x:Name="TxtDetailValidity" Text="---" FontSize="12" Foreground="#0F172A" Margin="0,4" TextWrapping="Wrap" />
 
                                             <!-- THUẬT TOÁN -->
                                             <TextBlock Grid.Row="8" Grid.Column="0" Text="Thuật toán:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
-                                            <TextBlock Grid.Row="8" Grid.Column="1" x:Name="TxtDetailAlgorithm" Text="---" FontSize="12" Foreground="#D97706" FontWeight="SemiBold" Margin="0,4" />
+                                            <TextBlock Grid.Row="8" Grid.Column="1" x:Name="TxtDetailAlgorithm" Text="---" FontSize="12" Foreground="#D97706" FontWeight="SemiBold" Margin="0,4" TextWrapping="Wrap" />
 
                                             <!-- MÃ BĂM -->
                                             <TextBlock Grid.Row="9" Grid.Column="0" Text="Mã băm:" FontWeight="SemiBold" FontSize="12" Foreground="#475569" Margin="0,4" />
@@ -586,7 +586,7 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <ComboBox Grid.Column="0" x:Name="CmbCertificates" Padding="6" SelectionChanged="CmbCertificates_SelectionChanged" />
+                                        <ComboBox Grid.Column="0" x:Name="CmbCertificates" Padding="6" SelectionChanged="CmbCertificates_SelectionChanged" ToolTip="Danh sách chứng thư số Ban Cơ yếu phát hiện trên máy" />
                                         <Button Grid.Column="1" Content="Quét lại" Style="{StaticResource SecondaryButton}" 
                                                 Margin="6,0,0,0" Padding="8,4" Click="BtnRefreshCertificates_Click" />
                                         <Button Grid.Column="2" x:Name="BtnSaveCertPreference" Content="Lưu lựa chọn"

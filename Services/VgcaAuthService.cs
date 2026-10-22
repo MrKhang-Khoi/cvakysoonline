@@ -209,6 +209,14 @@ namespace VGCASignToolPro.Services
                 if (!string.IsNullOrEmpty(certSerial)) matched.SerialNumber = certSerial;
                 if (!string.IsNullOrEmpty(cert.KeyContainerName)) matched.KeyContainer = cert.KeyContainerName;
                 if (string.IsNullOrEmpty(matched.Email) && !string.IsNullOrEmpty(certEmail)) matched.Email = certEmail;
+                if (string.IsNullOrWhiteSpace(matched.Organization) && !string.IsNullOrWhiteSpace(cert.Organization))
+                {
+                    matched.Organization = cert.Organization;
+                }
+                if (string.IsNullOrWhiteSpace(matched.Department) && !string.IsNullOrWhiteSpace(cert.OrganizationUnit))
+                {
+                    matched.Department = cert.OrganizationUnit;
+                }
                 // Nếu cắm USB Token phần cứng có chứa chứng thư con dấu hoặc chứng thư lãnh đạo, mở quyền đóng dấu
                 if (cert.IsHardwareToken && cert.IsOrganizationCertificate)
                 {
@@ -229,7 +237,7 @@ namespace VGCASignToolPro.Services
                 FullName = !string.IsNullOrWhiteSpace(certCn) ? certCn : "Cán bộ / Giáo viên",
                 Title = cert.IsHardwareToken ? "Lãnh đạo / Văn thư (USB Token)" : "Giáo viên",
                 Department = !string.IsNullOrWhiteSpace(cert.OrganizationUnit) ? cert.OrganizationUnit : "Đơn vị giáo dục",
-                Organization = !string.IsNullOrWhiteSpace(cert.Organization) ? cert.Organization : "TRƯỜNG THCS NGUYỄN HUỆ",
+                Organization = !string.IsNullOrWhiteSpace(cert.Organization) ? cert.Organization : (!string.IsNullOrWhiteSpace(cert.OrganizationUnit) ? cert.OrganizationUnit : "Cơ quan / Đơn vị"),
                 Email = certEmail,
                 CanSeal = canSealByDefault,
                 SigningMethod = cert.IsHardwareToken ? "USB_TOKEN" : "VGCA_CLOUD",
@@ -351,7 +359,7 @@ namespace VGCASignToolPro.Services
                             Department = dept,
                             Phone = phone,
                             Email = email,
-                            Organization = !string.IsNullOrEmpty(org) ? org : "TRƯỜNG THCS NGUYỄN HUỆ",
+                            Organization = !string.IsNullOrEmpty(org) ? org : (!string.IsNullOrEmpty(dept) ? dept : "Cơ quan / Đơn vị"),
                             SigningMethod = !string.IsNullOrEmpty(signingMethod) ? signingMethod : "AUTO",
                             CanSeal = canSeal,
                             Password = password,

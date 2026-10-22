@@ -58,10 +58,8 @@ namespace VGCASignToolPro.Models
             {
                 if (!IsVGCACertificate) return false;
                 string provUpper = (ProviderName ?? string.Empty).ToUpperInvariant();
-                if (provUpper.Contains("RSSP") || provUpper.Contains("VIRTUAL"))
-                    return true;
-                // Virtual CSP v2.0 của Ban Cơ Yếu Chính Phủ sử dụng ECDSA P-384
-                if (KeyAlgorithm.StartsWith("ECDSA", StringComparison.OrdinalIgnoreCase))
+                // Nhận diện chuẩn xác VGCA Virtual CSP qua CSP/KSP provider (RSSP / Virtual / Remote)
+                if (provUpper.Contains("RSSP") || provUpper.Contains("VIRTUAL") || provUpper.Contains("REMOTE"))
                     return true;
                 return false;
             }
@@ -72,26 +70,22 @@ namespace VGCASignToolPro.Models
             get
             {
                 if (!HasPrivateKey) return false;
+                // Nếu là Virtual CSP (ký số từ xa) thì không phải USB Token phần cứng
+                if (IsVirtualCspCertificate) return false;
+
                 string provUpper = (ProviderName ?? string.Empty).ToUpperInvariant();
                 string contUpper = (KeyContainerName ?? string.Empty).ToUpperInvariant();
 
-                // Nhận diện USB Token phần cứng qua Smart Card KSP / bit4id CSP
                 if (provUpper.Contains("SMART CARD") ||
                     provUpper.Contains("BIT4ID") ||
+                    provUpper.Contains("TOKEN") ||
+                    provUpper.Contains("ETOKEN") ||
                     contUpper.Contains("BIT4ID"))
                 {
                     return true;
                 }
 
-                // Nếu có private key, không phải Virtual CSP và dùng RSA (đặc thù Token vật lý VGCA)
-                if (!IsVirtualCspCertificate &&
-                    !provUpper.Contains("RSSP") &&
-                    KeyAlgorithm.StartsWith("RSA", StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-
-                return false;
+                return true;
             }
         }
 

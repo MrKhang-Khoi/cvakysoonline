@@ -432,6 +432,111 @@ namespace VGCASignToolPro
             }
         }
 
+        private void UpdateVgcaDeviceStatusBanner(CertificateModel? cert, VgcaTeacherModel? teacher)
+        {
+            if (TxtDetailUsbStatus == null || BorderDetailBanner == null || TxtDetailBannerIcon == null) return;
+
+            if (cert != null)
+            {
+                if (cert.IsVirtualCspCertificate)
+                {
+                    var vcspInfo = VcspStatusService.CheckStatus();
+                    if (!vcspInfo.IsInstalled)
+                    {
+                        TxtDetailBannerIcon.Text = "\uE7BA";
+                        TxtDetailBannerTitle.Text = "CHƯA CÀI ĐẶT VGCA VIRTUAL CSP";
+                        TxtDetailBannerTitle.Foreground = new SolidColorBrush(Color.FromRgb(220, 38, 38));
+                        TxtDetailBannerSubtitle.Text = "Máy tính chưa cài đặt phần mềm VGCA Virtual CSP v2.0 để kết nối ký số từ xa.";
+                        BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(254, 242, 242));
+                        BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(254, 202, 202));
+
+                        TxtDetailUsbStatus.Text = $"⚠️ Đã phát hiện chứng thư ({cert.CommonName}) nhưng chưa cài đặt VGCA Virtual CSP v2.0.";
+                        TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(220, 38, 38));
+
+                        BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(185, 28, 28));
+                        TxtVgcaGlobalStatusIcon.Text = "\uE7BA";
+                        TxtVgcaGlobalStatusText.Text = "VGCA: Thiếu Virtual CSP";
+                    }
+                    else if (!vcspInfo.IsRunning)
+                    {
+                        TxtDetailBannerIcon.Text = "\uE7BA";
+                        TxtDetailBannerTitle.Text = "VGCA VIRTUAL CSP CHƯA ĐƯỢC MỞ";
+                        TxtDetailBannerTitle.Foreground = new SolidColorBrush(Color.FromRgb(180, 83, 9));
+                        TxtDetailBannerSubtitle.Text = "Vui lòng mở ứng dụng VGCA Virtual CSP và đăng nhập tài khoản trước khi ký.";
+                        BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(255, 251, 235));
+                        BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(253, 230, 138));
+
+                        TxtDetailUsbStatus.Text = $"⚠️ Phát hiện chứng thư ({cert.CommonName}) nhưng ứng dụng Virtual CSP chưa mở. Nhấn 'Công cụ VGCA' để mở.";
+                        TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(180, 83, 9));
+
+                        BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(217, 119, 6));
+                        TxtVgcaGlobalStatusIcon.Text = "\uE7BA";
+                        TxtVgcaGlobalStatusText.Text = "VGCA: Chưa mở CSP";
+                    }
+                    else if (vcspInfo.State == VcspState.LoggedOut)
+                    {
+                        TxtDetailBannerIcon.Text = "\uE7BA";
+                        TxtDetailBannerTitle.Text = "VIRTUAL CSP CHƯA ĐĂNG NHẬP / HẾT HẠN PHIÊN";
+                        TxtDetailBannerTitle.Foreground = new SolidColorBrush(Color.FromRgb(180, 83, 9));
+                        TxtDetailBannerSubtitle.Text = "Ứng dụng Virtual CSP đang mở nhưng chưa đăng nhập hoặc phiên làm việc đã hết hạn.";
+                        BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(255, 251, 235));
+                        BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(253, 230, 138));
+
+                        TxtDetailUsbStatus.Text = "⚠️ Ứng dụng Virtual CSP đang hoạt động nhưng chưa đăng nhập. Vui lòng chuyển sang cửa sổ Virtual CSP để đăng nhập.";
+                        TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(180, 83, 9));
+
+                        BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(217, 119, 6));
+                        TxtVgcaGlobalStatusIcon.Text = "\uE7BA";
+                        TxtVgcaGlobalStatusText.Text = "VGCA: Chưa đăng nhập CSP";
+                    }
+                    else
+                    {
+                        // Sẵn sàng ký số từ xa
+                        TxtDetailBannerIcon.Text = "\uE753";
+                        TxtDetailBannerTitle.Text = "ĐÃ KẾT NỐI VGCA VIRTUAL CSP";
+                        TxtDetailBannerTitle.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
+                        TxtDetailBannerSubtitle.Text = "Sẵn sàng ký số từ xa qua ứng dụng VGCA Mobile trên điện thoại.";
+                        BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(240, 253, 244));
+                        BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(134, 239, 172));
+
+                        TxtDetailUsbStatus.Text = $"✅ Đã phát hiện chứng thư ({cert.CommonName}) & Virtual CSP đã sẵn sàng ký số.";
+                        TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
+
+                        BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(6, 95, 70));
+                        TxtVgcaGlobalStatusIcon.Text = "\uE73E";
+                        string nameDisplay = teacher?.FullName ?? cert.CommonName;
+                        TxtVgcaGlobalStatusText.Text = $"VGCA: {nameDisplay}";
+                    }
+                }
+                else
+                {
+                    // USB Token vật lý phần cứng
+                    TxtDetailBannerIcon.Text = "\uE730";
+                    TxtDetailBannerTitle.Text = "ĐÃ KẾT NỐI USB TOKEN PHẦN CỨNG";
+                    TxtDetailBannerTitle.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
+                    string tokenDesc = cert.IsOrganizationCertificate
+                        ? $"USB Token con dấu nhà trường: {cert.CommonName}"
+                        : $"USB Token cá nhân: {cert.CommonName}";
+                    TxtDetailBannerSubtitle.Text = $"Thiết bị {tokenDesc} đã sẵn sàng ký số.";
+                    BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(240, 253, 244));
+                    BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(134, 239, 172));
+
+                    TxtDetailUsbStatus.Text = $"✅ {tokenDesc}. Sẵn sàng ký số.";
+                    TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
+
+                    BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(6, 95, 70));
+                    TxtVgcaGlobalStatusIcon.Text = "\uE73E";
+                    string nameDisplay = teacher?.FullName ?? cert.CommonName;
+                    TxtVgcaGlobalStatusText.Text = $"VGCA Token: {nameDisplay}";
+                }
+            }
+            else
+            {
+                TxtDetailUsbStatus.Text = "ℹ️ Đang quét kết nối chữ ký số Ban Cơ Yếu...";
+                TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(217, 119, 6));
+            }
+        }
+
         private void ClearCertificateDetailsUI()
         {
             if (TxtDetailSignerName != null) TxtDetailSignerName.Text = "Chưa phát hiện thiết bị";
@@ -513,9 +618,20 @@ namespace VGCASignToolPro
 
                     TxtDetailSignerName.Text = teacher.FullName;
                     TxtDetailEmail.Text = !string.IsNullOrWhiteSpace(teacher.Email) ? teacher.Email : "Chưa đăng ký email trong chứng thư";
-                    TxtDetailOrg.Text = !string.IsNullOrWhiteSpace(teacher.Department)
-                        ? $"{teacher.Department} - {teacher.Organization ?? "N/A"}"
-                        : teacher.Organization ?? "Không rõ tổ chức";
+                    if (!string.IsNullOrWhiteSpace(teacher.Department) && !string.IsNullOrWhiteSpace(teacher.Organization))
+                    {
+                        TxtDetailOrg.Text = teacher.Department.Contains(teacher.Organization, StringComparison.OrdinalIgnoreCase) || teacher.Organization.Contains(teacher.Department, StringComparison.OrdinalIgnoreCase)
+                            ? (teacher.Department.Length >= teacher.Organization.Length ? teacher.Department : teacher.Organization)
+                            : $"{teacher.Department} - {teacher.Organization}";
+                    }
+                    else if (!string.IsNullOrWhiteSpace(teacher.Department))
+                    {
+                        TxtDetailOrg.Text = teacher.Department;
+                    }
+                    else
+                    {
+                        TxtDetailOrg.Text = teacher.Organization ?? "Không rõ tổ chức";
+                    }
                     TxtSignerDisplayName.Text = teacher.FullName;
                     TxtQuickCertNotice.Text = $"Chứng thư: {teacher.FullName} (Ban Cơ yếu G2)";
 
@@ -599,54 +715,8 @@ namespace VGCASignToolPro
                         TxtDetailThumbprint.Text = matchedCert.Thumbprint;
                     }
 
-                    // Cập nhật dòng trạng thái USB Token & Virtual CSP thực tế
-                    if (TxtDetailUsbStatus != null)
-                    {
-                        if (matchedCert != null)
-                        {
-                            if (matchedCert.IsVirtualCspCertificate)
-                            {
-                                TxtDetailBannerIcon.Text = "🛡️";
-                                TxtDetailBannerTitle.Text = "ĐÃ NHẬN DIỆN VGCA VIRTUAL CSP";
-                                TxtDetailBannerTitle.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
-                                TxtDetailBannerSubtitle.Text = "Sẵn sàng ký số từ xa qua ứng dụng VGCA Mobile trên điện thoại.";
-                                BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(240, 253, 244));
-                                BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(134, 239, 172));
-
-                                TxtDetailUsbStatus.Text = $"Đã phát hiện chứng thư Ban Cơ yếu ({matchedCert.CommonName}) & Virtual CSP đã sẵn sàng ký số";
-                                TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
-
-                                BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(6, 95, 70));
-                                TxtVgcaGlobalStatusIcon.Text = "\uE73E";
-                                TxtVgcaGlobalStatusText.Text = $"VGCA: {teacher.FullName}";
-                            }
-                            else
-                            {
-                                // USB Token vật lý phần cứng (Cá nhân BGH hoặc Con dấu cơ quan)
-                                TxtDetailBannerIcon.Text = "\uE730";
-                                TxtDetailBannerTitle.Text = "Đã kết nối USB Token phần cứng";
-                                TxtDetailBannerTitle.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
-                                string tokenDesc = matchedCert.IsOrganizationCertificate
-                                    ? $"USB Token con dấu nhà trường: {matchedCert.CommonName}"
-                                    : $"USB Token cá nhân: {matchedCert.CommonName}";
-                                TxtDetailBannerSubtitle.Text = $"Thiết bị {tokenDesc} đã sẵn sàng ký số.";
-                                BorderDetailBanner.Background = new SolidColorBrush(Color.FromRgb(240, 253, 244));
-                                BorderDetailBanner.BorderBrush = new SolidColorBrush(Color.FromRgb(134, 239, 172));
-
-                                TxtDetailUsbStatus.Text = $"{tokenDesc}. Sẵn sàng ký số";
-                                TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(21, 128, 61));
-
-                                BadgeVgcaGlobalStatus.Background = new SolidColorBrush(Color.FromRgb(6, 95, 70));
-                                TxtVgcaGlobalStatusIcon.Text = "\uE73E";
-                                TxtVgcaGlobalStatusText.Text = $"VGCA Token: {teacher.FullName}";
-                            }
-                        }
-                        else
-                        {
-                            TxtDetailUsbStatus.Text = "ℹ️ Đang quét kết nối chữ ký số Ban Cơ Yếu...";
-                            TxtDetailUsbStatus.Foreground = new SolidColorBrush(Color.FromRgb(217, 119, 6)); // Amber
-                        }
-                    }
+                    // Cập nhật trạng thái thiết bị ký số và banner chuẩn xác
+                    UpdateVgcaDeviceStatusBanner(matchedCert, teacher);
 
                     string maskedId = !string.IsNullOrEmpty(teacher.SerialNumber)
                         ? $"Serial: {teacher.SerialNumber}"
@@ -1227,12 +1297,31 @@ namespace VGCASignToolPro
 
                 TxtDetailSignerName.Text = cert.CommonName;
                 TxtDetailEmail.Text = !string.IsNullOrWhiteSpace(cert.Email) ? cert.Email : "N/A";
-                TxtDetailOrg.Text = !string.IsNullOrWhiteSpace(cert.OrganizationUnit) ? $"{cert.OrganizationUnit} - {cert.Organization}" : cert.Subject;
+                if (!string.IsNullOrWhiteSpace(cert.OrganizationUnit) && !string.IsNullOrWhiteSpace(cert.Organization))
+                {
+                    TxtDetailOrg.Text = cert.OrganizationUnit.Contains(cert.Organization, StringComparison.OrdinalIgnoreCase) || cert.Organization.Contains(cert.OrganizationUnit, StringComparison.OrdinalIgnoreCase)
+                        ? (cert.OrganizationUnit.Length >= cert.Organization.Length ? cert.OrganizationUnit : cert.Organization)
+                        : $"{cert.OrganizationUnit} - {cert.Organization}";
+                }
+                else if (!string.IsNullOrWhiteSpace(cert.OrganizationUnit))
+                {
+                    TxtDetailOrg.Text = cert.OrganizationUnit;
+                }
+                else if (!string.IsNullOrWhiteSpace(cert.Organization))
+                {
+                    TxtDetailOrg.Text = cert.Organization;
+                }
+                else
+                {
+                    TxtDetailOrg.Text = cert.Subject;
+                }
                 TxtDetailIssuer.Text = cert.Issuer;
                 TxtDetailSerial.Text = cert.SerialNumber;
                 TxtDetailValidity.Text = $"{cert.NotBefore:dd/MM/yyyy} đến {cert.NotAfter:dd/MM/yyyy} ({(cert.IsValidNow ? "Còn hạn" : "Hết hạn")})";
                 TxtDetailAlgorithm.Text = cert.KeyAlgorithm;
                 TxtDetailThumbprint.Text = cert.Thumbprint;
+                CmbCertificates.ToolTip = cert.DisplayText;
+                UpdateVgcaDeviceStatusBanner(cert, _vgcaAuth.CurrentTeacher);
             }
             else
             {
